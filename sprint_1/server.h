@@ -15,13 +15,6 @@
 
 namespace server_ns
 {
-
-    std::string ReadLine();
-
-    int ReadLineWithNumber();
-
-    std::vector<std::string> SplitIntoWords(const std::string &text);
-
     struct Document
     {
         int id {0};
@@ -36,6 +29,12 @@ namespace server_ns
         BANNED,
         REMOVED,
     };
+
+    std::string ReadLine();
+
+    int ReadLineWithNumber();
+
+    std::vector<std::string> SplitIntoWords(const std::string &text);
 
     class SearchServer
     {
@@ -149,7 +148,7 @@ namespace server_ns
 
         double ComputeWordInverseDocumentFreq(const std::string &word) const;
 
-    private: // Class fields TODO: change naming
+    private: // Class fields
         std::set<std::string> stop_words_;
         std::map<std::string, std::map<int, double>> word_to_document_frequency_;
         std::map<int, DocumentData> documents_;
