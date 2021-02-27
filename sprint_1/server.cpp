@@ -7,7 +7,7 @@
 #include <cmath>
 #include <iostream>
 
-namespace server_ns
+namespace server
 {
     using std::string;
     using std::vector;
@@ -60,12 +60,12 @@ namespace server_ns
                                    DocumentStatus status, const vector<int> &ratings)
     {
         const vector<string> words = SplitIntoWordsNoStop(document);
-        const double inv_word_count = 1.0 / words.size();
+        const double inverse_word_count = 1.0 / words.size();
 
         for (const string &word : words)
-            word_to_document_frequency_[word][document_id] += inv_word_count;
+            word_to_document_frequency_[word][document_id] += inverse_word_count;
 
-        documents_.emplace(document_id,DocumentData{ComputeAverageRating(ratings), status});
+        documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
     }
 
     vector<Document> SearchServer::FindTopDocuments(const string &raw_query, DocumentStatus document_status) const
@@ -80,7 +80,7 @@ namespace server_ns
         return static_cast<int>(documents_.size());
     }
 
-    SearchServer::WordsDocIdTuple SearchServer::MatchDocument(const string &raw_query, int document_id) const
+    SearchServer::WordsInDocumentInfo SearchServer::MatchDocument(const string &raw_query, int document_id) const
     {
         const Query query = ParseQuery(raw_query);
         vector<string> matched_words;
@@ -144,7 +144,7 @@ namespace server_ns
             text = text.substr(1);
         }
 
-        return {text, is_minus,IsStopWord(text)};
+        return {text, is_minus, IsStopWord(text)};
     }
 
     SearchServer::Query SearchServer::ParseQuery(const string &text) const
@@ -166,7 +166,7 @@ namespace server_ns
     }
 
     // Existence required
-    double SearchServer::ComputeWordInverseDocumentFreq(const string &word) const
+    double SearchServer::ComputeWordInverseDocumentFrequency(const string &word) const
     {
         return log(GetDocumentCount() * 1.0 / word_to_document_frequency_.at(word).size());
     }

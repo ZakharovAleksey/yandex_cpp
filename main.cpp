@@ -2,7 +2,7 @@
 
 #include "sprint_1/server.h"
 
-void PrintDocument(const server_ns::Document &document)
+void PrintDocument(const server::Document &document)
 {
     using namespace std;
 
@@ -16,7 +16,7 @@ void PrintDocument(const server_ns::Document &document)
 int main()
 {
     using namespace std;
-    using namespace server_ns;
+    using namespace server;
 
     SearchServer search_server;
     search_server.SetStopWords("и в на"s);

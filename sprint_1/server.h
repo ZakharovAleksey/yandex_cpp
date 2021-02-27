@@ -13,7 +13,7 @@
 #include <vector>
 #include <algorithm>
 
-namespace server_ns
+namespace server
 {
     struct Document
     {
@@ -39,7 +39,7 @@ namespace server_ns
     class SearchServer
     {
     public: // Public types
-        using WordsDocIdTuple = std::tuple<std::vector<std::string>, DocumentStatus>;
+        using WordsInDocumentInfo = std::tuple<std::vector<std::string>, DocumentStatus>;
 
     public: // Public methods
         template <class DocumentFilterFunction>
@@ -51,7 +51,7 @@ namespace server_ns
 
             std::sort(matched_documents.begin(), matched_documents.end(),
                       [](const Document &lhs, const Document &rhs) {
-                          if (std::abs(lhs.relevance - rhs.relevance) < kEps)
+                          if (std::abs(lhs.relevance - rhs.relevance) < kEqualityThreshold)
                               return lhs.rating > rhs.rating;
                           else
                               return lhs.relevance > rhs.relevance;
@@ -73,7 +73,7 @@ namespace server_ns
 
         int GetDocumentCount() const;
 
-        WordsDocIdTuple MatchDocument(const std::string &raw_query, int document_id) const;
+        WordsInDocumentInfo MatchDocument(const std::string &raw_query, int document_id) const;
 
     private: // Types
         struct DocumentData
@@ -83,7 +83,7 @@ namespace server_ns
         };
         struct QueryWord
         {
-            std::string data {""};
+            std::string data;
             bool is_minus {false};
             bool is_stop {false};
         };
@@ -94,7 +94,7 @@ namespace server_ns
         };
 
     private: // Constants
-        static constexpr double kEps {1e-6};
+        static constexpr double kEqualityThreshold {1e-6};
         static constexpr int kMaxDocumentsCount {5};
 
     private: // Class methods
@@ -107,7 +107,7 @@ namespace server_ns
                 if (word_to_document_frequency_.count(word) == 0)
                     continue;
 
-                const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
+                const double inverse_document_freq = ComputeWordInverseDocumentFrequency(word);
                 for (const auto [document_id, term_freq] : word_to_document_frequency_.at(word))
                 {
                     const auto &[rating, status] = documents_.at(document_id);
@@ -146,7 +146,7 @@ namespace server_ns
 
         Query ParseQuery(const std::string &text) const;
 
-        double ComputeWordInverseDocumentFreq(const std::string &word) const;
+        double ComputeWordInverseDocumentFrequency(const std::string &word) const;
 
     private: // Class fields
         std::set<std::string> stop_words_;
