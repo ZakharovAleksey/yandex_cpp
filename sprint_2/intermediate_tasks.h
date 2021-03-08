@@ -2,8 +2,8 @@
 // Created by azakharov on 3/6/2021.
 //
 
-#ifndef YP_CPP1_UTILS_H
-#define YP_CPP1_UTILS_H
+#ifndef YP_CPP1_INTERMEDIATE_TASKS_H
+#define YP_CPP1_INTERMEDIATE_TASKS_H
 
 #include <string>
 #include <map>
@@ -11,7 +11,7 @@
 #include <vector>
 #include <iostream>
 
-namespace utils {
+namespace intermediate {
     bool IsPalindrome(const std::string &text);
 
     class Synonyms {
@@ -28,7 +28,6 @@ namespace utils {
     private:
         WordsDictionary synonyms_;
     };
-
 
     namespace transport {
 
@@ -69,14 +68,12 @@ namespace utils {
             friend std::ostream &operator<<(std::ostream &os, const StopsForBusResponse &response);
         };
 
-
         struct AllBusesResponse {
             ResponseStatus status{ResponseStatus::Bad};
             std::map<std::string, std::vector<std::string>> buses_to_stops;
 
             friend std::ostream &operator<<(std::ostream &os, const AllBusesResponse &response);
         };
-
 
         class BusManager {
         public:
@@ -96,7 +93,6 @@ namespace utils {
             InfoContainer stops_to_buses_;
         };
     }
-
 }
 
-#endif //YP_CPP1_UTILS_H
+#endif //YP_CPP1_INTERMEDIATE_TASKS_H

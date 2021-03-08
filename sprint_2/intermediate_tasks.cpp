@@ -2,13 +2,13 @@
 // Created by azakharov on 3/6/2021.
 //
 
-#include "utils.h"
+#include "intermediate_tasks.h"
 
 #include <cassert>
 #include <algorithm>
 #include <iterator>
 
-namespace utils
+namespace intermediate
 {
     bool IsPalindrome(const std::string& text) {
         std::string text_copy {text};

@@ -59,8 +59,11 @@ namespace server
     void SearchServer::AddDocument(int document_id, const string &document,
                                    DocumentStatus status, const vector<int> &ratings)
     {
+        if (document.empty())
+            return;
+
         const vector<string> words = SplitIntoWordsNoStop(document);
-        const double inverse_word_count = 1.0 / words.size();
+        const double inverse_word_count = 1. / words.size();
 
         for (const string &word : words)
             word_to_document_frequency_[word][document_id] += inverse_word_count;
@@ -127,6 +130,9 @@ namespace server
 
     int SearchServer::ComputeAverageRating(const vector<int> &ratings)
     {
+        if (ratings.empty())
+            return 0;
+
         int rating_sum = 0;
         for (const int rating : ratings)
             rating_sum += rating;
