@@ -2,8 +2,7 @@
 // Created by azakharov on 3/7/2021.
 //
 
-#ifndef YP_CPP1_TESTING_FRAMEWORK_H
-#define YP_CPP1_TESTING_FRAMEWORK_H
+#pragma once
 
 #include <iostream>
 #include <map>
@@ -108,4 +107,3 @@ namespace unit_test {
 
 #define RUN_TEST(test_function) unit_test::RunTest((test_function), #test_function)
 
-#endif //YP_CPP1_TESTING_FRAMEWORK_H

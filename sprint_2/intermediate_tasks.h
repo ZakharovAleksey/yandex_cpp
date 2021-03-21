@@ -1,9 +1,7 @@
 //
 // Created by azakharov on 3/6/2021.
 //
-
-#ifndef YP_CPP1_INTERMEDIATE_TASKS_H
-#define YP_CPP1_INTERMEDIATE_TASKS_H
+#pragma once
 
 #include <string>
 #include <map>
@@ -94,5 +92,3 @@ namespace intermediate {
         };
     }
 }
-
-#endif //YP_CPP1_INTERMEDIATE_TASKS_H

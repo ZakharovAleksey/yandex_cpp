@@ -4,6 +4,8 @@
 
 #include "server_test.h"
 
+#include <cmath>
+
 namespace unit_test {
     using namespace server;
     using namespace std::string_literals;
@@ -53,7 +55,7 @@ namespace unit_test {
         }
     }
 
-    void TestAddDocument() {
+    void TestAddingDocumentsToTheServer() {
         {
             const std::string words_absent_in_general_document = "mom dad"s;
 
@@ -89,7 +91,7 @@ namespace unit_test {
     }
 
 
-    void TestMinusWords() {
+    void TestServerTakesIntoAccountMinusWords() {
         const std::string kQueryWithMinusWords = "cat -puppy"s;
         SearchServer server;
 
@@ -113,7 +115,7 @@ namespace unit_test {
                     "Server does not match any word for the document if it has at least one minus word"s);
     }
 
-    void TestMatchingWords() {
+    void TestServerMatchWordsForTheDocument() {
         SearchServer server;
         server.AddDocument(kGeneralDocumentId, kGeneralDocumentText, DocumentStatus::ACTUAL, kGeneralRatings);
 
@@ -141,66 +143,101 @@ namespace unit_test {
 
     }
 
-    void TestRelevance() {
-        {
-            SearchServer server;
+    void TestFoundDocumentsSortingByRelevance() {
+        SearchServer server;
 
-            server.AddDocument(1, "cat dog puppy kitty cat dog puppy kitty"s, DocumentStatus::ACTUAL, kGeneralRatings);
-            server.AddDocument(2, "cat dog puppy kitty"s, DocumentStatus::ACTUAL, kGeneralRatings);
-            server.AddDocument(3, "cat dog puppy kitty cat"s, DocumentStatus::ACTUAL, kGeneralRatings);
-            server.AddDocument(4, "cat dog puppy"s, DocumentStatus::ACTUAL, kGeneralRatings);
-            server.AddDocument(5, "cat dog"s, DocumentStatus::ACTUAL, kGeneralRatings);
-            server.AddDocument(6, "cat"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(1, "one"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(2, "one two"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(3, "one two three"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(4, "one two three four"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(5, "one two three four five"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(6, "one two three four five six"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(7, "one two three four five six seven"s, DocumentStatus::ACTUAL, kGeneralRatings);
 
-            auto documents = server.FindTopDocuments(kGeneralDocumentText);
-            ASSERT_EQUAL_HINT(documents.size(), 5, "Server finds not more than 5 documents");
-        }
+        const auto foundDocuments = server.FindTopDocuments("one three five seven"s);
+        /// Server returns NOT more than 5 matched documents by default
+        const std::vector<int> expectedDocumentIds = {7, 5, 6, 3, 4};
 
-        {
-            // Test on the data from the lectures
-            SearchServer server;
+        ASSERT_EQUAL(server.GetDocumentCount(), 7);
+        ASSERT_EQUAL(foundDocuments.size(), expectedDocumentIds.size());
 
-            server.AddDocument(1, "white cat and fashion collar"s, DocumentStatus::ACTUAL, kGeneralRatings);
-            server.AddDocument(2, "fluffy cat fluffy tail"s, DocumentStatus::ACTUAL, kGeneralRatings);
-            server.AddDocument(3, "well-groomed dog expressive eyes"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        bool is_sorted_by_relevance = std::is_sorted(foundDocuments.begin(), foundDocuments.end(),
+                                                     [](const Document &left, const Document &right) {
+                                                         return left.relevance > right.relevance;
+                                                     });
 
-            const auto found_documents = server.FindTopDocuments("fluffy well-groomed cat");
-            ASSERT_EQUAL(found_documents.size(), 3);
-
-
-            const std::vector<int> expectedRelevanceOrder = {2, 3, 1};
-            std::vector<int> actualRelevanceOrder;
-            std::transform(found_documents.begin(), found_documents.end(), std::back_inserter(actualRelevanceOrder),
-                           [](const Document &document) {
-                               return document.id;
-                           });
-
-            ASSERT_HINT(std::equal(actualRelevanceOrder.begin(), actualRelevanceOrder.end(),
-                                   expectedRelevanceOrder.begin()),
-                        "Documents has expected relevance order"s);
-
-
-            const std::vector<double> expectedRelevance = {0.1014, 0.6507, 0.2748};
-            std::vector<int> actualRelevance;
-            std::transform(found_documents.begin(), found_documents.end(), std::back_inserter(actualRelevance),
-                           [](const Document &document) {
-                               return document.relevance;
-                           });
-
-            auto positive_doubles_equal = [](const double left, const double right) {
-                const double kEqualityThreshold = 1e-3;
-                return std::abs(left - right) < kEqualityThreshold;
-            };
-
-            ASSERT_HINT(std::equal(actualRelevanceOrder.begin(), actualRelevanceOrder.end(),
-                                   expectedRelevanceOrder.begin(), positive_doubles_equal),
-                        "Documents has expected relevance values"s);
-
-        }
+        ASSERT_HINT(is_sorted_by_relevance, "Server returns documents, sorted by relevance"s);
     }
 
-    void TestRating() {
+    void TestServerFindNotMoreDocumentsThanExpected() {
+        SearchServer server;
 
+        server.AddDocument(1, "cat dog puppy kitty cat dog puppy kitty"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(2, "cat dog puppy kitty"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(3, "cat dog puppy kitty cat"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(4, "cat dog puppy"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(5, "cat dog"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(6, "cat"s, DocumentStatus::ACTUAL, kGeneralRatings);
+
+        auto documents = server.FindTopDocuments(kGeneralDocumentText);
+        ASSERT_EQUAL_HINT(documents.size(), 5, "Server finds not more than 5 documents");
+    }
+
+    void TestDocumentRelevanceCalculation() {
+        static const double kEqualityThreshold = 1e-3;
+        static const int kDocumentsCount = 3;
+
+        // Test on the data from the lectures
+        SearchServer server;
+
+        server.AddDocument(1, "white cat and fashion collar"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(2, "fluffy cat fluffy tail"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(3, "well-groomed dog expressive eyes"s, DocumentStatus::ACTUAL, kGeneralRatings);
+
+        const auto found_documents = server.FindTopDocuments("fluffy well-groomed cat");
+        ASSERT_EQUAL(found_documents.size(), 3);
+
+        /// Map structure: "word in query" : { {"document index" : "word frequency in this document"}, ...}
+        std::map<std::string, std::map<int, double>> words_rating_data = {
+                {"fluffy",       {{1, 0.},  {2, 0.5},  {3, 0.}}},
+                {"well-groomed", {{1, 0.},  {2, 0.},   {3, 0.25}}},
+                {"cat",          {{1, 0.2}, {2, 0.25}, {3, 0.}}}
+        };
+
+        std::map<int, double> actualRelevance;
+        std::for_each(found_documents.begin(), found_documents.end(), [&actualRelevance](const Document &document) {
+            actualRelevance[document.id] = document.relevance;
+        });
+
+        auto doubles_equal = [=](const double left, const double right) {
+            return std::abs(left - right) < kEqualityThreshold;
+        };
+
+        auto calculate_relevance = [&words_rating_data](int document_id) {
+            double relevance{0.};
+
+            for (const auto&[word, index_to_frequency] : words_rating_data) {
+                int documents_with_word_count = std::count_if(
+                        index_to_frequency.begin(), index_to_frequency.end(),
+                        [](const std::pair<int, double> pair) {
+                            return pair.second > kEqualityThreshold;
+                        });
+
+                relevance += log(kDocumentsCount * 1. / documents_with_word_count) *
+                             index_to_frequency.at(document_id);
+            }
+            return relevance;
+        };
+
+        for (const auto&[document_id, actual_relevance] : actualRelevance) {
+            double expected_relevance = calculate_relevance(document_id);
+            ASSERT_HINT(doubles_equal(expected_relevance, actual_relevance),
+                        "Documents has expected relevance values"s);
+        }
+
+    }
+
+    void TestDocumentRatingCalculation() {
         auto check_rating = [](const std::vector<int> &ratings, int expected_rating, const std::string &hint) {
             SearchServer server;
 
@@ -231,10 +268,28 @@ namespace unit_test {
 
     }
 
-    void TestStatus() {
+    void TestFindDocumentsWithCustomDocumentStatusFilterFunction() {
+        static const int kDocumentsCount = 3;
+        SearchServer server;
+
+        for (int document_id = kGeneralDocumentId;
+             document_id < kGeneralDocumentId + kDocumentsCount; ++document_id) {
+            server.AddDocument(document_id, kGeneralDocumentText, DocumentStatus::ACTUAL, kGeneralRatings);
+        }
+
+        auto custom_document_filter_function = [](int document_id, DocumentStatus status, int rating) {
+            return document_id > kGeneralDocumentId;
+        };
+
+        const auto found_documents = server.FindTopDocuments(kGeneralDocumentText, custom_document_filter_function);
+        ASSERT_EQUAL_HINT(found_documents.size(), kDocumentsCount - 1,
+                          "Server found expected number of documents with custom document filter function"s);
+    }
+
+    void TestFindDocumentsWithDefaultDocumentStatusFilterFunction() {
         {
-            const int kDocumentStatusCount = 4;
-            const int kDocumentsCount = 9;
+            static const int kDocumentStatusCount = 4;
+            static const int kDocumentsCount = 9;
             std::map<DocumentStatus, std::vector<int>> expected_documents;
 
             SearchServer server;
@@ -281,32 +336,35 @@ namespace unit_test {
 
         }
 
-        {
-            const int kDocumentsCount = 3;
+    }
 
-            SearchServer server;
-            for (int document_id = kGeneralDocumentId;
-                 document_id < kGeneralDocumentId + kDocumentsCount; ++document_id) {
-                server.AddDocument(document_id, kGeneralDocumentText, DocumentStatus::ACTUAL, kGeneralRatings);
-            }
+    void TestDocumentsCount() {
+        static const int kAddedDocumentsCount = 4;
 
-            auto custom_document_filter_function = [](int document_id, DocumentStatus status, int rating) {
-                return document_id > kGeneralDocumentId;
-            };
+        SearchServer server;
 
-            const auto found_documents = server.FindTopDocuments(kGeneralDocumentText, custom_document_filter_function);
-            ASSERT_EQUAL_HINT(found_documents.size(), kDocumentsCount - 1,
-                              "Server found expected number of documents with custom document filter function"s);
+        ASSERT_EQUAL_HINT(server.GetDocumentCount(), 0,
+                          "Initially server does not have any documents"s);
+
+        for (int document_id = 0; document_id < kAddedDocumentsCount; ++document_id) {
+            std::string documentText = std::to_string(document_id) + " document text"s;
+            server.AddDocument(kGeneralDocumentId + document_id, documentText, DocumentStatus::ACTUAL, kGeneralRatings);
         }
+        ASSERT_EQUAL_HINT(server.GetDocumentCount(), kAddedDocumentsCount,
+                          "Server stored all added document"s);
     }
 
     void TestSearchServer() {
         RUN_TEST(TestExcludeStopWordsFromAddedDocumentContent);
-        RUN_TEST(TestAddDocument);
-        RUN_TEST(TestMinusWords);
-        RUN_TEST(TestMatchingWords);
-        RUN_TEST(TestRelevance);
-        RUN_TEST(TestRating);
-        RUN_TEST(TestStatus);
+        RUN_TEST(TestAddingDocumentsToTheServer);
+        RUN_TEST(TestServerTakesIntoAccountMinusWords);
+        RUN_TEST(TestServerMatchWordsForTheDocument);
+        RUN_TEST(TestServerFindNotMoreDocumentsThanExpected);
+        RUN_TEST(TestFoundDocumentsSortingByRelevance);
+        RUN_TEST(TestDocumentRelevanceCalculation);
+        RUN_TEST(TestDocumentRatingCalculation);
+        RUN_TEST(TestFindDocumentsWithCustomDocumentStatusFilterFunction);
+        RUN_TEST(TestFindDocumentsWithDefaultDocumentStatusFilterFunction);
+        RUN_TEST(TestDocumentsCount);
     }
 }

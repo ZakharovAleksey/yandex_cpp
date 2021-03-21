@@ -2,9 +2,7 @@
 // Created by azakharov on 2/19/2021.
 //
 
-#ifndef YP_CPP1_SERVER_H
-#define YP_CPP1_SERVER_H
-
+#pragma once
 
 #include <map>
 #include <set>
@@ -154,5 +152,3 @@ namespace server
         std::map<int, DocumentData> documents_;
     };
 }
-
-#endif //YP_CPP1_SERVER_H
