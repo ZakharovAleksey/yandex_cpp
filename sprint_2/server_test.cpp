@@ -11,21 +11,20 @@ namespace unit_test {
     using namespace std::string_literals;
 
     // General variables, used for the big number of tests
-    const std::string kGeneralDocumentText = "cat dog puppy kitty";
-    constexpr int kGeneralDocumentId = 1;
-    const std::vector<int> kGeneralRatings = {1, 2, 3, 4};
+    const std::string general_document_text = "cat dog puppy kitty";
+    constexpr int general_document_id = 1;
+    const std::vector<int> general_ratings = {1, 2, 3, 4};
 
     void TestExcludeStopWordsFromAddedDocumentContent() {
-
         {
             SearchServer server;
-            server.AddDocument(kGeneralDocumentId, kGeneralDocumentText, DocumentStatus::ACTUAL, kGeneralRatings);
+            server.AddDocument(general_document_id, general_document_text, DocumentStatus::ACTUAL, general_ratings);
 
             const auto found_documents = server.FindTopDocuments("cat"s);
             ASSERT_EQUAL_HINT(found_documents.size(), 1,
                               "Expected number of documents WITHOUT stop words"s);
 
-            ASSERT_EQUAL_HINT(found_documents[0].id, kGeneralDocumentId,
+            ASSERT_EQUAL_HINT(found_documents[0].id, general_document_id,
                               "Expected document ID WITHOUT stop words"s);
         }
 
@@ -34,7 +33,7 @@ namespace unit_test {
 
             SearchServer server;
             server.SetStopWords(stop_word_from_document);
-            server.AddDocument(kGeneralDocumentId, kGeneralDocumentText, DocumentStatus::ACTUAL, kGeneralRatings);
+            server.AddDocument(general_document_id, general_document_text, DocumentStatus::ACTUAL, general_ratings);
 
             ASSERT_HINT(server.FindTopDocuments(stop_word_from_document).empty(),
                         "Skip documents if any word is a STOP word"s);
@@ -45,7 +44,7 @@ namespace unit_test {
 
             SearchServer server;
             server.SetStopWords(stop_word);
-            server.AddDocument(kGeneralDocumentId, kGeneralDocumentText, DocumentStatus::ACTUAL, kGeneralRatings);
+            server.AddDocument(general_document_id, general_document_text, DocumentStatus::ACTUAL, general_ratings);
 
             ASSERT_EQUAL_HINT(server.FindTopDocuments("cat"s).size(), 1,
                               "Expected number of documents found where STOP word IS NOT in the document"s);
@@ -60,31 +59,31 @@ namespace unit_test {
             const std::string words_absent_in_general_document = "mom dad"s;
 
             SearchServer server;
-            server.AddDocument(kGeneralDocumentId, kGeneralDocumentText, DocumentStatus::ACTUAL, kGeneralRatings);
-            server.AddDocument(kGeneralDocumentId + 1, words_absent_in_general_document,
-                               DocumentStatus::ACTUAL, kGeneralRatings);
+            server.AddDocument(general_document_id, general_document_text, DocumentStatus::ACTUAL, general_ratings);
+            server.AddDocument(general_document_id + 1, words_absent_in_general_document,
+                               DocumentStatus::ACTUAL, general_ratings);
 
             ASSERT_EQUAL_HINT(server.GetDocumentCount(), 2, "All added documents should be found");
 
-            for (const auto &word : SplitIntoWords(kGeneralDocumentText)) {
+            for (const auto &word : SplitIntoWords(general_document_text)) {
                 const auto found_documents = server.FindTopDocuments(word);
 
                 ASSERT_EQUAL(found_documents.size(), 1);
-                ASSERT_EQUAL_HINT(found_documents.at(0).id, kGeneralDocumentId,
+                ASSERT_EQUAL_HINT(found_documents.at(0).id, general_document_id,
                                   "All words from the added document should be found"s);
             }
         }
 
         {
             SearchServer server;
-            server.AddDocument(kGeneralDocumentId, ""s, DocumentStatus::ACTUAL, kGeneralRatings);
+            server.AddDocument(general_document_id, ""s, DocumentStatus::ACTUAL, general_ratings);
             ASSERT_EQUAL_HINT(server.GetDocumentCount(), 0, "Should not add document it it's empty"s);
         }
 
         {
             // TODO: Behaviour which I think we will fix further (plus all spaces behaviour)
             SearchServer server;
-            server.AddDocument(kGeneralDocumentId, "   "s, DocumentStatus::ACTUAL, kGeneralRatings);
+            server.AddDocument(general_document_id, "   "s, DocumentStatus::ACTUAL, general_ratings);
             ASSERT_EQUAL_HINT(server.GetDocumentCount(), 1,
                               "Should add document which consists only from spaces"s);
         }
@@ -95,8 +94,8 @@ namespace unit_test {
         const std::string kQueryWithMinusWords = "cat -puppy"s;
         SearchServer server;
 
-        server.AddDocument(1, "cat home"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(2, "cat puppy home"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(1, "cat home"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(2, "cat puppy home"s, DocumentStatus::ACTUAL, general_ratings);
 
         auto found_documents = server.FindTopDocuments(kQueryWithMinusWords);
         ASSERT_EQUAL_HINT(found_documents.size(), 1,
@@ -106,7 +105,7 @@ namespace unit_test {
         ASSERT_EQUAL_HINT(found_documents.size(), 1,
                           "Server returns ONLY the documents without minus words, if query has a word and the same word as minus word"s);
 
-        auto matching_words = std::get<0>(server.MatchDocument(kQueryWithMinusWords, 1));
+        auto[matching_words, _] = server.MatchDocument(kQueryWithMinusWords, 1);
         ASSERT_HINT(!matching_words.empty(),
                     "Server matches the words if query has a minus word which absent in the document"s);
 
@@ -117,17 +116,17 @@ namespace unit_test {
 
     void TestServerMatchWordsForTheDocument() {
         SearchServer server;
-        server.AddDocument(kGeneralDocumentId, kGeneralDocumentText, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(general_document_id, general_document_text, DocumentStatus::ACTUAL, general_ratings);
 
-        auto matching_words = std::get<0>(server.MatchDocument(""s, kGeneralDocumentId));
+        auto[matching_words, _] = server.MatchDocument(""s, general_document_id);
         ASSERT_HINT(matching_words.empty(),
                     "Server does not match any word for the empty query"s);
 
-        matching_words = std::get<0>(server.MatchDocument("none bug"s, kGeneralDocumentId));
+        matching_words = std::get<0>(server.MatchDocument("none bug"s, general_document_id));
         ASSERT_HINT(matching_words.empty(),
                     "Server does not match any word if it is not in a document"s);
 
-        matching_words = std::get<0>(server.MatchDocument("puppy cat"s, kGeneralDocumentId));
+        matching_words = std::get<0>(server.MatchDocument("puppy cat"s, general_document_id));
         ASSERT_EQUAL_HINT(matching_words.size(), 2,
                           "Server matches all words from query in document"s);
 
@@ -137,7 +136,7 @@ namespace unit_test {
         ASSERT_EQUAL_HINT(matching_words[1], "puppy"s,
                           "Server match the exact word from the query");
 
-        matching_words = std::get<0>(server.MatchDocument("cat dog -puppy", kGeneralDocumentId));
+        matching_words = std::get<0>(server.MatchDocument("cat dog -puppy", general_document_id));
         ASSERT_HINT(matching_words.empty(),
                     "Server does not match any word for the document if it has at least on minus word"s);
 
@@ -146,13 +145,13 @@ namespace unit_test {
     void TestFoundDocumentsSortingByRelevance() {
         SearchServer server;
 
-        server.AddDocument(1, "one"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(2, "one two"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(3, "one two three"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(4, "one two three four"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(5, "one two three four five"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(6, "one two three four five six"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(7, "one two three four five six seven"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(1, "one"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(2, "one two"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(3, "one two three"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(4, "one two three four"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(5, "one two three four five"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(6, "one two three four five six"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(7, "one two three four five six seven"s, DocumentStatus::ACTUAL, general_ratings);
 
         const auto foundDocuments = server.FindTopDocuments("one three five seven"s);
         /// Server returns NOT more than 5 matched documents by default
@@ -172,14 +171,14 @@ namespace unit_test {
     void TestServerFindNotMoreDocumentsThanExpected() {
         SearchServer server;
 
-        server.AddDocument(1, "cat dog puppy kitty cat dog puppy kitty"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(2, "cat dog puppy kitty"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(3, "cat dog puppy kitty cat"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(4, "cat dog puppy"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(5, "cat dog"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(6, "cat"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(1, "cat dog puppy kitty cat dog puppy kitty"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(2, "cat dog puppy kitty"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(3, "cat dog puppy kitty cat"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(4, "cat dog puppy"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(5, "cat dog"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(6, "cat"s, DocumentStatus::ACTUAL, general_ratings);
 
-        auto documents = server.FindTopDocuments(kGeneralDocumentText);
+        auto documents = server.FindTopDocuments(general_document_text);
         ASSERT_EQUAL_HINT(documents.size(), 5, "Server finds not more than 5 documents");
     }
 
@@ -190,15 +189,15 @@ namespace unit_test {
         // Test on the data from the lectures
         SearchServer server;
 
-        server.AddDocument(1, "white cat and fashion collar"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(2, "fluffy cat fluffy tail"s, DocumentStatus::ACTUAL, kGeneralRatings);
-        server.AddDocument(3, "well-groomed dog expressive eyes"s, DocumentStatus::ACTUAL, kGeneralRatings);
+        server.AddDocument(1, "white cat and fashion collar"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(2, "fluffy cat fluffy tail"s, DocumentStatus::ACTUAL, general_ratings);
+        server.AddDocument(3, "well-groomed dog expressive eyes"s, DocumentStatus::ACTUAL, general_ratings);
 
         const auto found_documents = server.FindTopDocuments("fluffy well-groomed cat");
         ASSERT_EQUAL(found_documents.size(), 3);
 
         /// Map structure: "word in query" : { {"document index" : "word frequency in this document"}, ...}
-        std::map<std::string, std::map<int, double>> words_rating_data = {
+        const std::map<std::string, std::map<int, double>> words_rating_data = {
                 {"fluffy",       {{1, 0.},  {2, 0.5},  {3, 0.}}},
                 {"well-groomed", {{1, 0.},  {2, 0.},   {3, 0.25}}},
                 {"cat",          {{1, 0.2}, {2, 0.25}, {3, 0.}}}
@@ -241,8 +240,8 @@ namespace unit_test {
         auto check_rating = [](const std::vector<int> &ratings, int expected_rating, const std::string &hint) {
             SearchServer server;
 
-            server.AddDocument(kGeneralDocumentId, kGeneralDocumentText, DocumentStatus::ACTUAL, ratings);
-            const auto found_documents = server.FindTopDocuments(kGeneralDocumentText);
+            server.AddDocument(general_document_id, general_document_text, DocumentStatus::ACTUAL, ratings);
+            const auto found_documents = server.FindTopDocuments(general_document_text);
 
             ASSERT_EQUAL(found_documents.size(), 1);
             ASSERT_EQUAL_HINT(found_documents[0].rating, expected_rating, hint);
@@ -272,16 +271,16 @@ namespace unit_test {
         static const int kDocumentsCount = 3;
         SearchServer server;
 
-        for (int document_id = kGeneralDocumentId;
-             document_id < kGeneralDocumentId + kDocumentsCount; ++document_id) {
-            server.AddDocument(document_id, kGeneralDocumentText, DocumentStatus::ACTUAL, kGeneralRatings);
+        for (int document_id = general_document_id;
+             document_id < general_document_id + kDocumentsCount; ++document_id) {
+            server.AddDocument(document_id, general_document_text, DocumentStatus::ACTUAL, general_ratings);
         }
 
         auto custom_document_filter_function = [](int document_id, DocumentStatus status, int rating) {
-            return document_id > kGeneralDocumentId;
+            return document_id > general_document_id;
         };
 
-        const auto found_documents = server.FindTopDocuments(kGeneralDocumentText, custom_document_filter_function);
+        const auto found_documents = server.FindTopDocuments(general_document_text, custom_document_filter_function);
         ASSERT_EQUAL_HINT(found_documents.size(), kDocumentsCount - 1,
                           "Server found expected number of documents with custom document filter function"s);
     }
@@ -296,14 +295,14 @@ namespace unit_test {
 
             for (int document_id = 0; document_id < kDocumentsCount; ++document_id) {
                 DocumentStatus status = static_cast<DocumentStatus>(document_id % kDocumentStatusCount);
-                server.AddDocument(document_id, kGeneralDocumentText, status, kGeneralRatings);
+                server.AddDocument(document_id, general_document_text, status, general_ratings);
                 expected_documents[status].emplace_back(document_id);
             }
 
 
             auto check_status = [=](DocumentStatus status, const std::string &status_string,
                                     const std::vector<int> &expected_document_indexes) {
-                const auto documents = server.FindTopDocuments(kGeneralDocumentText, status);
+                const auto documents = server.FindTopDocuments(general_document_text, status);
 
                 std::vector<int> actual_document_indexes;
                 std::transform(documents.begin(), documents.end(), std::back_inserter(actual_document_indexes),
@@ -327,11 +326,11 @@ namespace unit_test {
 
         {
             SearchServer server;
-            server.AddDocument(kGeneralDocumentId, kGeneralDocumentText, DocumentStatus::ACTUAL, kGeneralRatings);
+            server.AddDocument(general_document_id, general_document_text, DocumentStatus::ACTUAL, general_ratings);
 
-            const auto found_documents = server.FindTopDocuments(kGeneralDocumentText);
+            const auto found_documents = server.FindTopDocuments(general_document_text);
             ASSERT_EQUAL(found_documents.size(), 1);
-            ASSERT_EQUAL_HINT(found_documents[0].id, kGeneralDocumentId,
+            ASSERT_EQUAL_HINT(found_documents[0].id, general_document_id,
                               "Server found correct document with ACTUAL status and IMPLICIT ACTUAL function argument"s);
 
         }
@@ -348,7 +347,8 @@ namespace unit_test {
 
         for (int document_id = 0; document_id < kAddedDocumentsCount; ++document_id) {
             std::string documentText = std::to_string(document_id) + " document text"s;
-            server.AddDocument(kGeneralDocumentId + document_id, documentText, DocumentStatus::ACTUAL, kGeneralRatings);
+            server.AddDocument(general_document_id + document_id, documentText, DocumentStatus::ACTUAL,
+                               general_ratings);
         }
         ASSERT_EQUAL_HINT(server.GetDocumentCount(), kAddedDocumentsCount,
                           "Server stored all added document"s);

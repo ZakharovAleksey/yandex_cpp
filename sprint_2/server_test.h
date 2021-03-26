@@ -10,17 +10,27 @@
 namespace unit_test {
     void TestExcludeStopWordsFromAddedDocumentContent();
 
-    void TestAddDocument();
+    void TestExcludeStopWordsFromAddedDocumentContent();
 
-    void TestMinusWords();
+    void TestAddingDocumentsToTheServer();
 
-    void TestMatchingWords();
+    void TestServerTakesIntoAccountMinusWords();
 
-    void TestRelevance();
+    void TestServerMatchWordsForTheDocument();
 
-    void TestRating();
+    void TestServerFindNotMoreDocumentsThanExpected();
 
-    void TestStatus();
+    void TestFoundDocumentsSortingByRelevance();
+
+    void TestDocumentRelevanceCalculation();
+
+    void TestDocumentRatingCalculation();
+
+    void TestFindDocumentsWithCustomDocumentStatusFilterFunction();
+
+    void TestFindDocumentsWithDefaultDocumentStatusFilterFunction();
+
+    void TestDocumentsCount();
 
     void TestSearchServer();
 }
