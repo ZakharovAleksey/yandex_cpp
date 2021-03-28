@@ -82,7 +82,7 @@ void AssertEqual(const LeftValueType &left, const RightValueType &right, const s
 void AssertTrue(const bool condition, const std::string &expression, const std::string &file,
                 const std::string &function, unsigned line, const std::string &hint);
 
-void RunTest(std::function<void()> function, const std::string &function_name);
+void RunTest(const std::function<void()>& function, const std::string &function_name);
 }  // namespace unit_test
 
 #define ASSERT_EQUAL(left, right) \
@@ -95,5 +95,23 @@ void RunTest(std::function<void()> function, const std::string &function_name);
 
 #define ASSERT_HINT(condition, hint) \
     unit_test::AssertTrue(!!(condition), #condition, __FILE__, __FUNCTION__, __LINE__, (hint))
+
+#define ASSERT_THROW(statement, expected_exception) \
+    bool is_throw{false};                           \
+    try {                                           \
+        statement;                                  \
+    } catch (expected_exception & e) {              \
+        is_throw = true;                            \
+    }                                               \
+    unit_test::AssertTrue(!!(is_throw), #statement, __FILE__, __FUNCTION__, __LINE__, ""s)
+
+#define ASSERT_THROW_HINT(statement, expected_exception, hint) \
+    bool is_throw{false};                                      \
+    try {                                                      \
+        statement;                                             \
+    } catch (expected_exception & e) {                         \
+        is_throw = true;                                       \
+    }                                                          \
+    unit_test::AssertTrue(!!(is_throw), #statement, __FILE__, __FUNCTION__, __LINE__, (hint))
 
 #define RUN_TEST(test_function) unit_test::RunTest((test_function), #test_function)

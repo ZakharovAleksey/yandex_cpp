@@ -13,6 +13,10 @@
 
 namespace server {
 struct Document {
+    Document() = default;
+
+    Document(int id, double relevance, int rating) : id(id), relevance(relevance), rating(rating) {}
+
     int id{0};
     double relevance{0.};
     int rating{0};
@@ -25,15 +29,39 @@ enum class DocumentStatus {
     REMOVED,
 };
 
-std::string ReadLine();
-
-int ReadLineWithNumber();
-
 std::vector<std::string> SplitIntoWords(const std::string &text);
+
+template <typename StringContainer>
+std::set<std::string> MakeUniqueNonEmptyStrings(const StringContainer &strings) {
+    std::set<std::string> non_empty_strings;
+
+    std::for_each(strings.begin(), strings.end(), [&non_empty_strings](const std::string &string) {
+        if (!string.empty())
+            non_empty_strings.insert(string);
+    });
+
+    return non_empty_strings;
+}
 
 class SearchServer {
    public:  // Public types
     using WordsInDocumentInfo = std::tuple<std::vector<std::string>, DocumentStatus>;
+
+   public:  // Constructors
+    SearchServer() = default;
+
+    template <class StringContainer>
+    explicit SearchServer(const StringContainer &stop_words) : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
+        using namespace std::literals;
+
+        const bool isSpecialSymbolDetected = std::any_of(stop_words_.begin(), stop_words_.end(),
+                                                         [](const std::string &word) { return !IsValidWord(word); });
+
+        if (isSpecialSymbolDetected)
+            throw std::invalid_argument("At least one stop word contains special symbol, which is not expected"s);
+    }
+
+    explicit SearchServer(const std::string &stop_words_text) : SearchServer(SplitIntoWords(stop_words_text)) {}
 
    public:  // Public methods
     template <class DocumentFilterFunction>
@@ -42,10 +70,8 @@ class SearchServer {
         auto matched_documents = FindAllDocuments(query, filter_function);
 
         std::sort(matched_documents.begin(), matched_documents.end(), [](const Document &lhs, const Document &rhs) {
-            if (std::abs(lhs.relevance - rhs.relevance) < kEqualityThreshold)
-                return lhs.rating > rhs.rating;
-            else
-                return lhs.relevance > rhs.relevance;
+            return std::abs(lhs.relevance - rhs.relevance) < kEqualityThreshold ? lhs.rating > rhs.rating
+                                                                                : lhs.relevance > rhs.relevance;
         });
 
         if (matched_documents.size() > static_cast<size_t>(kMaxDocumentsCount))
@@ -54,28 +80,34 @@ class SearchServer {
         return matched_documents;
     }
 
-    std::vector<Document> FindTopDocuments(const std::string &raw_query,
+    [[nodiscard]] std::vector<Document> FindTopDocuments(const std::string &raw_query,
                                            DocumentStatus document_status = DocumentStatus::ACTUAL) const;
+
+    [[nodiscard]] int GetDocumentCount() const;
 
     void SetStopWords(const std::string &text);
 
     void AddDocument(int document_id, const std::string &document, DocumentStatus status,
                      const std::vector<int> &ratings);
 
-    int GetDocumentCount() const;
-
-    WordsInDocumentInfo MatchDocument(const std::string &raw_query, int document_id) const;
+    [[nodiscard]] WordsInDocumentInfo MatchDocument(const std::string &raw_query, int document_id) const;
 
    private:  // Types
     struct DocumentData {
         int rating{0};
         DocumentStatus status;
+
+        DocumentData() : status(DocumentStatus::IRRELEVANT) {}
+
+        DocumentData(int rating, DocumentStatus status) : rating(rating), status(status) {}
     };
+
     struct QueryWord {
         std::string data;
         bool is_minus{false};
         bool is_stop{false};
     };
+
     struct Query {
         std::set<std::string> plus_words;
         std::set<std::string> minus_words;
@@ -110,24 +142,28 @@ class SearchServer {
         }
 
         std::vector<Document> matched_documents;
-        for (const auto [document_id, relevance] : document_to_relevance) {
-            matched_documents.push_back({document_id, relevance, documents_.at(document_id).rating});
-        }
+        matched_documents.reserve(document_to_relevance.size());
+        for (const auto [document_id, relevance] : document_to_relevance)
+            matched_documents.emplace_back(document_id, relevance, documents_.at(document_id).rating);
 
         return matched_documents;
     }
 
     static int ComputeAverageRating(const std::vector<int> &ratings);
 
-    bool IsStopWord(const std::string &word) const;
+    static bool IsValidWord(const std::string &word);
 
-    std::vector<std::string> SplitIntoWordsNoStop(const std::string &text) const;
+    [[nodiscard]] bool IsStopWord(const std::string &word) const;
 
-    QueryWord ParseQueryWord(std::string text) const;
+    [[nodiscard]] bool ParseQueryWord(std::string word, QueryWord &query_word) const;
 
-    Query ParseQuery(const std::string &text) const;
+    [[nodiscard]] std::vector<std::string> SplitDocumentIntoNoWords(const std::string &text) const;
 
-    double ComputeWordInverseDocumentFrequency(const std::string &word) const;
+    [[nodiscard]] Query ParseQuery(const std::string &query_text) const;
+
+    [[nodiscard]] double ComputeWordInverseDocumentFrequency(const std::string &word) const;
+
+    std::optional<std::string> CheckDocumentInput(int document_id, const std::string &document);
 
    private:  // Class fields
     std::set<std::string> stop_words_;

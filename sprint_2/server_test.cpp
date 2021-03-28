@@ -11,7 +11,7 @@ using namespace server;
 using namespace std::string_literals;
 
 // General variables, used for the big number of tests
-const std::string general_document_text = "cat dog puppy kitty";
+const std::string general_document_text = "cat dog puppy kitty"s;
 constexpr int general_document_id = 1;
 const std::vector<int> general_ratings = {1, 2, 3, 4};
 
@@ -29,8 +29,7 @@ void TestExcludeStopWordsFromAddedDocumentContent() {
     {
         const std::string stop_word_from_document = "cat"s;
 
-        SearchServer server;
-        server.SetStopWords(stop_word_from_document);
+        SearchServer server(stop_word_from_document);
         server.AddDocument(general_document_id, general_document_text, DocumentStatus::ACTUAL, general_ratings);
 
         ASSERT_HINT(server.FindTopDocuments(stop_word_from_document).empty(),
@@ -40,8 +39,7 @@ void TestExcludeStopWordsFromAddedDocumentContent() {
     {
         const std::string stop_word = "none"s;
 
-        SearchServer server;
-        server.SetStopWords(stop_word);
+        SearchServer server(stop_word);
         server.AddDocument(general_document_id, general_document_text, DocumentStatus::ACTUAL, general_ratings);
 
         ASSERT_EQUAL_HINT(server.FindTopDocuments("cat"s).size(), 1,
@@ -74,8 +72,21 @@ void TestAddingDocumentsToTheServer() {
 
     {
         SearchServer server;
-        server.AddDocument(general_document_id, ""s, DocumentStatus::ACTUAL, general_ratings);
-        ASSERT_EQUAL_HINT(server.GetDocumentCount(), 0, "Should not add document it it's empty"s);
+        ASSERT_THROW_HINT(server.AddDocument(general_document_id, ""s, DocumentStatus::ACTUAL, general_ratings),
+                          std::invalid_argument, "Should throw if document is empty"s);
+    }
+
+    {
+        SearchServer server;
+        server.AddDocument(general_document_id, general_document_text, DocumentStatus::ACTUAL, general_ratings);
+        ASSERT_THROW_HINT(server.AddDocument(general_document_id, "new text"s, DocumentStatus::ACTUAL, general_ratings),
+                          std::invalid_argument, "Should throw if document index is already in data base"s);
+    }
+
+    {
+        SearchServer server;
+        ASSERT_THROW_HINT(server.AddDocument(-1, general_document_text, DocumentStatus::ACTUAL, general_ratings),
+                          std::invalid_argument, "Should throw if document index is negative"s);
     }
 
     {
@@ -113,13 +124,22 @@ void TestServerTakesIntoAccountMinusWords() {
 }
 
 void TestServerMatchWordsForTheDocument() {
+    static int kMaxSpecialSymbolIndex{31};
     SearchServer server;
+
     server.AddDocument(general_document_id, general_document_text, DocumentStatus::ACTUAL, general_ratings);
 
-    auto [matching_words, _] = server.MatchDocument(""s, general_document_id);
-    ASSERT_HINT(matching_words.empty(), "Server does not match any word for the empty query"s);
+    ASSERT_THROW_HINT(auto matching_result = server.MatchDocument(""s, general_document_id), std::invalid_argument,
+                      "Server should throw if matching query is empty"s);
 
-    std::tie(matching_words, _) = server.MatchDocument("none bug"s, general_document_id);
+    std::string query;
+    for (int symbol_index = 0; symbol_index < kMaxSpecialSymbolIndex; ++symbol_index) {
+        query = "cat"s + static_cast<char>(symbol_index) + " dog"s;
+        ASSERT_THROW_HINT(auto matching_result = server.MatchDocument(query, general_document_id),
+                          std::invalid_argument, "Server should throw if at least one special symbol is detected"s);
+    }
+
+    auto [matching_words, _] = server.MatchDocument("none bug"s, general_document_id);
     ASSERT_HINT(matching_words.empty(), "Server does not match any word if it is not in a document"s);
 
     std::tie(matching_words, _) = server.MatchDocument("puppy cat"s, general_document_id);
@@ -271,7 +291,7 @@ void TestFindDocumentsWithDefaultDocumentStatusFilterFunction() {
         SearchServer server;
 
         for (int document_id = 0; document_id < kDocumentsCount; ++document_id) {
-            DocumentStatus status = static_cast<DocumentStatus>(document_id % kDocumentStatusCount);
+            auto status = static_cast<DocumentStatus>(document_id % kDocumentStatusCount);
             server.AddDocument(document_id, general_document_text, status, general_ratings);
             expected_documents[status].emplace_back(document_id);
         }

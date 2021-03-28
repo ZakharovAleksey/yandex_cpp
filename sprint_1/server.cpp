@@ -6,25 +6,12 @@
 
 #include <cmath>
 #include <iostream>
+#include <numeric>
 
 namespace server {
+using namespace std::literals;
 using std::string;
 using std::vector;
-
-string ReadLine() {
-    string out_str;
-    getline(std::cin, out_str);
-
-    return out_str;
-}
-
-int ReadLineWithNumber() {
-    int number;
-    std::cin >> number;
-    ReadLine();
-
-    return number;
-}
 
 vector<string> SplitIntoWords(const string &text) {
     vector<string> words;
@@ -50,10 +37,12 @@ void SearchServer::SetStopWords(const string &text) {
 
 void SearchServer::AddDocument(int document_id, const string &document, DocumentStatus status,
                                const vector<int> &ratings) {
-    if (document.empty())
-        return;
+    if (const auto &error_message = CheckDocumentInput(document_id, document);
+        error_message && !error_message->empty()) {
+        throw std::invalid_argument(*error_message);
+    }
 
-    const vector<string> words = SplitIntoWordsNoStop(document);
+    const vector<string> words = SplitDocumentIntoNoWords(document);
     const double inverse_word_count = 1. / words.size();
 
     for (const string &word : words)
@@ -101,42 +90,55 @@ bool SearchServer::IsStopWord(const string &word) const {
     return stop_words_.count(word) > 0;
 }
 
-vector<string> SearchServer::SplitIntoWordsNoStop(const string &text) const {
+bool SearchServer::IsValidWord(const std::string &word) {
+    // A valid word must not contain special characters in range [0, 31]
+    return std::none_of(word.begin(), word.end(), [](char symbol) { return int(symbol) >= 0 && int(symbol) <= 31; });
+}
+
+vector<string> SearchServer::SplitDocumentIntoNoWords(const string &text) const {
     vector<string> words;
 
-    for (const string &word : SplitIntoWords(text))
+    for (const string &word : SplitIntoWords(text)) {
+        if (!IsValidWord(word))
+            throw std::invalid_argument("Invalid word in the document: "s + word);
+
         if (!IsStopWord(word))
             words.push_back(word);
+    }
 
     return words;
 }
 
 int SearchServer::ComputeAverageRating(const vector<int> &ratings) {
-    if (ratings.empty())
-        return 0;
-
-    int rating_sum = 0;
-    for (const int rating : ratings)
-        rating_sum += rating;
-
-    return rating_sum / static_cast<int>(ratings.size());
+    return !ratings.empty() ? std::accumulate(ratings.begin(), ratings.end(), 0) / static_cast<int>(ratings.size()) : 0;
 }
 
-SearchServer::QueryWord SearchServer::ParseQueryWord(string text) const {
+bool SearchServer::ParseQueryWord(std::string word, QueryWord &query_word) const {
+    query_word = {};
+
+    if (word.empty())
+        return false;
+
     bool is_minus = false;
-    // Word shouldn't be empty
-    if (text[0] == '-') {
+    if (word[0] == '-') {
         is_minus = true;
-        text = text.substr(1);
+        word = word.substr(1);
     }
 
-    return {text, is_minus, IsStopWord(text)};
+    if (word.empty() || word[0] == '-' || !IsValidWord(word))  //> Check word is not '-' or starts from '--'
+        return false;
+
+    query_word = {word, is_minus, IsStopWord(word)};
+    return true;
 }
 
-SearchServer::Query SearchServer::ParseQuery(const string &text) const {
+SearchServer::Query SearchServer::ParseQuery(const string &query_text) const {
     Query query;
-    for (const string &word : SplitIntoWords(text)) {
-        const QueryWord query_word = ParseQueryWord(word);
+    for (const string &word : SplitIntoWords(query_text)) {
+        QueryWord query_word;
+        if (!ParseQueryWord(word, query_word))
+            throw std::invalid_argument("Invalid word in the query: "s + word);
+
         if (!query_word.is_stop) {
             if (query_word.is_minus)
                 query.minus_words.insert(query_word.data);
@@ -148,45 +150,23 @@ SearchServer::Query SearchServer::ParseQuery(const string &text) const {
     return query;
 }
 
+std::optional<std::string> SearchServer::CheckDocumentInput(int document_id, const std::string &document) {
+    if (document_id < 0)
+        return "Negative document index is not expected"s;
+
+    if (documents_.count(document_id) > 0)
+        return "Document with index # " + std::to_string(document_id) +
+               " is already exists. Duplicates are not allowed"s;
+
+    if (document.empty())
+        return "Empty document is not allowed"s;
+
+    return std::nullopt;
+}
+
 // Existence required
 double SearchServer::ComputeWordInverseDocumentFrequency(const string &word) const {
-    return log(GetDocumentCount() * 1.0 / word_to_document_frequency_.at(word).size());
+    return log(GetDocumentCount() * 1. / word_to_document_frequency_.at(word).size());
 }
 
-void PrintDocument(const server::Document &document) {
-    using namespace std;
-
-    cout << "{ "s
-         << "document_id = "s << document.id << ", "s
-         << "relevance = "s << document.relevance << ", "s
-         << "rating = "s << document.rating << " }"s << endl;
-}
-
-int MainSprintFunction() {
-    using namespace std;
-    using namespace server;
-
-    SearchServer search_server;
-    search_server.SetStopWords("и в на"s);
-
-    search_server.AddDocument(0, "белый кот и модный ошейник"s, DocumentStatus::ACTUAL, {8, -3});
-    search_server.AddDocument(1, "пушистый кот пушистый хвост"s, DocumentStatus::ACTUAL, {7, 2, 7});
-    search_server.AddDocument(2, "ухоженный пёс выразительные глаза"s, DocumentStatus::ACTUAL, {5, -12, 2, 1});
-    search_server.AddDocument(3, "ухоженный скворец евгений"s, DocumentStatus::BANNED, {9});
-
-    cout << "ACTUAL by default:"s << endl;
-    for (const Document &document : search_server.FindTopDocuments("пушистый ухоженный кот"s))
-        PrintDocument(document);
-
-    cout << "BANNED:"s << endl;
-    for (const Document &document : search_server.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::BANNED))
-        PrintDocument(document);
-
-    cout << "Even ids:"s << endl;
-    auto even_document_ids = [](int document_id, DocumentStatus status, int rating) { return document_id % 2 == 0; };
-    for (const Document &document : search_server.FindTopDocuments("пушистый ухоженный кот"s, even_document_ids))
-        PrintDocument(document);
-
-    return 0;
-}
 }  // namespace server

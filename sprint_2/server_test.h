@@ -10,8 +10,6 @@
 namespace unit_test {
 void TestExcludeStopWordsFromAddedDocumentContent();
 
-void TestExcludeStopWordsFromAddedDocumentContent();
-
 void TestAddingDocumentsToTheServer();
 
 void TestServerTakesIntoAccountMinusWords();

@@ -21,7 +21,7 @@ void AssertTrue(const bool condition, const std::string &expression, const std::
     }
 }
 
-void RunTest(std::function<void()> function, const std::string &function_name) {
+void RunTest(const std::function<void()>& function, const std::string &function_name) {
     function();
     std::cerr << function_name << " OK" << std::endl;
 }
