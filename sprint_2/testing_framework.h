@@ -4,10 +4,12 @@
 
 #pragma once
 
+#include <exception>
 #include <functional>
 #include <iostream>
 #include <map>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -60,29 +62,70 @@ std::ostream &operator<<(std::ostream &os, const std::map<KeyType, ValueType> &c
     return os;
 }
 
+class TestFailureException : public std::logic_error {
+   public:
+    explicit TestFailureException(const std::string &what) : std::logic_error(what) {}
+
+   public:
+    [[nodiscard]] const char *what() const noexcept final {
+        return std::logic_error::what();
+    }
+};
+
+class TestRunner {
+   public:  // Constructor & Destructor
+    TestRunner() = default;
+    ~TestRunner();
+
+   public:
+    template <class TestFunction>
+    void RunTest(TestFunction test, const std::string &test_name) {
+        ++test_count_;
+
+        try {
+            test();
+            std::cerr << test_name << ": OK"s << std::endl;
+        } catch (TestFailureException &failed_test) {
+            failed_test_names_.emplace_back(test_name);
+            std::cerr << test_name << ": FAILED"s << std::endl;
+            std::cerr << failed_test.what();
+        } catch (...) {
+            failed_test_names_.emplace_back(test_name);
+            std::cerr << test_name << ": FAILED "s << std::endl;
+            std::cerr << "Reason: unexpected exception in test function"s << std::endl;
+        }
+    }
+
+   private:
+    int test_count_{0};
+    std::vector<std::string> failed_test_names_;
+};
+
+inline TestRunner GlobalTestRunner;  //> Global test runner, which starts all tests execution
+
 template <typename LeftValueType, typename RightValueType>
 void AssertEqual(const LeftValueType &left, const RightValueType &right, const std::string &left_string,
                  const std::string &right_string, const std::string &file, const std::string &function, unsigned line,
                  const std::string &hint) {
-    using std::cerr;
+    std::stringstream error;
+
     if (left != right) {
-        cerr << std::boolalpha;
-        cerr << file << "("s << line << "): "s << function << ": "s;
-        cerr << "ASSERT_EQUAL("s << left_string << ", "s << right_string << ") failed: "s;
-        cerr << left << " != "s << right << "."s;
+        error << std::boolalpha;
+        error << file << "("s << line << "): "s << function << ": "s;
+        error << "ASSERT_EQUAL("s << left_string << ", "s << right_string << ") failed: "s;
+        error << left << " != "s << right << "."s;
 
         if (!hint.empty())
-            cerr << " Hint: "s << hint;
+            error << " Hint: "s << hint;
 
-        cerr << std::endl;
-        abort();
+        error << std::endl;
+        throw TestFailureException(error.str());
     }
 }
 
 void AssertTrue(const bool condition, const std::string &expression, const std::string &file,
                 const std::string &function, unsigned line, const std::string &hint);
 
-void RunTest(const std::function<void()>& function, const std::string &function_name);
 }  // namespace unit_test
 
 #define ASSERT_EQUAL(left, right) \
@@ -114,4 +157,4 @@ void RunTest(const std::function<void()>& function, const std::string &function_
     }                                                          \
     unit_test::AssertTrue(!!(is_throw), #statement, __FILE__, __FUNCTION__, __LINE__, (hint))
 
-#define RUN_TEST(test_function) unit_test::RunTest((test_function), #test_function)
+#define RUN_TEST(test) unit_test::GlobalTestRunner.RunTest((test), #test)

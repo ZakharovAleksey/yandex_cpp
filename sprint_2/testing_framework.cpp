@@ -4,25 +4,35 @@
 
 #include "testing_framework.h"
 
+#include <iterator>
+
 namespace unit_test {
+TestRunner::~TestRunner() {
+    std::cerr << "\nTotal tests number: "s << std::to_string(test_count_) << " Failed tests number: "s
+              << std::to_string(failed_test_names_.size()) << std::endl;
+
+    if (!failed_test_names_.empty()) {
+        std::cerr << "Failed tests: "s;
+        std::copy(failed_test_names_.begin(), failed_test_names_.end(),
+                  std::ostream_iterator<std::string>(std::cerr, " "));
+    } else
+        std::cerr << "All tests passed without errors"s << std::endl;
+}
+
 void AssertTrue(const bool condition, const std::string &expression, const std::string &file,
                 const std::string &function, unsigned line, const std::string &hint) {
-    using std::cerr;
+    std::stringstream error;
 
     if (!condition) {
-        cerr << file << "("s << line << "): "s << function << ": "s;
-        cerr << "ASSERT("s << expression << ") failed."s;
+        error << file << "("s << line << "): "s << function << ": "s;
+        error << "ASSERT("s << expression << ") failed."s;
 
         if (!hint.empty())
-            std::cerr << " Hint: "s << hint;
+            error << " Hint: "s << hint;
 
-        cerr << std::endl;
-        abort();
+        error << std::endl;
+        throw TestFailureException(error.str());
     }
 }
 
-void RunTest(const std::function<void()>& function, const std::string &function_name) {
-    function();
-    std::cerr << function_name << " OK" << std::endl;
-}
 }  // namespace unit_test
