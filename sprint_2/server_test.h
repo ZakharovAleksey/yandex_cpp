@@ -8,29 +8,29 @@
 #include "testing_framework.h"
 
 namespace unit_test {
-    void TestExcludeStopWordsFromAddedDocumentContent();
+void TestExcludeStopWordsFromAddedDocumentContent();
 
-    void TestExcludeStopWordsFromAddedDocumentContent();
+void TestExcludeStopWordsFromAddedDocumentContent();
 
-    void TestAddingDocumentsToTheServer();
+void TestAddingDocumentsToTheServer();
 
-    void TestServerTakesIntoAccountMinusWords();
+void TestServerTakesIntoAccountMinusWords();
 
-    void TestServerMatchWordsForTheDocument();
+void TestServerMatchWordsForTheDocument();
 
-    void TestServerFindNotMoreDocumentsThanExpected();
+void TestServerFindNotMoreDocumentsThanExpected();
 
-    void TestFoundDocumentsSortingByRelevance();
+void TestFoundDocumentsSortingByRelevance();
 
-    void TestDocumentRelevanceCalculation();
+void TestDocumentRelevanceCalculation();
 
-    void TestDocumentRatingCalculation();
+void TestDocumentRatingCalculation();
 
-    void TestFindDocumentsWithCustomDocumentStatusFilterFunction();
+void TestFindDocumentsWithCustomDocumentStatusFilterFunction();
 
-    void TestFindDocumentsWithDefaultDocumentStatusFilterFunction();
+void TestFindDocumentsWithDefaultDocumentStatusFilterFunction();
 
-    void TestDocumentsCount();
+void TestDocumentsCount();
 
-    void TestSearchServer();
-}
+void TestSearchServer();
+}  // namespace unit_test

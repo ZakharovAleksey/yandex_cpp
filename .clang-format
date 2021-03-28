@@ -1,0 +1,8 @@
+# https://google.github.io/styleguide/cppguide.html#Formatting
+BasedOnStyle: Google
+ColumnLimit: 120
+IndentWidth: 4
+AllowShortBlocksOnASingleLine: "Never"
+AllowShortFunctionsOnASingleLine: "Empty"
+AllowShortIfStatementsOnASingleLine: "Never"
+AllowShortLoopsOnASingleLine: false
