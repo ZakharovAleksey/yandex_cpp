@@ -39,7 +39,7 @@ modifications and refactoring in SPRINT_1 folder.**
 :exclamation:
 
 Code with updated `SearchServer` version and corresponding to the changes tests could be found on branch:
-[dev/sprint-2](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-3).
+[dev/sprint-3](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-3).
 
 Implemented items:
 1. Updates in `SearchServer` class:
@@ -49,7 +49,11 @@ Implemented items:
    * [server_test.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-3/sprint_2/server_test.h)
    * [server_test.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-3/sprint_2/server_test.cpp)
    
-P.S. Additionally I've updated the `unit-test` framework, to make it easy to use. Main changes are:
+P.S. Additionally I've updated the `unit-test` framework, to make it easy to use. 
+
+Main changes are (
+[testing_framework.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-3/sprint_2/testing_framework.h);
+[testing_framework.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-3/sprint_2/testing_framework.cpp) ):
 * `ASSERT_THROW` macros, which checks if the function should throw
 * `RunTests` class which is used to run all tests implicitly
 * Existing functionality refactoring to match first two items :)
