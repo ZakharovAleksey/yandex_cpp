@@ -1,6 +1,6 @@
 # Yandex Practicum C++
 
-:boom: **Sprint #3 description added [here](#Sprint-3)** 
+:boom: **Sprint #4 description added [here](#Sprint-4)** 
 
 ## Sprint 1
 
@@ -31,20 +31,13 @@ Implemented items:
 
 ## Sprint 3
 
-
-:exclamation: 
-**All changes in** `sprint_3` **are related to the changes in** `SearchServer` 
-**class, which was implemented in** `sprint_1`, **that's why I made all 
-modifications and refactoring in SPRINT_1 folder.**
-:exclamation:
-
 Code with updated `SearchServer` version and corresponding to the changes tests could be found on branch:
 [dev/sprint-3](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-3).
 
 Implemented items:
 1. Updates in `SearchServer` class:
-    * [server.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-3/sprint_1/server.h)
-    * [server.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-3/sprint_1/server.cpp)
+    * [server.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-3/sprint_3/server_search.h)
+    * [server.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-3/sprint_1/server_search.cpp)
 2. Updates in unit tests for `SearchServer` class:
    * [server_test.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-3/sprint_2/server_test.h)
    * [server_test.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-3/sprint_2/server_test.cpp)
@@ -59,9 +52,20 @@ Main changes are (
 * Existing functionality refactoring to match first two items :)
 
 
+## Sprint 4
 
+:exclamation: :exclamation: :exclamation:
 
+Code with search server could be found here: [dev/sprint-4](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-4)
 
+Implemented items:
+1. Code of `SearchServer` engine was split up into several files, which are located in the folder: 
+  [sprint_4](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-4/sprint_4)
+2. Paginator functionality could be found here:
+    * [paginator.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-4/sprint_4/paginator.h)
+3. Query of requests to `SearchServer' could be found here:
+    * [request_queue.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-4/sprint_4/request_queue.h)
+    * [request_queue.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-4/sprint_4/request_queue.cpp)
 
 
 
