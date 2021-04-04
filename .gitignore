@@ -1,2 +1,4 @@
 .idea
 cmake-build-debug
+3rdparty
+lib
