@@ -11,7 +11,8 @@
 #include <utility>
 #include <vector>
 
-namespace server {
+namespace sprint_3::server {
+
 struct Document {
     Document() = default;
 
@@ -29,16 +30,23 @@ enum class DocumentStatus {
     REMOVED,
 };
 
+bool IsValidWord(const std::string &word);
+
 std::vector<std::string> SplitIntoWords(const std::string &text);
 
 template <typename StringContainer>
 std::set<std::string> MakeUniqueNonEmptyStrings(const StringContainer &strings) {
+    using namespace std::literals;
     std::set<std::string> non_empty_strings;
 
-    std::for_each(strings.begin(), strings.end(), [&non_empty_strings](const std::string &string) {
-        if (!string.empty())
-            non_empty_strings.insert(string);
+    std::for_each(strings.begin(), strings.end(), [&non_empty_strings](const std::string &word) {
+        if (!IsValidWord(word))
+            throw std::invalid_argument("Special symbol detected in the word: "s + word);
+
+        if (!word.empty())
+            non_empty_strings.insert(word);
     });
+
 
     return non_empty_strings;
 }
@@ -51,15 +59,7 @@ class SearchServer {
     SearchServer() = default;
 
     template <class StringContainer>
-    explicit SearchServer(const StringContainer &stop_words) : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
-        using namespace std::literals;
-
-        const bool isSpecialSymbolDetected = std::any_of(stop_words_.begin(), stop_words_.end(),
-                                                         [](const std::string &word) { return !IsValidWord(word); });
-
-        if (isSpecialSymbolDetected)
-            throw std::invalid_argument("At least one stop word contains special symbol, which is not expected"s);
-    }
+    explicit SearchServer(const StringContainer &stop_words) : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {}
 
     explicit SearchServer(const std::string &stop_words_text) : SearchServer(SplitIntoWords(stop_words_text)) {}
 
@@ -81,9 +81,11 @@ class SearchServer {
     }
 
     [[nodiscard]] std::vector<Document> FindTopDocuments(const std::string &raw_query,
-                                           DocumentStatus document_status = DocumentStatus::ACTUAL) const;
+                                                         DocumentStatus document_status = DocumentStatus::ACTUAL) const;
 
     [[nodiscard]] int GetDocumentCount() const;
+
+    [[nodiscard]] int GetDocumentId(int document_index) const;
 
     void SetStopWords(const std::string &text);
 
@@ -151,8 +153,6 @@ class SearchServer {
 
     static int ComputeAverageRating(const std::vector<int> &ratings);
 
-    static bool IsValidWord(const std::string &word);
-
     [[nodiscard]] bool IsStopWord(const std::string &word) const;
 
     [[nodiscard]] bool ParseQueryWord(std::string word, QueryWord &query_word) const;
@@ -163,11 +163,12 @@ class SearchServer {
 
     [[nodiscard]] double ComputeWordInverseDocumentFrequency(const std::string &word) const;
 
-    std::optional<std::string> CheckDocumentInput(int document_id, const std::string &document);
+    std::pair<bool, std::string> CheckDocumentInput(int document_id, const std::string &document);
 
    private:  // Class fields
     std::set<std::string> stop_words_;
     std::map<std::string, std::map<int, double>> word_to_document_frequency_;
     std::map<int, DocumentData> documents_;
+    std::vector<int> document_ids_;
 };
-}  // namespace server
+}  // namespace sprint_3::server

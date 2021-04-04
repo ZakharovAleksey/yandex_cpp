@@ -2,16 +2,23 @@
 // Created by azakharov on 2/19/2021.
 //
 
-#include "server.h"
+#include "server_search.h"
 
+#include <cassert>
 #include <cmath>
 #include <iostream>
 #include <numeric>
 
-namespace server {
+namespace sprint_3::server {
+
 using namespace std::literals;
 using std::string;
 using std::vector;
+
+bool IsValidWord(const std::string &word) {
+    // A valid word must not contain special characters in range [0, 31]
+    return std::none_of(word.begin(), word.end(), [](char symbol) { return symbol >= '\0' && symbol < ' '; });
+}
 
 vector<string> SplitIntoWords(const string &text) {
     vector<string> words;
@@ -37,10 +44,8 @@ void SearchServer::SetStopWords(const string &text) {
 
 void SearchServer::AddDocument(int document_id, const string &document, DocumentStatus status,
                                const vector<int> &ratings) {
-    if (const auto &error_message = CheckDocumentInput(document_id, document);
-        error_message && !error_message->empty()) {
-        throw std::invalid_argument(*error_message);
-    }
+    if (auto [is_correct, error_message] = CheckDocumentInput(document_id, document); !is_correct)
+        throw std::invalid_argument(error_message);
 
     const vector<string> words = SplitDocumentIntoNoWords(document);
     const double inverse_word_count = 1. / words.size();
@@ -49,6 +54,7 @@ void SearchServer::AddDocument(int document_id, const string &document, Document
         word_to_document_frequency_[word][document_id] += inverse_word_count;
 
     documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
+    document_ids_.emplace_back(document_id);
 }
 
 vector<Document> SearchServer::FindTopDocuments(const string &raw_query, DocumentStatus document_status) const {
@@ -59,6 +65,10 @@ vector<Document> SearchServer::FindTopDocuments(const string &raw_query, Documen
 
 int SearchServer::GetDocumentCount() const {
     return static_cast<int>(documents_.size());
+}
+
+int SearchServer::GetDocumentId(int document_index) const {
+    return document_ids_.at(document_index);
 }
 
 SearchServer::WordsInDocumentInfo SearchServer::MatchDocument(const string &raw_query, int document_id) const {
@@ -90,11 +100,6 @@ bool SearchServer::IsStopWord(const string &word) const {
     return stop_words_.count(word) > 0;
 }
 
-bool SearchServer::IsValidWord(const std::string &word) {
-    // A valid word must not contain special characters in range [0, 31]
-    return std::none_of(word.begin(), word.end(), [](char symbol) { return int(symbol) >= 0 && int(symbol) <= 31; });
-}
-
 vector<string> SearchServer::SplitDocumentIntoNoWords(const string &text) const {
     vector<string> words;
 
@@ -116,8 +121,7 @@ int SearchServer::ComputeAverageRating(const vector<int> &ratings) {
 bool SearchServer::ParseQueryWord(std::string word, QueryWord &query_word) const {
     query_word = {};
 
-    if (word.empty())
-        return false;
+    assert(!word.empty() && "Input word in query could not be empty");
 
     bool is_minus = false;
     if (word[0] == '-') {
@@ -125,7 +129,8 @@ bool SearchServer::ParseQueryWord(std::string word, QueryWord &query_word) const
         word = word.substr(1);
     }
 
-    if (word.empty() || word[0] == '-' || !IsValidWord(word))  //> Check word is not '-' or starts from '--'
+    // Check word is not '-' or starts from '--'
+    if (word.empty() || word[0] == '-' || !IsValidWord(word))
         return false;
 
     query_word = {word, is_minus, IsStopWord(word)};
@@ -150,23 +155,29 @@ SearchServer::Query SearchServer::ParseQuery(const string &query_text) const {
     return query;
 }
 
-std::optional<std::string> SearchServer::CheckDocumentInput(int document_id, const std::string &document) {
+std::pair<bool, std::string> SearchServer::CheckDocumentInput(int document_id, const std::string &document) {
     if (document_id < 0)
-        return "Negative document index is not expected"s;
+        return {false, "Negative document index is not expected"s};
 
     if (documents_.count(document_id) > 0)
-        return "Document with index # " + std::to_string(document_id) +
-               " is already exists. Duplicates are not allowed"s;
+        return {false, "Document with index # " + std::to_string(document_id) +
+                           " is already exists. Duplicates are not allowed"s};
 
     if (document.empty())
-        return "Empty document is not allowed"s;
+        return {false, "Empty document is not allowed"s};
 
-    return std::nullopt;
+    return {true, ""s};
 }
 
 // Existence required
 double SearchServer::ComputeWordInverseDocumentFrequency(const string &word) const {
-    return log(GetDocumentCount() * 1. / word_to_document_frequency_.at(word).size());
+    assert(word_to_document_frequency_.count(word) != 0 &&
+           "Expected word is not found in documents - could not calculate frequency");
+
+    auto documents_with_word = word_to_document_frequency_.at(word);
+    assert(!documents_with_word.empty() && "Expected word is not found in documents - could not calculate frequency");
+
+    return log(GetDocumentCount() * 1. / documents_with_word.size());
 }
 
-}  // namespace server
+}  // namespace sprint_3::server
