@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "sprint_4/paginator.h"
-#include "sprint_4/request_queue.h"
+#include "src/sprint_4/paginator.h"
+#include "src/sprint_4/request_queue.h"
 
 using namespace sprint_4::server;
 using namespace std::literals;
