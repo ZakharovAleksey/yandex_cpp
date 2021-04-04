@@ -1,5 +1,5 @@
 //
-// Created by azakharov on 2/19/2021.
+// Created by azakharov on 4/4/2021.
 //
 
 #pragma once
@@ -11,42 +11,10 @@
 #include <utility>
 #include <vector>
 
-#include "print_utils.h"
+#include "document.h"
+#include "string_processing.h"
 
-namespace sprint_1::server {
-
-struct Document {
-    Document() = default;
-
-    Document(int id, double relevance, int rating) : id(id), relevance(relevance), rating(rating) {}
-
-    int id{0};
-    double relevance{0.};
-    int rating{0};
-};
-
-std::ostream &operator<<(std::ostream &os, const Document &document);
-
-enum class DocumentStatus {
-    ACTUAL,
-    IRRELEVANT,
-    BANNED,
-    REMOVED,
-};
-
-std::vector<std::string> SplitIntoWords(const std::string &text);
-
-template <typename StringContainer>
-std::set<std::string> MakeUniqueNonEmptyStrings(const StringContainer &strings) {
-    std::set<std::string> non_empty_strings;
-
-    std::for_each(strings.begin(), strings.end(), [&non_empty_strings](const std::string &string) {
-        if (!string.empty())
-            non_empty_strings.insert(string);
-    });
-
-    return non_empty_strings;
-}
+namespace sprint_4::server {
 
 class SearchServer {
    public:  // Public types
@@ -56,17 +24,10 @@ class SearchServer {
     SearchServer() = default;
 
     template <class StringContainer>
-    explicit SearchServer(const StringContainer &stop_words) : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
-        using namespace std::literals;
+    explicit SearchServer(const StringContainer &stop_words)
+        : stop_words_(utils::MakeUniqueNonEmptyStrings(stop_words)) {}
 
-        const bool isSpecialSymbolDetected = std::any_of(stop_words_.begin(), stop_words_.end(),
-                                                         [](const std::string &word) { return !IsValidWord(word); });
-
-        if (isSpecialSymbolDetected)
-            throw std::invalid_argument("At least one stop word contains special symbol, which is not expected"s);
-    }
-
-    explicit SearchServer(const std::string &stop_words_text) : SearchServer(SplitIntoWords(stop_words_text)) {}
+    explicit SearchServer(const std::string &stop_words_text) : SearchServer(utils::SplitIntoWords(stop_words_text)) {}
 
    public:  // Public methods
     template <class DocumentFilterFunction>
@@ -89,6 +50,7 @@ class SearchServer {
                                                          DocumentStatus document_status = DocumentStatus::ACTUAL) const;
 
     [[nodiscard]] int GetDocumentCount() const;
+    [[nodiscard]] int GetDocumentId(int index) const;
 
     void SetStopWords(const std::string &text);
 
@@ -156,8 +118,6 @@ class SearchServer {
 
     static int ComputeAverageRating(const std::vector<int> &ratings);
 
-    static bool IsValidWord(const std::string &word);
-
     [[nodiscard]] bool IsStopWord(const std::string &word) const;
 
     [[nodiscard]] bool ParseQueryWord(std::string word, QueryWord &query_word) const;
@@ -168,11 +128,12 @@ class SearchServer {
 
     [[nodiscard]] double ComputeWordInverseDocumentFrequency(const std::string &word) const;
 
-    std::optional<std::string> CheckDocumentInput(int document_id, const std::string &document);
+    std::pair<bool, std::string> CheckDocumentInput(int document_id, const std::string &document);
 
    private:  // Class fields
     std::set<std::string> stop_words_;
     std::map<std::string, std::map<int, double>> word_to_document_frequency_;
     std::map<int, DocumentData> documents_;
+    std::vector<int> document_ids_;
 };
-}  // namespace sprint_1::server
+}  // namespace sprint_4::server

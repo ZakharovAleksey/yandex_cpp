@@ -8,10 +8,17 @@
 #include <iostream>
 #include <numeric>
 
-namespace server {
+namespace sprint_1::server {
+
 using namespace std::literals;
 using std::string;
 using std::vector;
+
+std::ostream &operator<<(std::ostream &os, const Document &document) {
+    return os << "{ document_id = "s << document.id << ", "s
+              << "relevance = "s << document.relevance << ", "s
+              << "rating = "s << document.rating << " }"s;
+}
 
 vector<string> SplitIntoWords(const string &text) {
     vector<string> words;
@@ -169,4 +176,4 @@ double SearchServer::ComputeWordInverseDocumentFrequency(const string &word) con
     return log(GetDocumentCount() * 1. / word_to_document_frequency_.at(word).size());
 }
 
-}  // namespace server
+}  // namespace sprint_1::server

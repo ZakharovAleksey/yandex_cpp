@@ -7,7 +7,8 @@
 #include <cmath>
 
 namespace unit_test {
-using namespace server;
+
+using namespace sprint_1::server;
 using namespace std::string_literals;
 
 // General variables, used for the big number of tests
