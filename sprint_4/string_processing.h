@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+using namespace std::literals;
+
 namespace sprint_4::server::utils {
 
 bool IsValidWord(const std::string &word);
@@ -20,8 +22,8 @@ std::set<std::string> MakeUniqueNonEmptyStrings(const StringContainer &strings) 
 
     for (const auto &current_string : strings) {
         if (!IsValidWord(current_string))
-            throw std::invalid_argument("Invalid word in the document: "s + word);
-        
+            throw std::invalid_argument("Invalid word in the document: "s + current_string);
+
         if (!current_string.empty())
             non_empty_strings.insert(current_string);
     }
