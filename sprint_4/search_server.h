@@ -17,10 +17,10 @@
 namespace sprint_4::server {
 
 class SearchServer {
-   public:  // Public types
+  public:  // Public types
     using WordsInDocumentInfo = std::tuple<std::vector<std::string>, DocumentStatus>;
 
-   public:  // Constructors
+  public:  // Constructors
     SearchServer() = default;
 
     template <class StringContainer>
@@ -29,7 +29,7 @@ class SearchServer {
 
     explicit SearchServer(const std::string &stop_words_text) : SearchServer(utils::SplitIntoWords(stop_words_text)) {}
 
-   public:  // Public methods
+  public:  // Public methods
     template <class DocumentFilterFunction>
     std::vector<Document> FindTopDocuments(const std::string &raw_query, DocumentFilterFunction filter_function) const {
         const Query query = ParseQuery(raw_query);
@@ -59,7 +59,7 @@ class SearchServer {
 
     [[nodiscard]] WordsInDocumentInfo MatchDocument(const std::string &raw_query, int document_id) const;
 
-   private:  // Types
+  private:  // Types
     struct DocumentData {
         int rating{0};
         DocumentStatus status;
@@ -80,11 +80,11 @@ class SearchServer {
         std::set<std::string> minus_words;
     };
 
-   private:  // Constants
+  private:  // Constants
     static constexpr double kEqualityThreshold{1e-6};
     static constexpr int kMaxDocumentsCount{5};
 
-   private:  // Class methods
+  private:  // Class methods
     template <class DocumentFilterFunction>
     std::vector<Document> FindAllDocuments(const Query &query, DocumentFilterFunction filter_function) const {
         std::map<int, double> document_to_relevance;
@@ -130,7 +130,7 @@ class SearchServer {
 
     std::pair<bool, std::string> CheckDocumentInput(int document_id, const std::string &document);
 
-   private:  // Class fields
+  private:  // Class fields
     std::set<std::string> stop_words_;
     std::map<std::string, std::map<int, double>> word_to_document_frequency_;
     std::map<int, DocumentData> documents_;
