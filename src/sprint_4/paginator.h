@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 
@@ -19,32 +20,30 @@ struct IteratorsRange {
 
 template <class Iterator>
 std::ostream& operator<<(std::ostream& os, const IteratorsRange<Iterator>& range) {
-    for (auto iter = range.start; iter != range.end; iter = std::next(iter))
+    for (auto iter = range.start; iter != range.end; ++iter)
         os << *iter;
     return os;
 }
 
 template <class Iterator>
 class Paginator {
-   public:  // Constructor
-    Paginator(Iterator begin, Iterator end, size_t page_size) {
-        size_t elements_on_page{1u};
+  public:  // Constructor
+    Paginator() = default;
 
-        for (auto iterator = begin; iterator != end; iterator = std::next(iterator), ++elements_on_page) {
-            if (elements_on_page == 1u)
-                pages_.emplace_back(iterator, iterator);
+  public:  // Methods
+    void Init(Iterator begin, Iterator end, size_t page_size) {
+        size_t elements_left{std::distance(begin, end)};
+        size_t elements_fit_page{0u};
 
-            if (elements_on_page == page_size) {
-                pages_.back().end = std::next(iterator);
-                elements_on_page = 0u;
-            }
+        while (elements_left > 0) {
+            elements_fit_page = std::min(page_size, elements_left);
+            pages_.emplace_back(begin, begin + elements_fit_page);
+
+            begin += elements_fit_page;
+            elements_left -= elements_fit_page;
         }
-
-        if (!pages_.empty())
-            pages_.back().end = end;
     }
 
-   public:  // Methods
     auto begin() const {
         return pages_.begin();
     }
@@ -57,13 +56,16 @@ class Paginator {
         return pages_.size();
     }
 
-   private:  // fields
+  private:  // fields
     std::vector<IteratorsRange<Iterator>> pages_;
 };
 
 template <typename Container>
-auto Paginate(const Container& c, size_t page_size) {
-    return Paginator(begin(c), end(c), page_size);
+auto Paginate(const Container& container, size_t page_size) {
+    Paginator<decltype(container.begin())> paginator;
+    paginator.Init(container.begin(), container.end(), page_size);
+
+    return paginator;
 }
 
 }  // namespace sprint_4::server::utils

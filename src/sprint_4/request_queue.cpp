@@ -15,10 +15,7 @@ std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query,
 }
 
 int RequestQueue::GetNoResultRequests() const {
-    return std::accumulate(requests_.begin(), requests_.end(), 0,
-                           [](int& current_sum, const QueryResult& query_result) {
-                               return query_result.is_empty ? ++current_sum : current_sum;
-                           });
+    return empty_responses_count_;
 }
 
 }  // namespace sprint_4::server
