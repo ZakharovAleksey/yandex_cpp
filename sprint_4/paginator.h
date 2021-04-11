@@ -27,13 +27,13 @@ std::ostream& operator<<(std::ostream& os, const IteratorsRange<Iterator>& range
 
 template <class Iterator>
 class Paginator {
-  public:  // Constructor
+    public:  // Constructor
     Paginator() = default;
 
-  public:  // Methods
-    void Init(Iterator begin, Iterator end, size_t page_size) {
-        size_t elements_left{std::distance(begin, end)};
-        size_t elements_fit_page{0u};
+    public:  // Methods
+    void Init(Iterator begin, Iterator end, int page_size) {
+        int elements_left{std::distance(begin, end)};
+        int elements_fit_page{0};
 
         while (elements_left > 0) {
             elements_fit_page = std::min(page_size, elements_left);
@@ -56,12 +56,12 @@ class Paginator {
         return pages_.size();
     }
 
-  private:  // fields
+    private:  // fields
     std::vector<IteratorsRange<Iterator>> pages_;
 };
 
 template <typename Container>
-auto Paginate(const Container& container, size_t page_size) {
+auto Paginate(const Container& container, int page_size) {
     Paginator<decltype(container.begin())> paginator;
     paginator.Init(container.begin(), container.end(), page_size);
 
