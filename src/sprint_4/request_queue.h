@@ -12,10 +12,10 @@
 namespace sprint_4::server {
 
 class RequestQueue {
-    public:  // Constructors
+public:  // Constructors
     explicit RequestQueue(const SearchServer& search_server) : server_(search_server) {}
 
-    public:  // Methods
+public:  // Methods
     template <typename DocumentFilterFunction>
     std::vector<Document> AddFindRequest(const std::string& raw_query,
                                          DocumentFilterFunction document_filter_function) {
@@ -31,10 +31,10 @@ class RequestQueue {
 
     [[nodiscard]] int GetNoResultRequests() const;
 
-    private:  // Constants
+private:  // Constants
     static const int kMinutesInDay{1440};
 
-    private:  // Types
+private:  // Types
     struct QueryResult {
         std::string query;
         int found_documents_count{0};
@@ -47,9 +47,10 @@ class RequestQueue {
         }
     };
 
+private:  // Methods
     void UpdateRequestsInformation(const std::vector<Document>& response);
 
-    private:  // Fields
+private:  // Fields
     std::deque<QueryResult> requests_;
     const SearchServer& server_;
     int empty_responses_count_{0};

@@ -27,10 +27,10 @@ std::ostream& operator<<(std::ostream& os, const IteratorsRange<Iterator>& range
 
 template <class Iterator>
 class Paginator {
-    public:  // Constructor
+public:  // Constructor
     Paginator() = default;
 
-    public:  // Methods
+public:  // Methods
     void Init(Iterator begin, Iterator end, int page_size) {
         int elements_left{std::distance(begin, end)};
         int elements_fit_page{0};
@@ -56,7 +56,7 @@ class Paginator {
         return pages_.size();
     }
 
-    private:  // fields
+private:  // fields
     std::vector<IteratorsRange<Iterator>> pages_;
 };
 
