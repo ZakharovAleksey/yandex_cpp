@@ -1,6 +1,8 @@
 # Yandex Practicum C++
 
-:boom: **Sprint #4 description added [here](#Sprint-4)** 
+:boom: **Sprint #5 description added [here](#Sprint-5)** 
+
+- [ ] Add `conan` package manager
 
 ## Sprint 1
 
@@ -54,8 +56,6 @@ Main changes are (
 
 ## Sprint 4
 
-:exclamation: :exclamation: :exclamation:
-
 Code with search server could be found here: [dev/sprint-4](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-4)
 
 Implemented items:
@@ -66,6 +66,21 @@ Implemented items:
 3. Query of requests to `SearchServer' could be found here:
     * [request_queue.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-4/sprint_4/request_queue.h)
     * [request_queue.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-4/sprint_4/request_queue.cpp)
+
+
+## Sprint 5
+
+:exclamation: :exclamation: :exclamation:
+
+Code with search server could be found here: [dev/sprint-5](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-5)
+
+Implemented items:
+1. In `SearchServer` engine three function have been implemented: `GetWordFrequencies`, `RemoveDocument` and `RemoveDuplicates`
+   
+2. Duration logger functionality could be found here:
+   * [log_duration.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-5/sprint_5/log_duration.h)
+3. Boost & Gtest functionality have been integrate to the project:
+   * [Gtest](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-5/tests)
 
 
 
