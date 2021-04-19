@@ -78,7 +78,7 @@ Implemented items:
 1. In `SearchServer` engine three function have been implemented: `GetWordFrequencies`, `RemoveDocument` and `RemoveDuplicates`
    
 2. Duration logger functionality could be found here:
-   * [log_duration.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-5/sprint_5/log_duration.h)
+   * [log_duration.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-5/src/sprint_5/log_duration.h)
 3. Boost & Gtest functionality have been integrate to the project:
    * [Gtest](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-5/tests)
 
