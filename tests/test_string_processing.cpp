@@ -5,7 +5,6 @@
 #include <gtest/gtest.h>
 
 #include "../src/sprint_5/string_processing.h"
-#include "utils/test_utils.h"
 
 using namespace sprint_5::server;
 using namespace std::literals;

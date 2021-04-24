@@ -13,12 +13,6 @@ namespace sprint_5::server {
 using namespace std::literals;
 using namespace utils;
 
-template <class Container>
-void RemoveByDocumentId(Container &container, DocumentId index) {
-    if (auto position = container.find(index); position != container.end())
-        container.erase(position);
-}
-
 // SearchServer class methods below
 
 void SearchServer::SetStopWords(const std::string &text) {
@@ -176,15 +170,12 @@ std::set<int>::const_iterator SearchServer::end() const {
 }
 
 const std::map<Word, double> &SearchServer::GetWordFrequencies(DocumentId index) const {
-    static std::map<Word, double> result;
-    result.clear();
+    static std::map<Word, double> default_option;
 
-    if (auto words_frequency = words_frequency_by_documents_.find(index);
-        words_frequency != words_frequency_by_documents_.end()) {
-        result.insert(words_frequency->second.begin(), words_frequency->second.end());
-    }
+    if (words_frequency_by_documents_.count(index) > 0)
+        return words_frequency_by_documents_.at(index);
 
-    return result;
+    return default_option;
 }
 
 void SearchServer::RemoveDocument(DocumentId index) {
@@ -196,37 +187,31 @@ void SearchServer::RemoveDocument(DocumentId index) {
     document_ids_.erase(document_position);
 
     for (const auto &[word, _] : words_frequency_by_documents_.at(index))
-        RemoveByDocumentId(word_to_document_frequency_.at(word), index);
+        word_to_document_frequency_.at(word).erase(index);
 
-    RemoveByDocumentId(documents_, index);
-    RemoveByDocumentId(words_frequency_by_documents_, index);
+    documents_.erase(index);
+    words_frequency_by_documents_.erase(index);
 }
 
 void RemoveDuplicates(SearchServer &search_server) {
     std::map<std::set<Word>, DocumentId> storage;
-    std::vector<DocumentId> indexes_for_removal;
-
-    auto get_distinct_words = [&](const std::map<Word, double> &word_frequencies) {
-        std::set<Word> result;
-        for (const auto &[word, _] : word_frequencies)
-            result.insert(word);
-        return result;
-    };
+    std::vector<DocumentId> indices_for_removal;
 
     for (const DocumentId index : search_server) {
         const auto &word_frequencies = search_server.GetWordFrequencies(index);
-        auto storage_key = get_distinct_words(word_frequencies);
+        std::set<Word> storage_key;
+        std::transform(word_frequencies.begin(), word_frequencies.end(),
+                       std::inserter(storage_key, storage_key.begin()), [](const auto &item) { return item.first; });
 
-        if (auto position = storage.find(storage_key); position != storage.end()) {
-            DocumentId index_to_remove = std::max(index, position->second);
-            position->second = std::min(index, position->second);
-
-            indexes_for_removal.emplace_back(index_to_remove);
-        } else
+        // In std::set<> keys are in increasing order. Ao, if we found the same 'storage_key' in the storage -
+        // we should remove current documents, because it has higher document index
+        if (storage.count(storage_key) > 0)
+            indices_for_removal.emplace_back(index);
+        else
             storage.insert({storage_key, index});
     }
 
-    for (DocumentId index : indexes_for_removal)
+    for (DocumentId index : indices_for_removal)
         search_server.RemoveDocument(index);
 }
 
