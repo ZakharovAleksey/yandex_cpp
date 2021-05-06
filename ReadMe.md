@@ -1,8 +1,8 @@
 # Yandex Practicum C++
 
-:boom: **Sprint #5 description added [here](#Sprint-5)** 
+:boom: **Sprint #6 description added [here](#Sprint-6)** 
 
-- [ ] Add `conan` package manager
+- [ ] Add `conan` package manager (could not find packages)
 
 ## Sprint 1
 
@@ -70,8 +70,6 @@ Implemented items:
 
 ## Sprint 5
 
-:exclamation: :exclamation: :exclamation:
-
 Code with search server could be found here: [dev/sprint-5](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-5)
 
 Implemented items:
@@ -83,5 +81,17 @@ Implemented items:
    * [Gtest](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-5/tests)
 
 
+## Sprint 6
+
+:exclamation: :exclamation: :exclamation:
+
+Code with search server could be found here: [dev/sprint-6](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-6)
+
+Implemented items:
+1. `SingleLinkedList` template class could be found here:
+   * [single_linked_list.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint_6/src/sprint_6/single_linked_list.h)
+   * [single_linked_list.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint_6/src/sprint_6/single_linked_list.cpp)
+2. Unit tests of `SingleLinkedList` class:
+   * [test_single_linked_list.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint_6/tests/test_single_linked_list.cpp)
 
 # Notes
