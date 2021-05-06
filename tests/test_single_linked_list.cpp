@@ -124,11 +124,11 @@ TEST(SingleLinkedList, IteratorsConverting) {
     SingleLinkedList<int> list;
     list.PushFront(1);
 
-    SingleLinkedList<int>::ConstIterator constant_iterator(list.begin());
+    SingleLinkedList<int>::ConstantIterator constant_iterator(list.begin());
     ASSERT_TRUE(constant_iterator == list.cbegin());
     ASSERT_TRUE(*constant_iterator == *list.cbegin());
 
-    SingleLinkedList<int>::ConstIterator constant_iterator_2;
+    SingleLinkedList<int>::ConstantIterator constant_iterator_2;
     // Присваивание ConstIterator-у значения Iterator
     constant_iterator_2 = list.begin();
     ASSERT_TRUE(constant_iterator_2 == constant_iterator);
@@ -277,39 +277,37 @@ TEST(SingleLinkedList, ThowExceptionOnIncorrectCopy) {
         }
     };
 
-    SingleLinkedList<ThrowOnCopy> src_list;
-    src_list.PushFront(ThrowOnCopy{});
-    src_list.PushFront(ThrowOnCopy{});
-    auto thrower = src_list.begin();
-    src_list.PushFront(ThrowOnCopy{});
+    SingleLinkedList<ThrowOnCopy> source;
+    source.PushFront(ThrowOnCopy{});
+    source.PushFront(ThrowOnCopy{});
+    auto thrower = source.begin();
+    source.PushFront(ThrowOnCopy{});
 
-    int copy_counter = 0;  // при первом же копировании будет выброшего исключение
+    int copy_counter = 0;
     thrower->countdown_ptr = &copy_counter;
 
-    SingleLinkedList<ThrowOnCopy> dst_list;
-    dst_list.PushFront(ThrowOnCopy{});
-    int dst_counter = 10;
-    dst_list.begin()->countdown_ptr = &dst_counter;
-    dst_list.PushFront(ThrowOnCopy{});
+    SingleLinkedList<ThrowOnCopy> destination;
+    destination.PushFront(ThrowOnCopy{});
+    int destination_counter = 10;
+    destination.begin()->countdown_ptr = &destination_counter;
+    destination.PushFront(ThrowOnCopy{});
 
     try {
-        dst_list = src_list;
-        // Ожидается исключение при присваивании
-        assert(false);
+        destination = source;
+        EXPECT_TRUE(false) << "Exception on assigment should be thrown"s;
     } catch (const std::bad_alloc&) {
-        // Проверяем, что состояние списка-приёмника не изменилось
-        // при выбрасывании исключений
-        assert(dst_list.GetSize() == 2);
-        auto it = dst_list.begin();
-        assert(it != dst_list.end());
-        assert(it->countdown_ptr == nullptr);
-        ++it;
-        assert(it != dst_list.end());
-        assert(it->countdown_ptr == &dst_counter);
-        assert(dst_counter == 10);
+
+        EXPECT_EQ(destination.GetSize(), 2) << "List should not change it's size when exception has been thrown"s;
+        auto current_iterator = destination.begin();
+        EXPECT_TRUE(current_iterator != destination.end());
+        EXPECT_TRUE(current_iterator->countdown_ptr == nullptr);
+
+        ++current_iterator;
+        EXPECT_TRUE(current_iterator != destination.end());
+        EXPECT_TRUE(current_iterator->countdown_ptr == &destination_counter);
+        EXPECT_EQ(destination_counter, 10);
     } catch (...) {
-        // Других типов исключений не ожидается
-        assert(false);
+        EXPECT_TRUE(false) << "No other exceptions expected when exception has been thrown on assigment"s;
     }
 }
 
