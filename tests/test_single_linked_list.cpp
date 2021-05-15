@@ -63,7 +63,7 @@ TEST(SingleLinkedList, EmptyListBehaviour) {
         << "Method before_begin() should return the same results for const and NON-const objects"s;
 
     EXPECT_TRUE(list.before_begin() == constant_list.before_begin())
-                    << "Method before_begin() should return the same results for const and NON-const objects"s;
+        << "Method before_begin() should return the same results for const and NON-const objects"s;
 
     EXPECT_TRUE(list.begin() == list.end()) << "NON-const iterators on begin()/end() of empty list should be equal"s;
 
@@ -296,7 +296,6 @@ TEST(SingleLinkedList, ThowExceptionOnIncorrectCopy) {
         destination = source;
         EXPECT_TRUE(false) << "Exception on assigment should be thrown"s;
     } catch (const std::bad_alloc&) {
-
         EXPECT_EQ(destination.GetSize(), 2) << "List should not change it's size when exception has been thrown"s;
         auto current_iterator = destination.begin();
         EXPECT_TRUE(current_iterator != destination.end());
@@ -337,8 +336,8 @@ TEST(SingleLinkedLit, InsertAfterIteratorMethod) {
 TEST(SingleLinkedLit, PopFrontMethodForEmptyList) {
     SingleLinkedList<int> empty_list;
 
-    empty_list.PopFront();
-    EXPECT_TRUE(empty_list.IsEmpty()) << "PopFront() method should correctly work on the empty list"s;
+    ASSERT_DEATH(empty_list.PopFront();, ".*Assertion.*")
+        << "PopFront() method should correctly work on the empty list"s;
 }
 
 TEST(SingleLinkedLit, PopFrontMethodForNonEmptyList) {
@@ -377,4 +376,7 @@ TEST(SingleLinkedLit, EraseAfterMethodForNonEnptyList) {
 
     list.EraseAfter(list.before_begin());
     EXPECT_TRUE(list.IsEmpty()) << "List should be empty after EraseAfter() removed the last element in the list"s;
+
+    ASSERT_DEATH(list.EraseAfter(list.before_begin());, ".*Assertion.*")
+        << "EraseAfter() method should assert if the list is empty"s;
 }

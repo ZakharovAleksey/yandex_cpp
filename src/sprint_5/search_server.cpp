@@ -197,7 +197,7 @@ void RemoveDuplicates(SearchServer &search_server) {
     std::map<std::set<Word>, DocumentId> storage;
     std::vector<DocumentId> indices_for_removal;
 
-    for (const DocumentId index : search_server) {
+    for (const auto index : search_server) {
         const auto &word_frequencies = search_server.GetWordFrequencies(index);
         std::set<Word> storage_key;
         std::transform(word_frequencies.begin(), word_frequencies.end(),
@@ -205,13 +205,14 @@ void RemoveDuplicates(SearchServer &search_server) {
 
         // In std::set<> keys are in increasing order. Ao, if we found the same 'storage_key' in the storage -
         // we should remove current documents, because it has higher document index
-        if (storage.count(storage_key) > 0)
+        if (storage.count(storage_key) > 0) {
             indices_for_removal.emplace_back(index);
-        else
+        } else {
             storage.insert({storage_key, index});
+        }
     }
 
-    for (DocumentId index : indices_for_removal)
+    for (auto index : indices_for_removal)
         search_server.RemoveDocument(index);
 }
 

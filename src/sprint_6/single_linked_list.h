@@ -93,24 +93,11 @@ public:  // Constructor and assigment operator
     SingleLinkedList() = default;
 
     SingleLinkedList(std::initializer_list<Type> values) {
-        for (auto iterator = std::rbegin(values); iterator != std::rend(values); ++iterator)
-            PushFront(*iterator);
+        Assign(values.begin(), values.end());
     }
 
     SingleLinkedList(const SingleLinkedList& other) {
-        SingleLinkedList<Type> temporary;
-
-        auto other_node = &other.head_;
-        auto temporary_node = &temporary.head_;
-        while (other_node->next_node) {
-            temporary_node->next_node = new Node(other_node->next_node->value, nullptr);
-
-            other_node = other_node->next_node;
-            temporary_node = temporary_node->next_node;
-        }
-        temporary.size_ = other.size_;
-
-        swap(temporary);
+        Assign(other.begin(), other.end());
     }
 
     SingleLinkedList& operator=(const SingleLinkedList& other) {
@@ -147,6 +134,8 @@ public:  // Methods
     }
 
     Iterator InsertAfter(ConstantIterator position, const Type& value) {
+        assert(position.node_ != nullptr && "Could not insert element after nullptr node");
+
         Node* position_after_insertion = position.node_->next_node;
         position.node_->next_node = new Node(value, position_after_insertion);
         ++size_;
@@ -155,17 +144,21 @@ public:  // Methods
     }
 
     void PopFront() noexcept {
-        if (Node* front_node = head_.next_node) {
-            // Change pointers order from: 1 -> 2 -> 3 to: 1 -> 3 and remove node 2
-            Node* new_front_node = front_node->next_node;
-            delete head_.next_node;
+        assert(!IsEmpty() && "Could not remove first element for the empty list");
 
-            head_.next_node = new_front_node;
-            --size_;
-        }
+        Node* front_node = head_.next_node;
+        // Change pointers order from: 1 -> 2 -> 3 to: 1 -> 3 and remove node 2
+        Node* new_front_node = front_node->next_node;
+        delete head_.next_node;
+
+        head_.next_node = new_front_node;
+        --size_;
     }
 
     Iterator EraseAfter(ConstantIterator position) noexcept {
+        assert(!IsEmpty() && "Could not erase elements from the empty list");
+        assert(position.node_ != nullptr && "Could not erase element after nullptr node");
+
         Node* position_for_removal = position.node_->next_node;
         Node* position_after_removal = position_for_removal->next_node;
 
@@ -213,13 +206,11 @@ public:  // Methods
     }
 
     [[nodiscard]] ConstantIterator cbefore_begin() const noexcept {
-        auto result = &const_cast<SingleLinkedList<Type>&>(*this).head_;
-        return ConstantIterator(result);
+        return ConstantIterator(&const_cast<SingleLinkedList<Type>&>(*this).head_);
     }
 
     [[nodiscard]] ConstantIterator before_begin() const noexcept {
-        auto result = &const_cast<SingleLinkedList<Type>&>(*this).head_;
-        return ConstantIterator(result);
+        return ConstantIterator(cbefore_begin());
     }
 
 private:
@@ -229,6 +220,21 @@ private:
             current_node = current_node->next_node;
 
         return current_node->next_node;
+    }
+
+    template <typename InputIterator>
+    void Assign(InputIterator begin, InputIterator end) {
+        SingleLinkedList<Type> temporary;
+        auto temporary_node = &temporary.head_;
+
+        for (auto iterator = begin; iterator != end; ++iterator) {
+            temporary_node->next_node = new Node(*iterator, nullptr);
+            temporary_node = temporary_node->next_node;
+        }
+
+        temporary.size_ = std::distance(begin, end);
+
+        swap(temporary);
     }
 
 private:
