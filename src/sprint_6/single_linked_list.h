@@ -206,11 +206,11 @@ public:  // Methods
     }
 
     [[nodiscard]] ConstantIterator cbefore_begin() const noexcept {
-        return ConstantIterator(&const_cast<SingleLinkedList<Type>&>(*this).head_);
+        return ConstantIterator (&const_cast<Node&>(head_));
     }
 
     [[nodiscard]] ConstantIterator before_begin() const noexcept {
-        return ConstantIterator(cbefore_begin());
+        return cbefore_begin();
     }
 
 private:
