@@ -1,6 +1,6 @@
 # Yandex Practicum C++
 
-:boom: **Sprint #6 description added [here](#Sprint-6)** 
+:boom: **Sprint #7 description added [here](#Sprint-7)** 
 
 - [ ] Add `conan` package manager (could not find packages)
 
@@ -83,8 +83,6 @@ Implemented items:
 
 ## Sprint 6
 
-:exclamation: :exclamation: :exclamation:
-
 Code with search server could be found here: [dev/sprint-6](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-6)
 
 Implemented items:
@@ -93,5 +91,20 @@ Implemented items:
    * [single_linked_list.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint_6/src/sprint_6/single_linked_list.cpp)
 2. Unit tests of `SingleLinkedList` class:
    * [test_single_linked_list.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint_6/tests/test_single_linked_list.cpp)
+
+## Sprint 7
+
+:exclamation: :exclamation: :exclamation:
+
+Code with search server could be found here: [dev/sprint-7](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint_7)
+
+Implemented items:
+1. `SimpleVector` template class could be found here:
+   * [simple_vector.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint_7/src/sprint_7/simple_vector.h)
+   * [array_ptr.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint_7/src/sprint_7/array_ptr.h)
+2. Unit tests of `SimpleVector` class:
+   * [test_simple_vector.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint_7/tests/test_simple_vector.cpp)
+
+
 
 # Notes

@@ -27,7 +27,7 @@ public:  // Types
     using Iterator = Type*;
     using ConstIterator = const Type*;
 
-public:  // Constructor
+public:  // Constructor & assigment operator
     SimpleVector() noexcept = default;
 
     explicit SimpleVector(size_t size) : size_(size), capacity_(size_), data_(size) {
@@ -127,6 +127,7 @@ public:  // Methods
 
             ArrayPtr<Type> new_data(new_capacity);
             std::fill(new_data.Get(), new_data.Get() + new_capacity, Type());
+
             std::copy(data_.Get(), const_cast<Iterator>(position), new_data.Get());
             new_data[new_element_index] = value;
             std::copy(const_cast<Iterator>(position), data_.Get() + size_, new_data.Get() + new_element_index + 1u);
@@ -149,6 +150,7 @@ public:  // Methods
 
             ArrayPtr<Type> new_data(new_capacity);
             std::generate(new_data.Get(), new_data.Get() + new_capacity, []() { return Type(); });
+
             std::move(data_.Get(), const_cast<Iterator>(position), new_data.Get());
             new_data[new_element_index] = std::move(value);
             std::move(const_cast<Iterator>(position), data_.Get() + size_, new_data.Get() + new_element_index + 1u);
