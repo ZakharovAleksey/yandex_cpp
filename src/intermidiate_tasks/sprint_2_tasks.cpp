@@ -65,7 +65,7 @@ std::istream &operator>>(std::istream &is, Query &q) {
         q.stops.reserve(stop_count);
 
         std::string cur_stop;
-        for (size_t i = 0; i < stop_count; ++i) {
+        for (int i = 0; i < stop_count; ++i) {
             is >> cur_stop;
             q.stops.emplace_back(cur_stop);
         }

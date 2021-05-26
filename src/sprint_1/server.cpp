@@ -59,9 +59,9 @@ void SearchServer::AddDocument(int document_id, const string &document, Document
 }
 
 vector<Document> SearchServer::FindTopDocuments(const string &raw_query, DocumentStatus document_status) const {
-    return FindTopDocuments(raw_query, [document_status](int document_id, DocumentStatus status, int rating) {
-        return status == document_status;
-    });
+    return FindTopDocuments(raw_query,
+                            [document_status]([[maybe_unused]] int document_id, DocumentStatus status,
+                                              [[maybe_unused]] int rating) { return status == document_status; });
 }
 
 int SearchServer::GetDocumentCount() const {

@@ -216,7 +216,7 @@ TEST(SearchServerClass, TestDocumentRelevanceCalculation) {
     std::for_each(found_documents.begin(), found_documents.end(),
                   [&actualRelevance](const Document& document) { actualRelevance[document.id] = document.relevance; });
 
-    auto calculate_relevance = [&words_rating_data](int document_id) {
+    auto calculate_relevance = [&](int document_id) {
         double relevance{0.};
 
         for (const auto& [word, index_to_frequency] : words_rating_data) {

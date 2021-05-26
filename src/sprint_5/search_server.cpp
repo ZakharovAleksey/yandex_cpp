@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <iterator>
 #include <numeric>
 
 namespace sprint_5::server {
@@ -41,9 +42,9 @@ void SearchServer::AddDocument(int document_id, const std::string &document, Doc
 
 std::vector<Document> SearchServer::FindTopDocuments(const std::string &raw_query,
                                                      DocumentStatus document_status) const {
-    return FindTopDocuments(raw_query, [document_status](int document_id, DocumentStatus status, int rating) {
-        return status == document_status;
-    });
+    return FindTopDocuments(raw_query,
+                            [document_status]([[maybe_unused]] int document_id, DocumentStatus status,
+                                              [[maybe_unused]] int rating) { return status == document_status; });
 }
 
 int SearchServer::GetDocumentCount() const {

@@ -5,6 +5,7 @@
 #include "sprint_4_tasks.h"
 
 #include <iostream>
+#include <string>
 
 namespace intermediate {
 

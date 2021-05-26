@@ -9,9 +9,9 @@
 namespace sprint_4::server {
 
 std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query, DocumentStatus document_status) {
-    return AddFindRequest(raw_query, [document_status](int document_id, DocumentStatus status, int rating) {
-        return status == document_status;
-    });
+    return AddFindRequest(raw_query,
+                          [document_status]([[maybe_unused]] int document_id, DocumentStatus status,
+                                            [[maybe_unused]] int rating) { return status == document_status; });
 }
 
 int RequestQueue::GetNoResultRequests() const {

@@ -202,8 +202,8 @@ TEST(SingleLinkedList, SwapFunction) {
 
     swap(actual_left, actual_right);
 
-    EXPECT_EQ(actual_left, expected_left) << "Swap function should change elements of the lists."s;
-    EXPECT_EQ(actual_right, expected_right) << "Swap function should change elements of the lists."s;
+    EXPECT_EQ(actual_left, expected_left) << "swap function should change elements of the lists."s;
+    EXPECT_EQ(actual_right, expected_right) << "swap function should change elements of the lists."s;
 }
 
 TEST(SingleLinkedList, SwapMethod) {
@@ -215,8 +215,8 @@ TEST(SingleLinkedList, SwapMethod) {
 
     actual_left.swap(actual_right);
 
-    EXPECT_EQ(actual_left, expected_left) << "Swap function should change elements of the lists."s;
-    EXPECT_EQ(actual_right, expected_right) << "Swap function should change elements of the lists."s;
+    EXPECT_EQ(actual_left, expected_left) << "swap function should change elements of the lists."s;
+    EXPECT_EQ(actual_right, expected_right) << "swap function should change elements of the lists."s;
 }
 
 TEST(SingleLinkedList, InitializerListConstructor) {

@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <numeric>
 #include <tuple>
+#include <string>
+#include <iterator>
 
 namespace intermediate {
 

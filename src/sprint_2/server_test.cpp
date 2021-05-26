@@ -22,7 +22,7 @@ void TestExcludeStopWordsFromAddedDocumentContent() {
         server.AddDocument(general_document_id, general_document_text, DocumentStatus::ACTUAL, general_ratings);
 
         const auto found_documents = server.FindTopDocuments("cat"s);
-        ASSERT_EQUAL_HINT(found_documents.size(), 1, "Expected number of documents WITHOUT stop words"s);
+        ASSERT_EQUAL_HINT(static_cast<int>(found_documents.size()), 1, "Expected number of documents WITHOUT stop words"s);
 
         ASSERT_EQUAL_HINT(found_documents[0].id, general_document_id, "Expected document ID WITHOUT stop words"s);
     }
@@ -274,7 +274,8 @@ void TestFindDocumentsWithCustomDocumentStatusFilterFunction() {
         server.AddDocument(document_id, general_document_text, DocumentStatus::ACTUAL, general_ratings);
     }
 
-    auto custom_document_filter_function = [](int document_id, DocumentStatus status, int rating) {
+    auto custom_document_filter_function = [](int document_id, [[maybe_unused]] DocumentStatus status,
+                                              [[maybe_unused]] int rating) {
         return document_id > general_document_id;
     };
 

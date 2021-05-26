@@ -4,6 +4,8 @@
 
 #include "document.h"
 
+#include <string>
+
 namespace sprint_5::server {
 
 std::ostream &operator<<(std::ostream &os, const Document &document) {
