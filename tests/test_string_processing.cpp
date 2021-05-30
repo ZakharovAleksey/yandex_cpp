@@ -22,7 +22,7 @@ TEST(StringProcessingFunctions, CheckInvalidWords) {
 TEST(StringProcessingFunctions, CheckSplitIntoWords) {
     EXPECT_TRUE(utils::SplitIntoWords(""s).at(0).empty()) << "Empty string could not be split into words";
 
-    std::map<std::string, std::vector<std::string>> input_output = {
+    std::map<std::string_view, std::vector<std::string_view>> input_output = {
         {"first"s, {"first"s}},
         {"first second third"s, {"first"s, "second"s, "third"s}},
         {"first  second   third"s, {"first"s, ""s, "second"s, ""s, ""s, "third"s}}};

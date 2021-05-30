@@ -60,8 +60,8 @@ TEST(SearchServerClass, TestAddingDocumentsToTheServer) {
 
     EXPECT_EQ(server.GetDocumentCount(), 2) << "All added documents should be found";
 
-    for (const auto& word : SplitIntoWords(general_document_text)) {
-        const auto found_documents = server.FindTopDocuments(word);
+    for (std::string_view word : SplitIntoWords(general_document_text)) {
+        const auto found_documents = server.FindTopDocuments(std::string(word));
 
         EXPECT_EQ(found_documents.size(), 1);
         EXPECT_EQ(found_documents.at(0).id, general_document_id)

@@ -16,24 +16,24 @@ using namespace utils;
 
 // SearchServer class methods below
 
-void SearchServer::SetStopWords(const std::string &text) {
-    for (const std::string &word : SplitIntoWords(text))
-        stop_words_.insert(word);
+void SearchServer::SetStopWords(std::string_view text) {
+    for (std::string_view word : SplitIntoWords(text))
+        stop_words_.insert(std::string(word));
 }
 
-void SearchServer::AddDocument(int document_id, const std::string &document, DocumentStatus status,
+void SearchServer::AddDocument(int document_id, std::string_view document, DocumentStatus status,
                                const std::vector<int> &ratings) {
     if (const auto &error_message = CheckDocumentInput(document_id, document);
         error_message && !error_message->empty()) {
         throw std::invalid_argument(*error_message);
     }
 
-    const std::vector<std::string> words = SplitDocumentIntoNoWords(document);
+    const std::vector<std::string_view> words = SplitDocumentIntoNoWords(document);
     const double inverse_word_count = 1. / words.size();
 
-    for (const std::string &word : words) {
-        word_to_document_frequency_[word][document_id] += inverse_word_count;
-        words_frequency_by_documents_[document_id][word] += inverse_word_count;
+    for (std::string_view word : words) {
+        word_to_document_frequency_[std::string(word)][document_id] += inverse_word_count;
+        words_frequency_by_documents_[document_id][std::string(word)] += inverse_word_count;
     }
 
     documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
@@ -51,7 +51,7 @@ int SearchServer::GetDocumentCount() const {
     return static_cast<int>(documents_.size());
 }
 
-SearchServer::WordsInDocumentInfo SearchServer::MatchDocument(const std::string & raw_query, int document_id) const {
+SearchServer::WordsInDocumentInfo SearchServer::MatchDocument(const std::string &raw_query, int document_id) const {
     const Query query = ParseQuery(raw_query);
     std::vector<std::string> matched_words;
 
@@ -76,16 +76,16 @@ SearchServer::WordsInDocumentInfo SearchServer::MatchDocument(const std::string 
     return {matched_words, documents_.at(document_id).status};
 }
 
-bool SearchServer::IsStopWord(const std::string &word) const {
-    return stop_words_.count(word) > 0;
+bool SearchServer::IsStopWord(std::string_view word) const {
+    return stop_words_.count(std::string(word)) > 0;
 }
 
-std::vector<std::string> SearchServer::SplitDocumentIntoNoWords(const std::string &text) const {
-    std::vector<std::string> words;
+std::vector<std::string_view> SearchServer::SplitDocumentIntoNoWords(std::string_view text) const {
+    std::vector<std::string_view> words;
 
-    for (const std::string &word : SplitIntoWords(text)) {
+    for (std::string_view word : SplitIntoWords(text)) {
         if (!IsValidWord(word))
-            throw std::invalid_argument("Invalid word in the document: "s + word);
+            throw std::invalid_argument("Invalid word in the document: "s + word.data());
 
         if (!IsStopWord(word))
             words.push_back(word);
@@ -120,10 +120,10 @@ bool SearchServer::ParseQueryWord(std::string word, QueryWord &query_word) const
 SearchServer::Query SearchServer::ParseQuery(const std::string &query_text) const {
     Query query;
 
-    for (const std::string &word : SplitIntoWords(query_text)) {
+    for (std::string_view word : SplitIntoWords(query_text)) {
         QueryWord query_word;
-        if (!ParseQueryWord(word, query_word))
-            throw std::invalid_argument("Invalid word in the query: "s + word);
+        if (!ParseQueryWord(std::string(word), query_word))
+            throw std::invalid_argument("Invalid word in the query: "s + word.data());
 
         if (!query_word.is_stop) {
             if (query_word.is_minus)
@@ -136,7 +136,7 @@ SearchServer::Query SearchServer::ParseQuery(const std::string &query_text) cons
     return query;
 }
 
-std::optional<std::string> SearchServer::CheckDocumentInput(int document_id, const std::string &document) {
+std::optional<std::string> SearchServer::CheckDocumentInput(int document_id, std::string_view document) {
     if (document_id < 0)
         return "Negative document index is not expected"s;
 

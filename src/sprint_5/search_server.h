@@ -28,7 +28,9 @@ public:  // Constructors
     explicit SearchServer(const StringContainer &stop_words)
         : stop_words_(utils::MakeUniqueNonEmptyStrings(stop_words)) {}
 
-    explicit SearchServer(const std::string &stop_words_text) : SearchServer(utils::SplitIntoWords(stop_words_text)) {}
+    explicit SearchServer(const std::string& stop_words_text) : SearchServer(utils::SplitIntoWords(stop_words_text)) {}
+
+    explicit SearchServer(std::string_view stop_words_text) : SearchServer(utils::SplitIntoWords(stop_words_text)) {}
 
 public:  // Public methods
     template <class DocumentFilterFunction>
@@ -52,9 +54,9 @@ public:  // Public methods
 
     [[nodiscard]] int GetDocumentCount() const;
 
-    void SetStopWords(const std::string &text);
+    void SetStopWords(std::string_view text);
 
-    void AddDocument(int document_id, const std::string &document, DocumentStatus status,
+    void AddDocument(int document_id, std::string_view document, DocumentStatus status,
                      const std::vector<int> &ratings);
 
     [[nodiscard]] WordsInDocumentInfo MatchDocument(const std::string &raw_query, int document_id) const;
@@ -188,11 +190,11 @@ private:  // Class methods
 
     static int ComputeAverageRating(const std::vector<int> &ratings);
 
-    [[nodiscard]] bool IsStopWord(const std::string &word) const;
+    [[nodiscard]] bool IsStopWord(std::string_view word) const;
 
     [[nodiscard]] bool ParseQueryWord(std::string word, QueryWord &query_word) const;
 
-    [[nodiscard]] std::vector<std::string> SplitDocumentIntoNoWords(const std::string &text) const;
+    [[nodiscard]] std::vector<std::string_view> SplitDocumentIntoNoWords(std::string_view text) const;
 
     [[nodiscard]] Query ParseQuery(const std::string &query_text) const;
 
@@ -208,13 +210,13 @@ private:  // Class methods
             return {};
 
         Query query;
-        const auto &words = SplitIntoWords(query_text);
+        std::vector<std::string_view> words = SplitIntoWords(query_text);
 
         // Convert all words to the query-words
         std::vector<std::pair<bool, QueryWord>> query_words(words.size());
-        std::transform(words.begin(), words.end(), query_words.begin(), [this](const Word &word) {
+        std::transform(words.begin(), words.end(), query_words.begin(), [this](std::string_view word) {
             QueryWord query_word;
-            return std::make_pair(ParseQueryWord(word, query_word), query_word);
+            return std::make_pair(ParseQueryWord(std::string(word), query_word), query_word);
         });
 
         // Check that at least one word is invalid
@@ -238,7 +240,7 @@ private:  // Class methods
 
     [[nodiscard]] double ComputeWordInverseDocumentFrequency(const std::string &word) const;
 
-    std::optional<std::string> CheckDocumentInput(int document_id, const std::string &document);
+    std::optional<std::string> CheckDocumentInput(int document_id, std::string_view document);
 
 private:  // Class fields
     std::set<Word> stop_words_;
