@@ -11,7 +11,7 @@ public:  // Declarations
     using Clock = std::chrono::steady_clock;
 
 public:  // Constructors
-    LogDuration(std::string code_block_name, std::ostream& out_stream)
+    LogDuration(std::string_view code_block_name, std::ostream& out_stream)
         : code_block_name_(std::move(code_block_name)), out_stream_(out_stream) {}
 
 public:  // Destructors
@@ -36,4 +36,4 @@ private:  // Fields
 #define PROFILE_CONCAT_INTERNAL(X, Y) X##Y
 #define PROFILE_CONCAT(X, Y) PROFILE_CONCAT_INTERNAL(X, Y)
 #define UNIQUE_VAR_NAME_PROFILE PROFILE_CONCAT(profileGuard, __LINE__)
-#define LOG_DURATION(code_block, out_stream) server::utils::LogDuration UNIQUE_VAR_NAME_PROFILE(code_block, out_stream)
+#define LOG_DURATION(code_block, out_stream) sprint_5::server::utils::LogDuration UNIQUE_VAR_NAME_PROFILE(code_block, out_stream)

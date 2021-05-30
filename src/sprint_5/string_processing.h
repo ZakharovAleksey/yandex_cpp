@@ -1,9 +1,9 @@
 #pragma once
 
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
 
 namespace sprint_5::server::utils {
 

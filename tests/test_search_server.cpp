@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <execution>
 
 #include "../src/sprint_5/search_server.h"
 
@@ -335,4 +336,68 @@ TEST(SearchServerClass, TestDocumentsCount) {
         server.AddDocument(general_document_id + document_id, documentText, DocumentStatus::ACTUAL, general_ratings);
     }
     EXPECT_EQ(server.GetDocumentCount(), added_documents_count) << "Server stored all added document"s;
+}
+
+TEST(SearchServerClass, TestRemoveDocumentWithDiffererntExecutionPlocies) {
+    SearchServer search_server("and with"s);
+    std::vector<std::string> input_documents = {
+        "funny pet and nasty rat"s,      "funny pet with curly hair"s, "funny pet and not very nasty rat"s,
+        "pet with rat and rat and rat"s, "nasty rat with curly hair"s,
+    };
+    int document_index = 0;
+    int current_documents_count = input_documents.size();
+
+    for (const std::string& text : input_documents)
+        search_server.AddDocument(++document_index, text, DocumentStatus::ACTUAL, {1, 2});
+
+    const std::string query = "curly and funny"s;
+
+    auto report = [&search_server, &query](int expected_documents_count, const std::string& execution_policy = ""s) {
+        EXPECT_EQ(search_server.GetDocumentCount(), expected_documents_count)
+            << "Number of document should decrease on 1 after RemoveDocument() method call. "s + execution_policy;
+
+        EXPECT_EQ(search_server.FindTopDocuments(query).size(), expected_documents_count - 1)
+            << "Method RemoveDocument() should remove document with SPECIFIED index. "s + execution_policy;
+    };
+
+    report(current_documents_count--, "Single-thread policy"s);
+    search_server.RemoveDocument(5);
+
+    report(current_documents_count--, "Single-thread policy with std::execution::seq"s);
+    search_server.RemoveDocument(std::execution::seq, 1);
+
+    report(current_documents_count--, "Multy-thread policy with std::execution::par"s);
+    search_server.RemoveDocument(std::execution::par, 2);
+
+    report(current_documents_count--);
+}
+
+TEST(SearchServerClass, TestMatchDocumentsWithDifferentExecutionPolices) {
+    SearchServer search_server("and with"s);
+    std::vector<std::string> input_documents = {
+        "funny pet and nasty rat"s,      "funny pet with curly hair"s, "funny pet and not very nasty rat"s,
+        "pet with rat and rat and rat"s, "nasty rat with curly hair"s,
+    };
+    int document_index = 0;
+    int current_documents_count = input_documents.size();
+
+    for (const std::string& text : input_documents)
+        search_server.AddDocument(++document_index, text, DocumentStatus::ACTUAL, {1, 2});
+
+    const std::string query = "curly and funny -not"s;
+
+    {
+        const auto [words, status] = search_server.MatchDocument(query, 1);
+        EXPECT_EQ(words.size(), 1) << "Unexpected behaviour in method MatchDocument() with Single-thread policy"s;
+    }
+    {
+        const auto [words, status] = search_server.MatchDocument(std::execution::seq, query, 2);
+        EXPECT_EQ(words.size(), 2)
+            << "Unexpected behaviour in method MatchDocument() with Single-thread policy (execution::seq)"s;
+    }
+    {
+        const auto [words, status] = search_server.MatchDocument(std::execution::par, query, 3);
+        EXPECT_EQ(words.size(), 0)
+            << "Unexpected behaviour in method MatchDocument() with Multi-thread policy (execution::par)"s;
+    }
 }

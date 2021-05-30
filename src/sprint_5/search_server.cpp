@@ -51,7 +51,7 @@ int SearchServer::GetDocumentCount() const {
     return static_cast<int>(documents_.size());
 }
 
-SearchServer::WordsInDocumentInfo SearchServer::MatchDocument(const std::string &raw_query, int document_id) const {
+SearchServer::WordsInDocumentInfo SearchServer::MatchDocument(const std::string & raw_query, int document_id) const {
     const Query query = ParseQuery(raw_query);
     std::vector<std::string> matched_words;
 
@@ -119,6 +119,7 @@ bool SearchServer::ParseQueryWord(std::string word, QueryWord &query_word) const
 
 SearchServer::Query SearchServer::ParseQuery(const std::string &query_text) const {
     Query query;
+
     for (const std::string &word : SplitIntoWords(query_text)) {
         QueryWord query_word;
         if (!ParseQueryWord(word, query_word))
@@ -181,10 +182,8 @@ const std::map<Word, double> &SearchServer::GetWordFrequencies(DocumentId index)
 
 void SearchServer::RemoveDocument(DocumentId index) {
     auto document_position = document_ids_.find(index);
-
     if (document_position == document_ids_.end())
         return;
-
     document_ids_.erase(document_position);
 
     for (const auto &[word, _] : words_frequency_by_documents_.at(index))

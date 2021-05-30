@@ -13,7 +13,7 @@ bool IsValidWord(const std::string &word) {
     return std::none_of(word.begin(), word.end(), [](char symbol) { return symbol >= '\0' && symbol < ' '; });
 }
 
-std::vector<std::string> SplitIntoWords(const std::string &text) {
+std::vector<std::string> SplitIntoWords(const std::string & text) {
     std::vector<std::string> words;
     std::string word;
     for (const char symbol : text) {
