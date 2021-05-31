@@ -19,7 +19,7 @@ using DocumentId = int;
 
 class SearchServer {
 public:  // Public types
-    using WordsInDocumentInfo = std::tuple<std::vector<std::string>, DocumentStatus>;
+    using WordsInDocumentInfo = std::tuple<std::vector<std::string_view>, DocumentStatus>;
 
 public:  // Constructors
     SearchServer() = default;
@@ -28,13 +28,13 @@ public:  // Constructors
     explicit SearchServer(const StringContainer &stop_words)
         : stop_words_(utils::MakeUniqueNonEmptyStrings(stop_words)) {}
 
-    explicit SearchServer(const std::string& stop_words_text) : SearchServer(utils::SplitIntoWords(stop_words_text)) {}
+    explicit SearchServer(const std::string &stop_words_text) : SearchServer(utils::SplitIntoWords(stop_words_text)) {}
 
     explicit SearchServer(std::string_view stop_words_text) : SearchServer(utils::SplitIntoWords(stop_words_text)) {}
 
 public:  // Public methods
     template <class DocumentFilterFunction>
-    std::vector<Document> FindTopDocuments(const std::string &raw_query, DocumentFilterFunction filter_function) const {
+    std::vector<Document> FindTopDocuments(std::string_view raw_query, DocumentFilterFunction filter_function) const {
         const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query, filter_function);
 
@@ -49,7 +49,7 @@ public:  // Public methods
         return matched_documents;
     }
 
-    [[nodiscard]] std::vector<Document> FindTopDocuments(const std::string &raw_query,
+    [[nodiscard]] std::vector<Document> FindTopDocuments(std::string_view raw_query,
                                                          DocumentStatus document_status = DocumentStatus::ACTUAL) const;
 
     [[nodiscard]] int GetDocumentCount() const;
@@ -59,13 +59,13 @@ public:  // Public methods
     void AddDocument(int document_id, std::string_view document, DocumentStatus status,
                      const std::vector<int> &ratings);
 
-    [[nodiscard]] WordsInDocumentInfo MatchDocument(const std::string &raw_query, int document_id) const;
+    [[nodiscard]] WordsInDocumentInfo MatchDocument(std::string_view raw_query, int document_id) const;
 
     template <class ExecutionPolicyName>
-    [[nodiscard]] WordsInDocumentInfo MatchDocument(ExecutionPolicyName policy, const std::string &raw_query,
+    [[nodiscard]] WordsInDocumentInfo MatchDocument(ExecutionPolicyName policy, std::string_view raw_query,
                                                     int document_id) const {
         using namespace std::execution;
-        std::vector<std::string> matched_words;
+        std::vector<std::string_view> matched_words;
 
         if (!(std::is_same<ExecutionPolicyName, parallel_policy>::value ||
               std::is_same<ExecutionPolicyName, sequenced_policy>::value))
@@ -75,17 +75,17 @@ public:  // Public methods
 
         const auto &plus_words = query.plus_words;
         std::for_each(
-            policy, plus_words.begin(), plus_words.end(), [this, document_id, &matched_words](const Word &word) {
+            policy, plus_words.begin(), plus_words.end(), [this, document_id, &matched_words](std::string_view word) {
                 const auto word_position = word_to_document_frequency_.find(word);
                 if (word_position != word_to_document_frequency_.end() && word_position->second.count(document_id))
-                    matched_words.push_back(word);
+                    matched_words.push_back(word_position->first);
             });
 
         // clang-format off
         const auto &minus_words = query.minus_words;
         bool has_minus_words =
             std::transform_reduce(minus_words.begin(), minus_words.end(), 0, std::plus<>(),
-                [this, document_id](const Word &word) {
+                [this, document_id](std::string_view word) {
                                       const auto word_position = word_to_document_frequency_.find(word);
                                       return (word_position != word_to_document_frequency_.end() &&
                                               word_position->second.count(document_id)) ? 1 : 0; }
@@ -98,7 +98,7 @@ public:  // Public methods
         return {matched_words, documents_.at(document_id).status};
     }
 
-    [[nodiscard]] const std::map<Word, double> &GetWordFrequencies(DocumentId index) const;
+    [[nodiscard]] const std::map<std::string, double> &GetWordFrequencies(DocumentId index) const;
 
     void RemoveDocument(DocumentId index);
 
@@ -142,14 +142,14 @@ private:  // Types
     };
 
     struct QueryWord {
-        std::string data;
+        std::string_view data;
         bool is_minus{false};
         bool is_stop{false};
     };
 
     struct Query {
-        std::set<std::string> plus_words;
-        std::set<std::string> minus_words;
+        std::set<std::string_view> plus_words;
+        std::set<std::string_view> minus_words;
     };
 
 private:  // Constants
@@ -160,23 +160,25 @@ private:  // Class methods
     template <class DocumentFilterFunction>
     std::vector<Document> FindAllDocuments(const Query &query, DocumentFilterFunction filter_function) const {
         std::map<int, double> document_to_relevance;
-        for (const std::string &word : query.plus_words) {
-            if (word_to_document_frequency_.count(word) == 0)
+        for (std::string_view word : query.plus_words) {
+            const auto word_position = word_to_document_frequency_.find(word);
+            if (word_position == word_to_document_frequency_.cend())
                 continue;
 
             const double inverse_document_freq = ComputeWordInverseDocumentFrequency(word);
-            for (const auto [document_id, term_freq] : word_to_document_frequency_.at(word)) {
+            for (const auto [document_id, term_freq] : word_position->second) {
                 const auto &[rating, status] = documents_.at(document_id);
                 if (filter_function(document_id, status, rating))
                     document_to_relevance[document_id] += term_freq * inverse_document_freq;
             }
         }
 
-        for (const std::string &word : query.minus_words) {
-            if (word_to_document_frequency_.count(word) == 0)
+        for (std::string_view word : query.minus_words) {
+            const auto word_position = word_to_document_frequency_.find(word);
+            if (word_position == word_to_document_frequency_.cend())
                 continue;
 
-            for (const auto [document_id, _] : word_to_document_frequency_.at(word))
+            for (const auto [document_id, _] : word_position->second)
                 document_to_relevance.erase(document_id);
         }
 
@@ -192,14 +194,14 @@ private:  // Class methods
 
     [[nodiscard]] bool IsStopWord(std::string_view word) const;
 
-    [[nodiscard]] bool ParseQueryWord(std::string word, QueryWord &query_word) const;
+    [[nodiscard]] bool ParseQueryWord(std::string_view word, QueryWord &query_word) const;
 
     [[nodiscard]] std::vector<std::string_view> SplitDocumentIntoNoWords(std::string_view text) const;
 
-    [[nodiscard]] Query ParseQuery(const std::string &query_text) const;
+    [[nodiscard]] Query ParseQuery(std::string_view query_text) const;
 
     template <class ExecutionPolicyType>
-    [[nodiscard]] Query ParseQuery(ExecutionPolicyType policy, const std::string &query_text) const {
+    [[nodiscard]] Query ParseQuery(ExecutionPolicyType policy, std::string_view query_text) const {
         using namespace std::literals;
         using namespace std::execution;
         using namespace sprint_5::server::utils;
@@ -216,35 +218,36 @@ private:  // Class methods
         std::vector<std::pair<bool, QueryWord>> query_words(words.size());
         std::transform(words.begin(), words.end(), query_words.begin(), [this](std::string_view word) {
             QueryWord query_word;
-            return std::make_pair(ParseQueryWord(std::string(word), query_word), query_word);
+            return std::make_pair(ParseQueryWord(word, query_word), query_word);
         });
 
         // Check that at least one word is invalid
         auto invalid_word_position = std::find_if(std::execution::par, query_words.cbegin(), query_words.cend(),
                                                   [](const std::pair<bool, QueryWord> &pair) { return !pair.first; });
         if (invalid_word_position != query_words.cend())
-            throw std::invalid_argument("Invalid word in the query: "s + invalid_word_position->second.data);
+            throw std::invalid_argument("Invalid word in the query: "s +
+                                        std::string(invalid_word_position->second.data));
 
         // Move words from the storage to the appropriate category <plus / minus>
         for (auto [_, query_word] : query_words) {
             if (!query_word.is_stop) {
                 if (query_word.is_minus)
-                    query.minus_words.insert(std::move(query_word.data));
+                    query.minus_words.insert(query_word.data);
                 else
-                    query.plus_words.insert(std::move(query_word.data));
+                    query.plus_words.insert(query_word.data);
             }
         }
 
         return query;
     }
 
-    [[nodiscard]] double ComputeWordInverseDocumentFrequency(const std::string &word) const;
+    [[nodiscard]] double ComputeWordInverseDocumentFrequency(std::string_view word) const;
 
     std::optional<std::string> CheckDocumentInput(int document_id, std::string_view document);
 
 private:  // Class fields
-    std::set<Word> stop_words_;
-    std::map<Word, std::map<DocumentId, double>> word_to_document_frequency_;
+    std::set<Word, std::less<>> stop_words_;
+    std::map<Word, std::map<DocumentId, double>, std::less<>> word_to_document_frequency_;
     std::map<DocumentId, DocumentData> documents_;
     std::set<DocumentId> document_ids_;
     std::map<DocumentId, std::map<Word, double>> words_frequency_by_documents_;

@@ -32,7 +32,7 @@ TEST(StringProcessingFunctions, CheckSplitIntoWords) {
 }
 
 TEST(StringProcessingFunctions, CheckMakeUniqueNonEmptyWords) {
-    const std::set<std::string> expected_words = {"first"s, "second"s};
+    const std::set<std::string, std::less<>> expected_words = {"first"s, "second"s};
 
     std::vector<std::string> container_with_empty_string = {"first"s, ""s, "second"s, ""s, ""s};
     auto actual_words = utils::MakeUniqueNonEmptyStrings(container_with_empty_string);
