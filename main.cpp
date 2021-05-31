@@ -93,52 +93,17 @@ void Test(string_view mark, SearchServer search_server, ExecutionPolicy&& policy
 
 #define TEST(mode) Test(#mode, search_server, execution::mode)
 
-// int main() {
-//     mt19937 generator;
-//
-//     const auto dictionary = GenerateDictionary(generator, 10000, 25);
-//     const auto documents = GenerateQueries(generator, dictionary, 10'000, 100);
-//
-//     SearchServer search_server(dictionary[0]);
-//     for (size_t i = 0; i < documents.size(); ++i) {
-//         search_server.AddDocument(i, documents[i], DocumentStatus::ACTUAL, {1, 2, 3});
-//     }
-//
-//     TEST(seq);
-//     TEST(par);
-// }
+ int main() {
+     mt19937 generator;
 
-class Lol {
-public:
-    Lol(std::string_view data) {
-        int size = data.size();
-        data_.push_back(data.substr(0, size / 2));
-        data_.push_back(data.substr(size / 2, size / 2));
-    }
-    Lol() = default;
+     const auto dictionary = GenerateDictionary(generator, 10000, 25);
+     const auto documents = GenerateQueries(generator, dictionary, 10'000, 100);
 
-    void set(string_view data) {
-        int size = data.size();
-        data_.push_back(data.substr(0, size / 2));
-        data_.push_back(data.substr(size / 2, size / 2));
-    }
+     SearchServer search_server(dictionary[0]);
+     for (size_t i = 0; i < documents.size(); ++i) {
+         search_server.AddDocument(i, documents[i], DocumentStatus::ACTUAL, {1, 2, 3});
+     }
 
-    void print() {
-        for (auto i : data_)
-            std::cout << i.data() << std::endl;
-    }
-
-private:
-    std::vector<std::string_view> data_;
-};
-
-int main() {
-    Lol lol;
-    {
-        std::string_view data = "123456";
-        lol.set("123456");
-    }
-    lol.print();
-
-    return 0;
-}
+     TEST(seq);
+     TEST(par);
+ }

@@ -19,7 +19,7 @@ std::set<std::string, std::less<>> MakeUniqueNonEmptyStrings(const StringContain
 
     for (std::string_view current_string : strings) {
         if (!IsValidWord(current_string))
-            throw std::invalid_argument("Invalid word in the document: "s + current_string.data());
+            throw std::invalid_argument("Invalid word in the document: "s + std::string(current_string));
 
         if (!current_string.empty())
             non_empty_strings.insert(std::string(current_string));

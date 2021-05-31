@@ -34,7 +34,8 @@ void SearchServer::AddDocument(int document_id, std::string_view document, Docum
 
     for (std::string_view word : words) {
         word_to_document_frequency_[std::string(word)][document_id] += inverse_word_count;
-        words_frequency_by_documents_[document_id][std::string(word)] += inverse_word_count;
+        const auto position = word_to_document_frequency_.find(word);
+        words_frequency_by_documents_[document_id][position->first] += inverse_word_count;
     }
 
     documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
@@ -182,13 +183,12 @@ std::set<int>::const_iterator SearchServer::end() const {
     return document_ids_.end();
 }
 
-const std::map<std::string, double> &SearchServer::GetWordFrequencies(DocumentId index) const {
-    static std::map<std::string, double> default_option;
+const std::map<std::string_view, double> &SearchServer::GetWordFrequencies(DocumentId index) const {
+    static std::map<std::string_view, double> default_option;
+    const auto words_frequencies_position = words_frequency_by_documents_.find(index);
 
-    if (words_frequency_by_documents_.count(index) > 0)
-        return words_frequency_by_documents_.at(index);
-
-    return default_option;
+    return (words_frequencies_position == words_frequency_by_documents_.cend()) ? default_option
+                                                                                : words_frequencies_position->second;
 }
 
 void SearchServer::RemoveDocument(DocumentId index) {
@@ -197,8 +197,10 @@ void SearchServer::RemoveDocument(DocumentId index) {
         return;
     document_ids_.erase(document_position);
 
-    for (const auto &[word, _] : words_frequency_by_documents_.at(index))
-        word_to_document_frequency_.at(word).erase(index);
+    for (auto [word, _] : words_frequency_by_documents_.at(index)) {
+        auto position = word_to_document_frequency_.find(word);
+        position->second.erase(index);
+    }
 
     documents_.erase(index);
     words_frequency_by_documents_.erase(index);
@@ -212,7 +214,8 @@ void RemoveDuplicates(SearchServer &search_server) {
         const auto &word_frequencies = search_server.GetWordFrequencies(index);
         std::set<Word> storage_key;
         std::transform(word_frequencies.begin(), word_frequencies.end(),
-                       std::inserter(storage_key, storage_key.begin()), [](const auto &item) { return item.first; });
+                       std::inserter(storage_key, storage_key.begin()),
+                       [](const auto &item) { return std::string(item.first); });
 
         // In std::set<> keys are in increasing order. Ao, if we found the same 'storage_key' in the storage -
         // we should remove current documents, because it has higher document index

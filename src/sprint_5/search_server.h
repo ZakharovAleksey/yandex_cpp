@@ -98,7 +98,7 @@ public:  // Public methods
         return {matched_words, documents_.at(document_id).status};
     }
 
-    [[nodiscard]] const std::map<std::string, double> &GetWordFrequencies(DocumentId index) const;
+    [[nodiscard]] const std::map<std::string_view, double> &GetWordFrequencies(DocumentId index) const;
 
     void RemoveDocument(DocumentId index);
 
@@ -116,8 +116,10 @@ public:  // Public methods
         document_ids_.erase(document_position);
 
         auto &words_in_document = words_frequency_by_documents_.at(index);
-        std::for_each(policy, words_in_document.begin(), words_in_document.end(),
-                      [this, index](const auto &pair) { word_to_document_frequency_.at(pair.first).erase(index); });
+        std::for_each(policy, words_in_document.begin(), words_in_document.end(), [this, index](const auto &pair) {
+            auto position = word_to_document_frequency_.find(pair.first);
+            position->second.erase(index);
+        });
 
         documents_.erase(index);
         words_frequency_by_documents_.erase(index);
@@ -250,7 +252,7 @@ private:  // Class fields
     std::map<Word, std::map<DocumentId, double>, std::less<>> word_to_document_frequency_;
     std::map<DocumentId, DocumentData> documents_;
     std::set<DocumentId> document_ids_;
-    std::map<DocumentId, std::map<Word, double>> words_frequency_by_documents_;
+    std::map<DocumentId, std::map<std::string_view, double>> words_frequency_by_documents_;
 };
 
 void RemoveDuplicates(SearchServer &search_server);
