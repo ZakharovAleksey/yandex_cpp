@@ -2,7 +2,6 @@
 
 #include <deque>
 
-#include "document.h"
 #include "search_server.h"
 
 namespace sprint_5::server {
