@@ -6,7 +6,7 @@
 
 #include <numeric>
 
-namespace sprint_5::server {
+namespace sprint_8::server {
 
 std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query, DocumentStatus document_status) {
     return AddFindRequest(raw_query,
@@ -32,4 +32,4 @@ void RequestQueue::UpdateRequestsInformation(const std::vector<Document>& respon
         ++empty_responses_count_;
 }
 
-}  // namespace sprint_5::server
+}  // namespace sprint_8::server

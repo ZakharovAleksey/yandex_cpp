@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-namespace sprint_5::server::utils {
+namespace sprint_8::server::utils {
 
 template <class Iterator>
 struct IteratorsRange {
@@ -64,4 +64,4 @@ auto Paginate(const Container& container, int page_size) {
     return paginator;
 }
 
-}  // namespace sprint_5::server::utils
+}  // namespace sprint_8::server::utils

@@ -4,9 +4,9 @@
 
 #include <gtest/gtest.h>
 
-#include "../src/sprint_5/string_processing.h"
+#include "../src/sprint_8/string_processing.h"
 
-using namespace sprint_5::server;
+using namespace sprint_8::server;
 using namespace std::literals;
 
 TEST(StringProcessingFunctions, CheckInvalidWords) {

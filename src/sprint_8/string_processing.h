@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace sprint_5::server::utils {
+namespace sprint_8::server::utils {
 
 bool IsValidWord(std::string_view word);
 
@@ -28,4 +28,4 @@ std::set<std::string, std::less<>> MakeUniqueNonEmptyStrings(const StringContain
     return non_empty_strings;
 }
 
-}  // namespace sprint_5::server::utils
+}  // namespace sprint_8::server::utils

@@ -4,10 +4,10 @@
 
 #include <gtest/gtest.h>
 
-#include "../src/sprint_5/request_queue.h"
+#include "../src/sprint_8/request_queue.h"
 
-using namespace sprint_5::server;
-using namespace sprint_5::server::utils;
+using namespace sprint_8::server;
+using namespace sprint_8::server::utils;
 using namespace std::literals;
 
 TEST(RequestQueueClass, TestRequestQueueWithoutDocuments) {

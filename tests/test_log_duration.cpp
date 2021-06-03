@@ -7,9 +7,9 @@
 #include <regex>
 #include <thread>
 
-#include "../src/sprint_5/log_duration.h"
+#include "../src/sprint_8/log_duration.h"
 
-using namespace sprint_5::server::utils;
+using namespace sprint_8::server::utils;
 using namespace std::literals;
 using namespace std::chrono_literals;
 

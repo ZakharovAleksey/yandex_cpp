@@ -10,7 +10,7 @@
 #include <iterator>
 #include <numeric>
 
-namespace sprint_5::server {
+namespace sprint_8::server {
 
 using namespace std::literals;
 using namespace utils;
@@ -230,4 +230,4 @@ void RemoveDuplicates(SearchServer &search_server) {
         search_server.RemoveDocument(index);
 }
 
-}  // namespace sprint_5::server
+}  // namespace sprint_8::server

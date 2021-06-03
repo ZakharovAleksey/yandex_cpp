@@ -7,10 +7,10 @@
 #include <cmath>
 #include <execution>
 
-#include "../src/sprint_5/search_server.h"
+#include "../src/sprint_8/search_server.h"
 
-using namespace sprint_5::server;
-using namespace sprint_5::server::utils;
+using namespace sprint_8::server;
+using namespace sprint_8::server::utils;
 using namespace std::literals;
 
 // General variables, used for the big number of tests

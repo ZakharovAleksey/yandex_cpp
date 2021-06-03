@@ -7,9 +7,9 @@
 #include <cmath>
 #include <numeric>
 
-#include "../src/sprint_5/paginator.h"
+#include "../src/sprint_8/paginator.h"
 
-using namespace sprint_5::server::utils;
+using namespace sprint_8::server::utils;
 using namespace std::literals;
 
 TEST(PaginatorClass, PaginatorSplitWhenContainerSizeIsDivisibleOnPageSize) {

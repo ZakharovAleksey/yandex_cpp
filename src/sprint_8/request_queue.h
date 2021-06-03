@@ -4,7 +4,7 @@
 
 #include "search_server.h"
 
-namespace sprint_5::server {
+namespace sprint_8::server {
 
 class RequestQueue {
 public:  // Constructors
@@ -50,4 +50,4 @@ private:  // Fields
     const SearchServer& server_;
     int64_t empty_responses_count_{0};
 };
-}  // namespace sprint_5::server
+}  // namespace sprint_8::server

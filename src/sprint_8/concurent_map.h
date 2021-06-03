@@ -11,7 +11,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace sprint_5::server {
+namespace sprint_8::server {
 
 template <typename ForwardRangeContainer>
 auto CalculateBucketsBoundariesForContainer(ForwardRangeContainer& container, int buckets_count, int bucket_size) {
@@ -125,4 +125,4 @@ private:  // Fields
     std::vector<ThreadSafeMap> buckets_;
 };
 
-}  // namespace sprint_5::server
+}  // namespace sprint_8::server

@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace sprint_5::server {
+namespace sprint_8::server {
 
 std::ostream &operator<<(std::ostream &os, const Document &document) {
     using namespace std::literals;
@@ -16,4 +16,4 @@ std::ostream &operator<<(std::ostream &os, const Document &document) {
               << "rating = "s << document.rating << " }"s;
 }
 
-}  // namespace sprint_5::server
+}  // namespace sprint_8::server

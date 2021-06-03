@@ -8,7 +8,7 @@
 
 #include "search_server.h"
 
-namespace sprint_5::server {
+namespace sprint_8::server {
 
 std::vector<std::vector<Document>> ProcessQueries(const SearchServer& search_server,
                                                   const std::vector<std::string>& queries) {
@@ -32,4 +32,4 @@ std::vector<Document> ProcessQueriesJoined(const SearchServer& search_server, co
     return result;
 }
 
-}  // namespace sprint_5::server
+}  // namespace sprint_8::server

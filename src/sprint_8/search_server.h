@@ -13,7 +13,7 @@
 #include "document.h"
 #include "string_processing.h"
 
-namespace sprint_5::server {
+namespace sprint_8::server {
 
 using Word = std::string;
 using DocumentId = int;
@@ -132,7 +132,7 @@ public:  // Public methods
             [this, document_id, &matched_words, &current_size](std::string_view word) {
                 const auto word_position = word_to_document_frequency_.find(word);
                 if (word_position != word_to_document_frequency_.end() && word_position->second.count(document_id))
-                    matched_words[current_size] = word_position->first;
+                    matched_words[current_size++] = word_position->first;
             });
 
         // clang-format off
@@ -146,8 +146,10 @@ public:  // Public methods
                                   ) > 0;
         // clang-format on
 
-        if (has_minus_words)
+        if (has_minus_words) {
             matched_words.clear();
+            return {matched_words, documents_.at(document_id).status};
+        }
 
         return {{matched_words.begin(), matched_words.begin() + current_size}, documents_.at(document_id).status};
     }
@@ -217,7 +219,7 @@ private:  // Class methods
     template <class ExecutionPolicy, class DocumentFilterFunction>
     std::vector<Document> FindAllDocuments(ExecutionPolicy policy, const Query &query,
                                            DocumentFilterFunction filter_function) const {
-        using namespace sprint_5::server::utils;
+        using namespace sprint_8::server::utils;
         using namespace std::execution;
 
         // Currently we support only two policies: seq & par
@@ -314,7 +316,7 @@ private:  // Class methods
     [[nodiscard]] Query ParseQuery(ExecutionPolicy policy, std::string_view query_text) const {
         using namespace std::literals;
         using namespace std::execution;
-        using namespace sprint_5::server::utils;
+        using namespace sprint_8::server::utils;
 
         // Currently we support only two policies: seq & par
         if (!(std::is_same<ExecutionPolicy, sequenced_policy>::value ||
@@ -365,4 +367,4 @@ private:  // Class fields
 
 void RemoveDuplicates(SearchServer &search_server);
 
-}  // namespace sprint_5::server
+}  // namespace sprint_8::server

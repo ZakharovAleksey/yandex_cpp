@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-namespace sprint_5::server::utils {
+namespace sprint_8::server::utils {
 
 bool IsValidWord(std::string_view word) {
     // A valid word must not contain special characters in range [0, 31]
@@ -17,7 +17,7 @@ std::vector<std::string_view> SplitIntoWords(std::string_view text) {
     std::vector<std::string_view> words;
     int word_begin{0u};
 
-    while (word_begin <= text.length()){
+    while (word_begin <= text.length()) {
         int word_end = text.find(' ', word_begin);
 
         words.push_back(text.substr(word_begin, word_end - word_begin));
@@ -27,4 +27,4 @@ std::vector<std::string_view> SplitIntoWords(std::string_view text) {
     return words;
 }
 
-}  // namespace sprint_5::server::utils
+}  // namespace sprint_8::server::utils
