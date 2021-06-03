@@ -4,16 +4,28 @@
 
 #pragma once
 
+#include <algorithm>
+
 template <typename Type>
 class ArrayPtr {
 public:  // Constructors and assigment operators
     ArrayPtr() = default;
 
     explicit ArrayPtr(size_t size) {
-        raw_ptr_ = size == 0 ? nullptr : new Type[size];
+        raw_ptr_ = (size == 0) ? nullptr : new Type[size];
+        if (size > 0)
+            std::generate(raw_ptr_, raw_ptr_ + size, [] { return Type(); });
     }
 
     explicit ArrayPtr(Type* raw_ptr) noexcept : raw_ptr_(raw_ptr) {}
+
+    explicit ArrayPtr(ArrayPtr&& other) noexcept : raw_ptr_(std::exchange(other.raw_ptr_, nullptr)) {}
+
+    ArrayPtr& operator=(ArrayPtr&& other) noexcept {
+        if (this != &other)
+            raw_ptr_ = std::exchange(other.raw_ptr_, nullptr);
+        return *this;
+    }
 
     ArrayPtr(const ArrayPtr&) = delete;
 
@@ -24,8 +36,8 @@ public:  // Destructor
         delete[] raw_ptr_;
     }
 
-public: // Methods
-    [[nodiscard]] Type* Release() noexcept {
+public:  // Methods
+    Type* Release() noexcept {
         Type* tmp = raw_ptr_;
         raw_ptr_ = nullptr;
         return tmp;
