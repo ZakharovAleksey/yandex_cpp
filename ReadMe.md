@@ -1,6 +1,6 @@
 # Yandex Practicum C++
 
-:boom: **Sprint #7 description added [here](#Sprint-7)** 
+:boom: **Sprint #8 description added [here](#Sprint-8)** 
 
 - [ ] Add `conan` package manager (could not find packages)
 
@@ -104,6 +104,24 @@ Implemented items:
    * [array_ptr.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint_7/src/sprint_7/array_ptr.h)
 2. Unit tests of `SimpleVector` class:
    * [test_simple_vector.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint_7/tests/test_simple_vector.cpp)
+
+
+## Sprint 8
+
+:exclamation: :exclamation: :exclamation:
+
+Code with search server could be found here: [dev/sprint-8](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-8)
+
+Implemented items:
+1. Multi-treading for methods of `SearchServer` class:
+   * Methods list: `RemoveDocument()`, `FindAllDocuments()`, `ParseQuery()`, `FindTopDocuments()`, `MatchDocument()`
+   * Could be found [search_server.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-8/sprint_8/search_server.h)
+2. Change `std::string` on `std::string_view` for performance improvement:
+   * Could be found [search_server.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-8/sprint_8/search_server.h)
+3. Add multi-threading functions to process queries:
+   * [process_queries.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-8/sprint_8/process_queries.h)
+4. Class `ConcurrentMap` and `ForEach()` method to thread safe process `std::map<k,v>`:
+   * [concurent_map.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-8/sprint_8/concurent_map.h)
 
 
 
