@@ -13,8 +13,7 @@ public:  // Constructors and assigment operators
 
     explicit ArrayPtr(size_t size) {
         raw_ptr_ = (size == 0) ? nullptr : new Type[size];
-        if (size > 0)
-            std::generate(raw_ptr_, raw_ptr_ + size, [] { return Type(); });
+        std::generate(raw_ptr_, raw_ptr_ + size, [] { return Type(); });
     }
 
     explicit ArrayPtr(Type* raw_ptr) noexcept : raw_ptr_(raw_ptr) {}

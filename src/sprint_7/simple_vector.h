@@ -77,7 +77,7 @@ public:  // Methods
         size_t new_size = size_ + 1u;
         if (new_size > capacity_) {
             size_t new_capacity = (capacity_ != 0) ? std::max(new_size, 2u * capacity_) : 1;
-            ReallocateAndCopyData(new_capacity);
+            ReallocateAndMoveData(new_capacity);
         }
         data_[size_] = value;
         size_ = new_size;
@@ -87,12 +87,7 @@ public:  // Methods
         size_t new_size = size_ + 1u;
         if (new_size > capacity_) {
             size_t new_capacity = (capacity_ != 0) ? std::max(new_size, 2u * capacity_) : 1;
-
-            TypeSmartPtr new_data(new_capacity);
-            std::move(data_.Get(), data_.Get() + size_, new_data.Get());
-            data_.swap(new_data);
-
-            capacity_ = new_capacity;
+            ReallocateAndMoveData(new_capacity);
         }
         data_[size_] = std::move(value);
         size_ = new_size;
@@ -106,18 +101,19 @@ public:  // Methods
     Iterator Insert(ConstIterator position, const Type& value) {
         size_t position_offset = position - data_.Get();
         assert(position_offset <= size_ && "Could not insert to position greater than size of vector");
+        Iterator element_position = data_.Get() + position_offset;
 
         size_t new_size = size_ + 1;
         if (new_size <= capacity_) {
-            std::copy_backward(const_cast<Iterator>(position), data_.Get() + size_, data_.Get() + size_ + 1u);
+            std::copy_backward(element_position, data_.Get() + size_, data_.Get() + size_ + 1u);
             data_[position_offset] = value;
         } else {
             size_t new_capacity = (capacity_ != 0) ? std::max(new_size, 2u * capacity_) : 1;
 
             TypeSmartPtr new_data(new_capacity);
-            std::copy(data_.Get(), const_cast<Iterator>(position), new_data.Get());
+            std::copy(data_.Get(), element_position, new_data.Get());
             new_data[position_offset] = value;
-            std::copy(const_cast<Iterator>(position), data_.Get() + size_, new_data.Get() + position_offset + 1u);
+            std::copy(element_position, data_.Get() + size_, new_data.Get() + position_offset + 1u);
 
             data_.swap(new_data);
 
@@ -125,36 +121,36 @@ public:  // Methods
         }
         size_ = new_size;
 
-        return Iterator(data_.Get() + position_offset);
+        return element_position;
     }
 
     Iterator Insert(ConstIterator position, Type&& value) {
         size_t position_offset = position - data_.Get();
         assert(position_offset <= size_ && "Could not insert to position greater than size of vector");
+        Iterator element_position = data_.Get() + position_offset;
 
         size_t new_size = size_ + 1;
         if (new_size <= capacity_) {
-            std::move_backward(const_cast<Iterator>(position), data_.Get() + size_, data_.Get() + size_ + 1u);
+            std::move_backward(element_position, data_.Get() + size_, data_.Get() + size_ + 1u);
             data_[position_offset] = std::move(value);
         } else {
             size_t new_capacity = (capacity_ != 0) ? std::max(new_size, 2u * capacity_) : 1;
 
             TypeSmartPtr new_data(new_capacity);
-            std::move(data_.Get(), const_cast<Iterator>(position), new_data.Get());
+            std::move(data_.Get(), element_position, new_data.Get());
             new_data[position_offset] = std::move(value);
-            std::move(const_cast<Iterator>(position), data_.Get() + size_, new_data.Get() + position_offset + 1u);
+            std::move(element_position, data_.Get() + size_, new_data.Get() + position_offset + 1u);
 
             data_.swap(new_data);
             capacity_ = new_capacity;
         }
         size_ = new_size;
 
-        return Iterator(data_.Get() + position_offset);
+        return element_position;
     }
 
     Iterator Erase(ConstIterator position) {
-        for (auto current_position = (Iterator)position; current_position != end() - 1; ++current_position)
-            *current_position = std::move(*(current_position + 1));
+        std::move(std::next((Iterator)position), end(), Iterator(position));
         --size_;
 
         return Iterator(position);
@@ -162,12 +158,12 @@ public:  // Methods
 
     void Reserve(size_t new_capacity) {
         if (new_capacity > capacity_)
-            ReallocateAndCopyData(new_capacity);
+            ReallocateAndMoveData(new_capacity);
     }
 
     void Resize(size_t new_size) {
         if (new_size > capacity_)
-            ReallocateAndCopyData(new_size);
+            ReallocateAndMoveData(new_size);
         else if (new_size > size_)
             std::fill(data_.Get() + size_, data_.Get() + new_size, Type());
 
@@ -251,9 +247,10 @@ private:  // Methods
         swap(temporary);
     }
 
-    void ReallocateAndCopyData(size_t new_capacity) {
+    void ReallocateAndMoveData(size_t new_capacity) {
         TypeSmartPtr new_data(new_capacity);
-        std::copy(data_.Get(), data_.Get() + size_, new_data.Get());
+        size_t elements_count = std::min(size_, new_capacity);
+        std::move(data_.Get(), data_.Get() + elements_count, new_data.Get());
         data_.swap(new_data);
 
         capacity_ = new_capacity;
@@ -267,8 +264,9 @@ private:
 
 template <typename Type>
 bool operator==(const SimpleVector<Type>& left, const SimpleVector<Type>& right) {
-    return (&left != &right) ? left.GetSize() == right.GetSize() && std::equal(left.begin(), left.end(), right.begin())
-                             : true;
+    if (&left != &right)
+        return left.GetSize() == right.GetSize() && std::equal(left.begin(), left.end(), right.begin());
+    return true;
 }
 
 template <typename Type>
