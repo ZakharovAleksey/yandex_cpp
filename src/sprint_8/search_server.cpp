@@ -46,7 +46,7 @@ std::vector<Document> SearchServer::FindTopDocuments(std::string_view raw_query,
     // clang-format off
     return FindTopDocuments(raw_query,
                             [document_status](
-                                [[maybe_unused]] int document_id, DocumentStatus status,[[maybe_unused]] int rating) {
+                                [[maybe_unused]] int document_id, DocumentStatus status, [[maybe_unused]] int rating) {
                                 return status == document_status;
                             });
     // clang-format on

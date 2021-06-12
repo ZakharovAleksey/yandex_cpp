@@ -64,8 +64,9 @@ void ForEach(ExecutionPolicy policy, ForwardRangeContainer& container, Function 
         futures_vector.reserve(buckets_count);
         auto buckets_boundaries = CalculateBucketsBoundariesForContainer(container, buckets_count, bucket_size);
 
-        for (const auto& p : buckets_boundaries)
-            futures_vector.emplace_back(std::async([&] { std::for_each(policy, p.first, p.second, function); }));
+        for (const auto& boundary : buckets_boundaries)
+            futures_vector.emplace_back(std::async(
+                [&policy, &boundary, &function] { std::for_each(policy, boundary.first, boundary.second, function); }));
 
         for (auto& future : futures_vector)
             future.get();
@@ -94,12 +95,12 @@ public:  // Constructors
 
 public:  // Methods
     Access operator[](const Key& key) {
-        auto& bucket = buckets_[getBucketId(key)];
+        auto& bucket = buckets_[GetBucketId(key)];
         return {std::lock_guard(bucket.mutex_), bucket.map_[key]};
     }
 
-    void erase(const Key& key) {
-        auto& bucket = buckets_[getBucketId(key)];
+    void Erase(const Key& key) {
+        auto& bucket = buckets_[GetBucketId(key)];
         std::lock_guard guard(bucket.mutex_);
         bucket.map_.erase(key);
     }
@@ -116,7 +117,7 @@ public:  // Methods
     }
 
 private:  // Methods
-    size_t getBucketId(const Key& key) const {
+    size_t GetBucketId(const Key& key) const {
         return static_cast<uint64_t>(key) % bucket_count_;
     }
 

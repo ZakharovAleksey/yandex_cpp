@@ -195,7 +195,7 @@ public:  // Methods
     void erase(const Key& key) {
         auto& bucket = buckets_[getBucketId(key)];
         std::lock_guard guard(bucket.mutex_);
-        bucket.map_.erase(key);
+        bucket.map_.Erase(key);
     }
 
     std::map<Key, Value> BuildOrdinaryMap() {

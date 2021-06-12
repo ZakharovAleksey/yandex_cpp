@@ -39,21 +39,14 @@ public:  // Public methods
                                            DocumentFilterFunction filter_function) const {
         using namespace std::execution;
 
-        if (!(std::is_same<ExecutionPolicy, sequenced_policy>::value ||
-              std::is_same<ExecutionPolicy, parallel_policy>::value))
-            return {};
-
-        const Query query = ParseQuery<ExecutionPolicy>(policy, raw_query);
+        const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(policy, query, filter_function);
 
-        // clang-format off
-        std::sort(policy, matched_documents.begin(), matched_documents.end(),
-                  [](const Document &lhs, const Document &rhs) {
-                      return std::abs(lhs.relevance - rhs.relevance) < kEqualityThreshold ?
-                                                                                          lhs.rating > rhs.rating:
-                                                                                          lhs.relevance > rhs.relevance;
-                  });
-        // clang-format on
+        std::sort(
+            policy, matched_documents.begin(), matched_documents.end(), [](const Document &lhs, const Document &rhs) {
+                return std::abs(lhs.relevance - rhs.relevance) < kEqualityThreshold ? lhs.rating > rhs.rating
+                                                                                    : lhs.relevance > rhs.relevance;
+            });
 
         if (matched_documents.size() > static_cast<size_t>(kMaxDocumentsCount))
             matched_documents.resize(static_cast<size_t>(kMaxDocumentsCount));
@@ -67,37 +60,14 @@ public:  // Public methods
         DocumentStatus document_status = DocumentStatus::ACTUAL) const {
         using namespace std::execution;
 
-        if (!(std::is_same<ExecutionPolicy, sequenced_policy>::value ||
-              std::is_same<ExecutionPolicy, parallel_policy>::value))
-            return {};
-
-        // clang-format off
         return FindTopDocuments(policy, raw_query,
-                                [document_status](
-                                    [[maybe_unused]] int document_id, DocumentStatus status,[[maybe_unused]] int rating) {
-                                  return status == document_status;
-                                });
-        // clang-format on
+                                [document_status]([[maybe_unused]] int document_id, DocumentStatus status,
+                                                  [[maybe_unused]] int rating) { return status == document_status; });
     }
 
     template <class DocumentFilterFunction>
     std::vector<Document> FindTopDocuments(std::string_view raw_query, DocumentFilterFunction filter_function) const {
-        const Query query = ParseQuery(raw_query);
-        auto matched_documents = FindAllDocuments(query, filter_function);
-
-        // clang-format off
-        std::sort(matched_documents.begin(), matched_documents.end(),
-                  [](const Document &lhs, const Document &rhs) {
-                      return std::abs(lhs.relevance - rhs.relevance) < kEqualityThreshold ?
-                                                                                          lhs.rating > rhs.rating:
-                                                                                          lhs.relevance > rhs.relevance;
-                  });
-        // clang-format on
-
-        if (matched_documents.size() > static_cast<size_t>(kMaxDocumentsCount))
-            matched_documents.resize(static_cast<size_t>(kMaxDocumentsCount));
-
-        return matched_documents;
+        return FindTopDocuments(std::execution::par, raw_query, filter_function);
     }
 
     [[nodiscard]] std::vector<Document> FindTopDocuments(std::string_view raw_query,
@@ -116,42 +86,33 @@ public:  // Public methods
     [[nodiscard]] WordsInDocumentInfo MatchDocument(ExecutionPolicy policy, std::string_view raw_query,
                                                     int document_id) const {
         using namespace std::execution;
-        std::vector<std::string_view> matched_words;
 
-        if (!(std::is_same<ExecutionPolicy, parallel_policy>::value ||
-              std::is_same<ExecutionPolicy, sequenced_policy>::value))
-            return {matched_words, documents_.at(document_id).status};
+        const auto word_checker = [this, document_id](std::string_view word) {
+            const auto position = word_to_document_frequency_.find(word);
+            return position != word_to_document_frequency_.end() && position->second.count(document_id);
+        };
 
-        const Query query = ParseQuery(policy, raw_query);
-
+        const Query query = ParseQuery(raw_query);
         const auto &plus_words = query.plus_words;
-        matched_words.resize(plus_words.size());
+        std::vector<std::string_view> matched_words(plus_words.size());
+
         std::atomic<int> current_size{0};
-        std::for_each(
-            policy, plus_words.begin(), plus_words.end(),
-            [this, document_id, &matched_words, &current_size](std::string_view word) {
-                const auto word_position = word_to_document_frequency_.find(word);
-                if (word_position != word_to_document_frequency_.end() && word_position->second.count(document_id))
-                    matched_words[current_size++] = word_position->first;
-            });
+        std::for_each(policy, plus_words.begin(), plus_words.end(),
+                      [this, document_id, &matched_words, &current_size, &word_checker](std::string_view word) {
+                          if (word_checker(word))
+                              matched_words[current_size++] = word;
+                      });
+
+        // Remove duplicates
+        std::sort(policy, matched_words.begin(), matched_words.end());
+        matched_words.erase(std::unique(policy, matched_words.begin(), matched_words.end()), matched_words.end());
 
         // clang-format off
         const auto &minus_words = query.minus_words;
-        bool has_minus_words =
-            std::transform_reduce(minus_words.begin(), minus_words.end(), 0, std::plus<>(),
-                [this, document_id](std::string_view word) {
-                                      const auto word_position = word_to_document_frequency_.find(word);
-                                      return (word_position != word_to_document_frequency_.end() &&
-                                              word_position->second.count(document_id)) ? 1 : 0; }
-                                  ) > 0;
-        // clang-format on
+        if (std::any_of(policy, minus_words.begin(), minus_words.end(), word_checker))
+            return {{}, documents_.at(document_id).status};
 
-        if (has_minus_words) {
-            matched_words.clear();
-            return {matched_words, documents_.at(document_id).status};
-        }
-
-        return {{matched_words.begin(), matched_words.begin() + current_size}, documents_.at(document_id).status};
+        return {matched_words, documents_.at(document_id).status};
     }
 
     [[nodiscard]] const std::map<std::string_view, double> &GetWordFrequencies(DocumentId index) const;
@@ -161,11 +122,6 @@ public:  // Public methods
     template <class ExecutionPolicy>
     void RemoveDocument(ExecutionPolicy policy, DocumentId index) {
         using namespace std::execution;
-
-        // Currently we support only two policies: seq & par
-        if (!(std::is_same<ExecutionPolicy, sequenced_policy>::value ||
-              std::is_same<ExecutionPolicy, parallel_policy>::value))
-            return;
 
         auto document_position = document_ids_.find(index);
         if (document_position == document_ids_.end())
@@ -222,11 +178,6 @@ private:  // Class methods
         using namespace sprint_8::server::utils;
         using namespace std::execution;
 
-        // Currently we support only two policies: seq & par
-        if (!(std::is_same<ExecutionPolicy, sequenced_policy>::value ||
-              std::is_same<ExecutionPolicy, parallel_policy>::value))
-            return {};
-
         const auto processor_count = static_cast<int>(std::thread::hardware_concurrency());
         ConcurrentMap<int, double> document_relevancy(processor_count);
 
@@ -252,7 +203,7 @@ private:  // Class methods
             const auto word_position = word_to_document_frequency_.find(word);
             if (word_position != word_to_document_frequency_.cend()) {
                 for (const auto [document_id, _] : word_position->second)
-                    document_relevancy.erase(document_id);
+                    document_relevancy.Erase(document_id);
             }
         };
         auto &minus_words = query.minus_words;
@@ -313,15 +264,10 @@ private:  // Class methods
     [[nodiscard]] Query ParseQuery(std::string_view query_text) const;
 
     template <class ExecutionPolicy>
-    [[nodiscard]] Query ParseQuery(ExecutionPolicy policy, std::string_view query_text) const {
+    [[maybe_unused]] [[nodiscard]] Query ParseQuery(ExecutionPolicy policy, std::string_view query_text) const {
         using namespace std::literals;
         using namespace std::execution;
         using namespace sprint_8::server::utils;
-
-        // Currently we support only two policies: seq & par
-        if (!(std::is_same<ExecutionPolicy, sequenced_policy>::value ||
-              std::is_same<ExecutionPolicy, parallel_policy>::value))
-            return {};
 
         Query query;
         std::vector<std::string_view> words = SplitIntoWords(query_text);
