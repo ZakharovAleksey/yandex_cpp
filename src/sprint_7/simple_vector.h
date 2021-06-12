@@ -94,7 +94,7 @@ public:  // Methods
     }
 
     void PopBack() noexcept {
-        data_[size_ - 1] = Type();
+        assert(size_ != 0u && "Could not remove last element from the empty list");
         --size_;
     }
 
@@ -121,7 +121,7 @@ public:  // Methods
         }
         size_ = new_size;
 
-        return element_position;
+        return data_.Get() + position_offset;
     }
 
     Iterator Insert(ConstIterator position, Type&& value) {
@@ -146,7 +146,7 @@ public:  // Methods
         }
         size_ = new_size;
 
-        return element_position;
+        return data_.Get() + position_offset;
     }
 
     Iterator Erase(ConstIterator position) {
@@ -264,9 +264,9 @@ private:
 
 template <typename Type>
 bool operator==(const SimpleVector<Type>& left, const SimpleVector<Type>& right) {
-    if (&left != &right)
-        return left.GetSize() == right.GetSize() && std::equal(left.begin(), left.end(), right.begin());
-    return true;
+    if (&left == &right)
+        return true;
+    return left.GetSize() == right.GetSize() && std::equal(left.begin(), left.end(), right.begin());
 }
 
 template <typename Type>
