@@ -9,7 +9,7 @@
 #include <regex>
 
 namespace output_utils {
-// TODO: string_view instead of string
+
 std::string ParseBusStatisticsRequest(std::string_view text) {
     std::regex pattern("^Bus (.+)$");
     std::match_results<std::string_view::const_iterator> match;
@@ -19,7 +19,7 @@ std::string ParseBusStatisticsRequest(std::string_view text) {
     return match[1];
 }
 
-void PrintBusStatistics(std::ostream& os, std::string bus_number, std::optional<catalog::BusStatistics> bus_info) {
+void PrintBusStatistics(std::ostream& os, std::string_view bus_number, std::optional<catalog::BusStatistics> bus_info) {
     if (!bus_info) {
         os << "Bus " << bus_number << ": not found" << std::endl;
     } else {

@@ -162,7 +162,7 @@ int main() {
         std::getline(is, query);
         const auto bus_number = ParseBusStatisticsRequest(query);
         auto bus_statistics = catalogue.GetBusStatistics(bus_number);
-        PrintBusStatistics(std::cout, bus_number, bus_statistics);
+        PrintBusStatistics(std::cout, bus_number, std::move(bus_statistics));
     }
     return 0;
 }

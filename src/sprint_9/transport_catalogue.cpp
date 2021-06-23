@@ -28,15 +28,14 @@ void TransportCatalogue::AddBus(Bus bus) {
     buses_.insert({position->number, &(*position)});
 }
 
-std::optional<BusStatistics> TransportCatalogue::GetBusStatistics(std::string bus_number) const {
+std::optional<BusStatistics> TransportCatalogue::GetBusStatistics(std::string_view bus_number) const {
     if (buses_.count(bus_number) == 0)
         return std::nullopt;
 
-    BusStatistics result;
-    result.number = bus_number;
-
     const auto& bus_info = buses_.at(bus_number);
 
+    BusStatistics result;
+    result.number = bus_info->number;
     result.stops_count = bus_info->GetStopsCount();
     result.unique_stops_count = bus_info->unique_stops.size();
 

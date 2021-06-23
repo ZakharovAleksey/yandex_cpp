@@ -31,7 +31,7 @@ struct Stop {
 };
 
 struct BusStatistics {
-    std::string number;
+    std::string_view number;
     size_t stops_count{0u};
     size_t unique_stops_count{0u};
     double rout_length{0.};
@@ -45,14 +45,14 @@ public:  // Methods
     void AddStop(Stop stop);
     void AddBus(Bus bus);
 
-    [[nodiscard]] std::optional<BusStatistics> GetBusStatistics(std::string bus_number) const;
+    [[nodiscard]] std::optional<BusStatistics> GetBusStatistics(std::string_view bus_number) const;
 
 private:  // Fields
     std::deque<Stop> stops_storage_;
     std::unordered_map<std::string_view, const Stop*> stops_;
 
     std::deque<Bus> buses_storage_;
-    std::unordered_map<std::string, const Bus*> buses_;
+    std::unordered_map<std::string_view, const Bus*> buses_;
 };
 
 }  // namespace catalog
