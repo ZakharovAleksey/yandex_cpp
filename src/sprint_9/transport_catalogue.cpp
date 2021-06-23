@@ -16,6 +16,8 @@ size_t Bus::GetStopsCount() const {
 void TransportCatalogue::AddStop(Stop stop) {
     const auto position = stops_storage_.insert(stops_storage_.begin(), std::move(stop));
     stops_.insert({position->name, &(*position)});
+    // Add stop for <stop-bus> correspondence
+    buses_through_stop_.insert({position->name, {}});
 }
 
 void TransportCatalogue::AddBus(Bus bus) {
@@ -26,6 +28,10 @@ void TransportCatalogue::AddBus(Bus bus) {
 
     const auto position = buses_storage_.insert(buses_storage_.begin(), std::move(bus));
     buses_.insert({position->number, &(*position)});
+
+    // Add stop for <stop-bus> correspondence
+    for (std::string_view stop : position->stop_names)
+        buses_through_stop_[stop].insert(position->number);
 }
 
 std::optional<BusStatistics> TransportCatalogue::GetBusStatistics(std::string_view bus_number) const {
@@ -48,4 +54,12 @@ std::optional<BusStatistics> TransportCatalogue::GetBusStatistics(std::string_vi
 
     return result;
 }
+
+std::optional<std::set<std::string_view>> TransportCatalogue::GetBusesPassingThroughTheStop(
+    std::string_view stop_name) const {
+    if (const auto position = buses_through_stop_.find(stop_name); position != buses_through_stop_.cend())
+        return {position->second};
+    return std::nullopt;
+}
+
 }  // namespace catalog

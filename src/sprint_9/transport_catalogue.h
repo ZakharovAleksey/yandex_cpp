@@ -46,6 +46,7 @@ public:  // Methods
     void AddBus(Bus bus);
 
     [[nodiscard]] std::optional<BusStatistics> GetBusStatistics(std::string_view bus_number) const;
+    [[nodiscard]] std::optional<std::set<std::string_view>> GetBusesPassingThroughTheStop(std::string_view stop_name) const;
 
 private:  // Fields
     std::deque<Stop> stops_storage_;
@@ -53,6 +54,8 @@ private:  // Fields
 
     std::deque<Bus> buses_storage_;
     std::unordered_map<std::string_view, const Bus*> buses_;
+
+    std::unordered_map<std::string_view, std::set<std::string_view>> buses_through_stop_;
 };
 
 }  // namespace catalog
