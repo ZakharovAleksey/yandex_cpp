@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <optional>
 
 #include "document.h"
 #include "string_processing.h"

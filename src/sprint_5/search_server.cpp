@@ -7,6 +7,7 @@
 #include <cmath>
 #include <iostream>
 #include <numeric>
+#include <iterator>
 
 namespace sprint_5::server {
 
