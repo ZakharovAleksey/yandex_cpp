@@ -12,6 +12,9 @@
 
 #include "geo.h"
 
+using StringViewPair = std::pair<std::string_view, std::string_view>;
+using DistancesToStops = std::vector<std::pair<std::string, double>>;
+
 namespace catalog {
 
 enum class RouteType { CIRCLE, TWO_DIRECTIONAL };
@@ -35,6 +38,7 @@ struct BusStatistics {
     size_t stops_count{0u};
     size_t unique_stops_count{0u};
     double rout_length{0.};
+    double curvature{0.};
 };
 
 class TransportCatalogue {
@@ -44,9 +48,26 @@ public:  // Constructors
 public:  // Methods
     void AddStop(Stop stop);
     void AddBus(Bus bus);
+    void AddDistancesBetweenStops(std::string_view stop_from, const DistancesToStops& distances);
 
     [[nodiscard]] std::optional<BusStatistics> GetBusStatistics(std::string_view bus_number) const;
-    [[nodiscard]] std::optional<std::set<std::string_view>> GetBusesPassingThroughTheStop(std::string_view stop_name) const;
+    [[nodiscard]] std::optional<std::set<std::string_view>> GetBusesPassingThroughTheStop(
+        std::string_view stop_name) const;
+
+private:  // Types
+    struct StringViewPairHash {
+        size_t operator()(const StringViewPair& pair) const {
+            return hasher(pair.first) + value * hasher(pair.second);
+        }
+
+    private:
+        std::hash<std::string_view> hasher;
+        const size_t value{31};
+    };
+
+private:  // Methods
+    double CalculateRouteLength(const Bus* bus_info) const;
+    double CalculateGeographicLength(const Bus* bus_info) const;
 
 private:  // Fields
     std::deque<Stop> stops_storage_;
@@ -56,6 +77,7 @@ private:  // Fields
     std::unordered_map<std::string_view, const Bus*> buses_;
 
     std::unordered_map<std::string_view, std::set<std::string_view>> buses_through_stop_;
+    std::unordered_map<StringViewPair, double, StringViewPairHash> distances_between_stops_;
 };
 
 }  // namespace catalog

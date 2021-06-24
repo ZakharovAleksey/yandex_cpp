@@ -34,7 +34,8 @@ void PrintBusStatistics(std::ostream& os, std::string_view bus_number, std::opti
     } else {
         os << "Bus " << bus_info->number << ": " << bus_info->stops_count << " stops on route, "
            << bus_info->unique_stops_count << " unique stops, ";
-        os << std::setprecision(6) << bus_info->rout_length << " route length" << std::endl;
+        os << bus_info->rout_length << " route length, ";
+        os << std::setprecision(6) << bus_info->curvature << " curvature" << std::endl;
     }
 }
 

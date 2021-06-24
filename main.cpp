@@ -1,4 +1,3 @@
-#include <cstring>
 #include <iostream>
 
 #include "src/sprint_8/search_server.h"
@@ -34,20 +33,14 @@ using namespace std::literals;
 using MyPair = std::pair<std::string, int>;
 
 #include <algorithm>
-#include <iostream>
 #include <vector>
 
 using namespace std;
 
-#include <algorithm>
 #include <array>
 #include <iomanip>
-#include <iostream>
 #include <list>
-#include <optional>
 #include <sstream>
-#include <string>
-#include <vector>
 
 using namespace std;
 
@@ -135,7 +128,7 @@ using namespace catalog;
 
 int main() {
     TransportCatalogue catalogue;
-    std::ifstream is("D:\\Additional\\0_workdir\\yandex_cpp\\data.txt");
+    std::ifstream is("D:\\Additional\\0_workdir\\yandex_cpp\\data.txt"s);
 
     int queries_count{0};
     is >> queries_count;
@@ -143,15 +136,23 @@ int main() {
 
     std::vector<std::string> bus_queries;
     bus_queries.reserve(queries_count);
+    std::unordered_map<std::string, DistancesToStops> stop_distances;
+    stop_distances.reserve(queries_count);
+
     std::string query;
     for (int id = 0; id < queries_count; ++id) {
         std::getline(is, query);
         if (query.substr(0, 4) == "Stop"s) {
-            catalogue.AddStop(ParseBusStopInput(query));
+            auto [stop, distances_to_stops] = ParseBusStopInput(query);
+            stop_distances.insert({stop.name, std::move(distances_to_stops)});
+            catalogue.AddStop(std::move(stop));
         } else if (query.substr(0, 3) == "Bus"s) {
             bus_queries.emplace_back(std::move(query));
         }
     }
+
+    for (const auto& [stop_from, distances_to_stops] : stop_distances)
+        catalogue.AddDistancesBetweenStops(stop_from, distances_to_stops);
 
     for (auto query : bus_queries)
         catalogue.AddBus(ParseBusRouteInput(query));
@@ -163,7 +164,7 @@ int main() {
         if (query.substr(0, 3) == "Bus"s) {
             const auto bus_number = ParseBusStatisticsRequest(query);
             auto bus_statistics = catalogue.GetBusStatistics(bus_number);
-            PrintBusStatistics(std::cout, bus_number, std::move(bus_statistics));
+            PrintBusStatistics(std::cout, bus_number, bus_statistics);
         } else if (query.substr(0, 4) == "Stop"s) {
             const auto stop_name = ParseBusesPassingThroughStopRequest(query);
             auto buses = catalogue.GetBusesPassingThroughTheStop(stop_name);

@@ -12,12 +12,41 @@ namespace input_utils {
 using namespace std::literals;
 using namespace catalog;
 
-Stop ParseBusStopInput(std::string_view text) {
-    std::regex pattern("^Stop (.+): ([0-9]+[.][0-9]+), ([0-9]+[.][0-9]+)$");
+DistancesToStops ParsePredefinedDistancesBetweenStops(std::string_view text) {
+    using svregex_iterator = std::regex_iterator<std::string_view::const_iterator>;
+    using sv_match = std::match_results<std::string_view::const_iterator>;
+
+    const std::regex distance_to_stop_pattern("(, ([0-9]+)m to ([a-zA-Z ]+) ?)");
+
+    DistancesToStops result;
+
+    auto patterns_match_begin = svregex_iterator(text.begin(), text.end(), distance_to_stop_pattern);
+    auto patterns_match_end = svregex_iterator();
+
+    size_t matched_patterns_count = std::distance(patterns_match_begin, patterns_match_end);
+    if (matched_patterns_count != 0u) {
+        result.reserve(matched_patterns_count);
+        sv_match match;
+        // Loop over all matched patterns, extracting information: stop_name & distance
+        for (svregex_iterator i = patterns_match_begin; i != patterns_match_end; ++i) {
+            std::string_view distance_to_stop = text.substr(i->position(), i->length());
+            std::regex_match(distance_to_stop.cbegin(), distance_to_stop.cend(), match, distance_to_stop_pattern);
+
+            result.emplace_back(match[3], std::stod(match[2]));
+        }
+    }
+
+    return result;
+}
+
+std::pair<catalog::Stop, DistancesToStops> ParseBusStopInput(std::string_view text) {
+    std::regex pattern("^Stop (.+): ([0-9]+[.][0-9]+), ([0-9]+[.][0-9]+)(.+?)$");
     std::match_results<std::string_view::const_iterator> match;
 
-    assert(std::regex_match(text.cbegin(), text.cend(), match, pattern) && "Stop info input does not match the pattern");
-    return {match[1], {std::stod(match[2]), std::stod(match[3])}};
+    assert(std::regex_match(text.cbegin(), text.cend(), match, pattern) &&
+           "Stop info input does not match the pattern");
+
+    return {{match[1], {std::stod(match[2]), std::stod(match[3])}}, ParsePredefinedDistancesBetweenStops(text)};
 }
 
 Bus ParseBusRouteInput(std::string_view text) {

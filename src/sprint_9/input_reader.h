@@ -8,7 +8,7 @@
 
 namespace input_utils {
 
-catalog::Stop ParseBusStopInput(std::string_view text);
+std::pair<catalog::Stop, DistancesToStops> ParseBusStopInput(std::string_view text);
 
 catalog::Bus ParseBusRouteInput(std::string_view text);
 

@@ -20,6 +20,16 @@ void TransportCatalogue::AddStop(Stop stop) {
     buses_through_stop_.insert({position->name, {}});
 }
 
+void TransportCatalogue::AddDistancesBetweenStops(std::string_view stop_from, const DistancesToStops& distances) {
+    //! On this step we suppose that ALL stops have been parsed
+    std::string_view local_stop_from = stops_.find(stop_from)->first;
+
+    for (const auto& [stop_to, distance] : distances) {
+        StringViewPair key = std::make_pair(local_stop_from, stops_.find(stop_to)->first);
+        distances_between_stops_.insert({std::move(key), distance});
+    }
+}
+
 void TransportCatalogue::AddBus(Bus bus) {
     //! On this step we suppose that ALL stops have been parsed
     for (auto& stop : bus.stop_names)
@@ -44,15 +54,38 @@ std::optional<BusStatistics> TransportCatalogue::GetBusStatistics(std::string_vi
     result.number = bus_info->number;
     result.stops_count = bus_info->GetStopsCount();
     result.unique_stops_count = bus_info->unique_stops.size();
-
-    result.rout_length = std::transform_reduce(std::next(bus_info->stop_names.begin()), bus_info->stop_names.end(),
-                                               bus_info->stop_names.begin(), 0., std::plus<>(),
-                                               [this](std::string_view from, std::string_view to) {
-                                                   return ComputeDistance(stops_.at(from)->point, stops_.at(to)->point);
-                                               });
-    result.rout_length = (bus_info->type == RouteType::CIRCLE) ? result.rout_length : result.rout_length * 2.;
+    result.rout_length = CalculateRouteLength(bus_info);
+    result.curvature = result.rout_length / CalculateGeographicLength(bus_info);
 
     return result;
+}
+
+double TransportCatalogue::CalculateRouteLength(const Bus* bus_info) const {
+    auto get_route_length = [this](std::string_view from, std::string_view to) {
+        auto key = std::make_pair(from, to);
+        // If we not found 'from -> to' than we are looking for 'to -> from'
+        return (distances_between_stops_.count(key) > 0) ? distances_between_stops_.at(key)
+                                                         : distances_between_stops_.at(std::make_pair(to, from));
+    };
+
+    double forward_route = std::transform_reduce(std::next(bus_info->stop_names.begin()), bus_info->stop_names.end(),
+                                                 bus_info->stop_names.begin(), 0., std::plus<>(), get_route_length);
+    if (bus_info->type == RouteType::CIRCLE)
+        return forward_route;
+    // Otherwise, this is a two-directional way, so we need to calculate the distance on backward way
+    double backward_route = std::transform_reduce(std::next(bus_info->stop_names.rbegin()), bus_info->stop_names.rend(),
+                                                  bus_info->stop_names.rbegin(), 0., std::plus<>(), get_route_length);
+    return forward_route + backward_route;
+}
+
+double TransportCatalogue::CalculateGeographicLength(const Bus* bus_info) const {
+    auto geographic_length = std::transform_reduce(
+        std::next(bus_info->stop_names.begin()), bus_info->stop_names.end(), bus_info->stop_names.begin(), 0.,
+        std::plus<>(), [this](std::string_view from, std::string_view to) {
+            return ComputeDistance(stops_.at(from)->point, stops_.at(to)->point);
+        });
+
+    return (bus_info->type == RouteType::CIRCLE) ? geographic_length : geographic_length * 2.;
 }
 
 std::optional<std::set<std::string_view>> TransportCatalogue::GetBusesPassingThroughTheStop(
