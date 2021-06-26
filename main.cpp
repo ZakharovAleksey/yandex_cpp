@@ -136,23 +136,26 @@ int main() {
 
     std::vector<std::string> bus_queries;
     bus_queries.reserve(queries_count);
-    std::unordered_map<std::string, DistancesToStops> stop_distances;
+    std::unordered_map<std::string, std::string> stop_distances;
     stop_distances.reserve(queries_count);
 
     std::string query;
     for (int id = 0; id < queries_count; ++id) {
         std::getline(is, query);
         if (query.substr(0, 4) == "Stop"s) {
-            auto [stop, distances_to_stops] = ParseBusStopInput(query);
-            stop_distances.insert({stop.name, std::move(distances_to_stops)});
+            auto [stop, is_store_query] = ParseBusStopInput(query);
+            if (is_store_query)
+                stop_distances.insert({stop.name, std::move(query)});
             catalogue.AddStop(std::move(stop));
         } else if (query.substr(0, 3) == "Bus"s) {
             bus_queries.emplace_back(std::move(query));
         }
     }
 
-    for (const auto& [stop_from, distances_to_stops] : stop_distances)
+    for (const auto& [stop_from, query] : stop_distances) {
+        auto distances_to_stops = ParsePredefinedDistancesBetweenStops(query);
         catalogue.AddDistancesBetweenStops(stop_from, distances_to_stops);
+    }
 
     for (auto query : bus_queries)
         catalogue.AddBus(ParseBusRouteInput(query));

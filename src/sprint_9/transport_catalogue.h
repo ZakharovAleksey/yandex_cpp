@@ -13,7 +13,7 @@
 #include "geo.h"
 
 using StringViewPair = std::pair<std::string_view, std::string_view>;
-using DistancesToStops = std::vector<std::pair<std::string, double>>;
+using DistancesToStops = std::vector<std::pair<std::string_view, int>>;
 
 namespace catalog {
 
@@ -37,7 +37,7 @@ struct BusStatistics {
     std::string_view number;
     size_t stops_count{0u};
     size_t unique_stops_count{0u};
-    double rout_length{0.};
+    uint64_t rout_length{0};
     double curvature{0.};
 };
 
@@ -57,16 +57,16 @@ public:  // Methods
 private:  // Types
     struct StringViewPairHash {
         size_t operator()(const StringViewPair& pair) const {
-            return hasher(pair.first) + value * hasher(pair.second);
+            return hasher(pair.first) + prime_number * hasher(pair.second);
         }
 
     private:
         std::hash<std::string_view> hasher;
-        const size_t value{31};
+        static const size_t prime_number{31};
     };
 
 private:  // Methods
-    double CalculateRouteLength(const Bus* bus_info) const;
+    uint64_t CalculateRouteLength(const Bus* bus_info) const;
     double CalculateGeographicLength(const Bus* bus_info) const;
 
 private:  // Fields
@@ -77,7 +77,7 @@ private:  // Fields
     std::unordered_map<std::string_view, const Bus*> buses_;
 
     std::unordered_map<std::string_view, std::set<std::string_view>> buses_through_stop_;
-    std::unordered_map<StringViewPair, double, StringViewPairHash> distances_between_stops_;
+    std::unordered_map<StringViewPair, int, StringViewPairHash> distances_between_stops_;
 };
 
 }  // namespace catalog

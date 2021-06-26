@@ -47,7 +47,7 @@ void PrintBusesPassingThroughStop(std::ostream& os, std::string_view stop_name,
         os << "Stop " << stop_name << ": no buses" << std::endl;
     } else {
         os << "Stop " << stop_name << ": buses ";
-        size_t index {0u};
+        size_t index{0u};
         for (std::string_view bus : *buses) {
             if (index++ != 0)
                 os << " ";

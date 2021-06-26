@@ -12,67 +12,63 @@ namespace input_utils {
 using namespace std::literals;
 using namespace catalog;
 
-DistancesToStops ParsePredefinedDistancesBetweenStops(std::string_view text) {
-    using svregex_iterator = std::regex_iterator<std::string_view::const_iterator>;
-    using sv_match = std::match_results<std::string_view::const_iterator>;
+constexpr int kMaxStopsCount{100};
 
-    const std::regex distance_to_stop_pattern("(, ([0-9]+)m to ([a-zA-Z ]+) ?)");
+DistancesToStops ParsePredefinedDistancesBetweenStops(std::string_view text) {
+    //! Input format: Stop X: latitude, longitude, D1m to stop1, D2m to stop2, ...
+
+    const std::regex distance_to_stop_pattern(", ([0-9]+)m to ([a-zA-Z ]+) ?");
 
     DistancesToStops result;
+    result.reserve(kMaxStopsCount);
 
-    auto patterns_match_begin = svregex_iterator(text.begin(), text.end(), distance_to_stop_pattern);
-    auto patterns_match_end = svregex_iterator();
-
-    size_t matched_patterns_count = std::distance(patterns_match_begin, patterns_match_end);
-    if (matched_patterns_count != 0u) {
-        result.reserve(matched_patterns_count);
-        sv_match match;
-        // Loop over all matched patterns, extracting information: stop_name & distance
-        for (svregex_iterator i = patterns_match_begin; i != patterns_match_end; ++i) {
-            std::string_view distance_to_stop = text.substr(i->position(), i->length());
-            std::regex_match(distance_to_stop.cbegin(), distance_to_stop.cend(), match, distance_to_stop_pattern);
-
-            result.emplace_back(match[3], std::stod(match[2]));
-        }
+    std::match_results<std::string_view::const_iterator> match;
+    int offset{0};
+    while (std::regex_search(text.begin() + offset, text.end(), match, distance_to_stop_pattern)) {
+        int stop_offset = std::distance(text.cbegin(), match[2].first);  // offset + 2 + match[1].length() + 5;
+        result.emplace_back(text.substr(stop_offset, match[2].length()), std::stoi(match[1]));
+        offset += match.length();
     }
 
     return result;
 }
 
-std::pair<catalog::Stop, DistancesToStops> ParseBusStopInput(std::string_view text) {
-    std::regex pattern("^Stop (.+): ([0-9]+[.][0-9]+), ([0-9]+[.][0-9]+)(.+?)$");
+std::pair<catalog::Stop, bool> ParseBusStopInput(std::string_view text) {
+    //! Input format without stops info: Stop X: latitude, longitude
+    //! Input format with stops info: Stop X: latitude, longitude, D1m to stop1, D2m to stop2, ...
+
+    const std::regex pattern("^Stop (.+): ([-]?[0-9]+[.]?[0-9+]*), ([-]?[0-9]+[.]?[0-9+]*)");
     std::match_results<std::string_view::const_iterator> match;
 
-    assert(std::regex_match(text.cbegin(), text.cend(), match, pattern) &&
+    // Search one time for the first information about bus
+    assert(std::regex_search(text.cbegin(), text.cend(), match, pattern) &&
            "Stop info input does not match the pattern");
 
-    return {{match[1], {std::stod(match[2]), std::stod(match[3])}}, ParsePredefinedDistancesBetweenStops(text)};
+    bool has_stops_info = text.size() != match.length();
+    return {{match[1], {std::stod(match[2]), std::stod(match[3])}}, has_stops_info};
 }
 
 Bus ParseBusRouteInput(std::string_view text) {
-    const size_t bus_index_start{4u};
-    const std::string bus_stops_delimiter{": "};
+    //! Input format for circle route: Bus Y: Stop#1 > Stop#2 > Stop#3 ..
+    //! Input format for two-directional route: Bus Y: Stop#1 - Stop#2 - Stop#3 ..
 
     Bus result;
 
-    size_t bus_index_end = text.find(bus_stops_delimiter);
-    size_t stops_offset = bus_index_end + bus_stops_delimiter.size();
+    const std::regex bus_pattern("^Bus ([a-zA-Z0-9 ]+):");
+    std::match_results<std::string_view::const_iterator> match;
 
-    result.number = text.substr(bus_index_start, bus_index_end - bus_index_start);
+    assert(std::regex_search(text.begin(), text.end(), match, bus_pattern) && "Input does not match bus pattern");
+    result.number = match[1];
 
-    char delimiter = text[text.find_first_of("->")];
-    result.type = delimiter == '>' ? RouteType::CIRCLE : RouteType::TWO_DIRECTIONAL;
+    result.type = text[text.find_first_of("->")] == '>' ? RouteType::CIRCLE : RouteType::TWO_DIRECTIONAL;
 
-    std::string stops_separator = " " + std::string(1, delimiter) + " ";
-    size_t stop_begin = stops_offset;
-    while (stop_begin <= text.length()) {
-        size_t word_end = text.find(stops_separator, stop_begin);
-
-        result.stop_names.push_back(text.substr(stop_begin, word_end - stop_begin));
-        stop_begin = (word_end == std::string_view::npos) ? word_end : word_end + stops_separator.size();
+    const std::regex stop_pattern(" ([a-zA-Z ]+)(?= |$)");
+    int offset = match.length();
+    while (std::regex_search(text.begin() + offset, text.end(), match, stop_pattern)) {
+        int stop_offset = std::distance(text.begin(), match[1].first);
+        result.stop_names.emplace_back(text.substr(stop_offset, match[1].length()));
+        offset = stop_offset + match.length() - 1;
     }
-
-    result.unique_stops = {result.stop_names.begin(), result.stop_names.end()};
 
     return result;
 }

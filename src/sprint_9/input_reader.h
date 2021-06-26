@@ -5,10 +5,11 @@
 
 #include "transport_catalogue.h"
 
-
 namespace input_utils {
 
-std::pair<catalog::Stop, DistancesToStops> ParseBusStopInput(std::string_view text);
+DistancesToStops ParsePredefinedDistancesBetweenStops(std::string_view text);
+
+std::pair<catalog::Stop, bool> ParseBusStopInput(std::string_view text);
 
 catalog::Bus ParseBusRouteInput(std::string_view text);
 
