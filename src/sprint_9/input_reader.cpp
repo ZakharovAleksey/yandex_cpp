@@ -37,7 +37,7 @@ std::pair<catalog::Stop, bool> ParseBusStopInput(std::string_view text) {
     //! Input format without stops info: Stop X: latitude, longitude
     //! Input format with stops info: Stop X: latitude, longitude, D1m to stop1, D2m to stop2, ...
 
-    const std::regex pattern("^Stop (.+): ([-]?[0-9]+[.]?[0-9+]*), ([-]?[0-9]+[.]?[0-9+]*)");
+    const std::regex pattern("^Stop (.+): ([-]?[0-9]+[.]?[0-9]*), ([-]?[0-9]+[.]?[0-9]*)");
     std::match_results<std::string_view::const_iterator> match;
 
     // Search one time for the first information about bus
