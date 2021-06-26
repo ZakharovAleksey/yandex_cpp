@@ -22,10 +22,11 @@ void TransportCatalogue::AddStop(Stop stop) {
 
 void TransportCatalogue::AddDistancesBetweenStops(std::string_view stop_from, const DistancesToStops& distances) {
     //! On this step we suppose that ALL stops have been parsed
-    std::string_view local_stop_from = stops_.find(stop_from)->first;
+    std::string_view local_stop_from = stops_.find(stop_from)->second->name;
 
     for (const auto& [stop_to, distance] : distances) {
-        StringViewPair key = std::make_pair(local_stop_from, stops_.find(stop_to)->first);
+        std::string_view local_stop_to = stops_.find(stop_to)->second->name;
+        StringViewPair key = std::make_pair(local_stop_from, local_stop_to);
         distances_between_stops_.insert({std::move(key), distance});
     }
 }
