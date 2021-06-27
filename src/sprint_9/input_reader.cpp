@@ -12,40 +12,52 @@ namespace input_utils {
 using namespace std::literals;
 using namespace catalog;
 
-constexpr int kMaxStopsCount{100};
-
 DistancesToStops ParsePredefinedDistancesBetweenStops(std::string_view text) {
     //! Input format: Stop X: latitude, longitude, D1m to stop1, D2m to stop2, ...
 
-    const std::regex distance_to_stop_pattern(", ([0-9]+)m to ([a-zA-Z ]+) ?");
-
     DistancesToStops result;
-    result.reserve(kMaxStopsCount);
 
-    std::match_results<std::string_view::const_iterator> match;
-    int offset{0};
-    while (std::regex_search(text.begin() + offset, text.end(), match, distance_to_stop_pattern)) {
-        int stop_offset = std::distance(text.cbegin(), match[2].first);  // offset + 2 + match[1].length() + 5;
-        result.emplace_back(text.substr(stop_offset, match[2].length()), std::stoi(match[1]));
-        offset += match.length();
+    // Looking for the second ',' in a row
+    size_t start = text.find(',');
+    start = text.find(',', start + 1) + (" "sv).size();
+    size_t end = start;
+
+    while (start != std::string_view::npos) {
+        end = text.find("m"sv, start);
+        int distance = std::stoi(std::string(text.substr(start, end - start)));
+
+        start = end + ("m to "sv).size();
+        end = text.find(","sv, start);
+
+        std::string_view stop_to = text.substr(start, end - start);
+        result.emplace_back(stop_to, distance);
+
+        start = (end == std::string_view::npos) ? end : end + (" "sv).size();
     }
 
     return result;
 }
 
-std::pair<catalog::Stop, bool> ParseBusStopInput(std::string_view text) {
+std::pair<catalog::Stop, bool> ParseBusStopInput(const std::string& text) {
     //! Input format without stops info: Stop X: latitude, longitude
     //! Input format with stops info: Stop X: latitude, longitude, D1m to stop1, D2m to stop2, ...
 
-    const std::regex pattern("^Stop (.+): ([-]?[0-9]+[.]?[0-9]*), ([-]?[0-9]+[.]?[0-9]*)");
-    std::match_results<std::string_view::const_iterator> match;
+    Stop stop;
 
-    // Search one time for the first information about bus
-    assert(std::regex_search(text.cbegin(), text.cend(), match, pattern) &&
-           "Stop info input does not match the pattern");
+    size_t stop_begin = ("Stop "s).size();
+    size_t stop_end = text.find(": "s, stop_begin);
+    stop.name = text.substr(stop_begin, stop_end - stop_begin);
 
-    bool has_stops_info = text.size() != match.length();
-    return {{match[1], {std::stod(match[2]), std::stod(match[3])}}, has_stops_info};
+    size_t latitude_begin = stop_end + (": "s).size();
+    size_t latitude_end = text.find(","s, latitude_begin);
+    stop.point.lat = std::stod(text.substr(latitude_begin, latitude_end - latitude_begin));
+
+    size_t longitude_begin = latitude_end + (", "s).size();
+    size_t longitude_end = text.find(","s, longitude_begin);
+    stop.point.lng = std::stod(text.substr(longitude_begin, longitude_end - longitude_begin));
+
+    bool has_stops_info = longitude_end != std::string_view::npos;
+    return {std::move(stop), has_stops_info};
 }
 
 Bus ParseBusRouteInput(std::string_view text) {
@@ -54,21 +66,22 @@ Bus ParseBusRouteInput(std::string_view text) {
 
     Bus result;
 
-    const std::regex bus_pattern("^Bus ([a-zA-Z0-9 ]+):");
-    std::match_results<std::string_view::const_iterator> match;
+    size_t bus_start = text.find(' ') + (" "sv).size();
+    size_t bus_end = text.find(": "sv, bus_start);
+    result.number = text.substr(bus_start, bus_end - bus_start);
 
-    assert(std::regex_search(text.begin(), text.end(), match, bus_pattern) && "Input does not match bus pattern");
-    result.number = match[1];
+    result.type = (text[text.find_first_of("->")] == '>') ? RouteType::CIRCLE : RouteType::TWO_DIRECTIONAL;
+    std::string_view stops_separator = (result.type == RouteType::CIRCLE) ? " > "sv : " - "sv;
 
-    result.type = text[text.find_first_of("->")] == '>' ? RouteType::CIRCLE : RouteType::TWO_DIRECTIONAL;
+    size_t stop_begin = bus_end + (": "sv).size();
+    while (stop_begin <= text.length()) {
+        size_t stop_end = text.find(stops_separator, stop_begin);
 
-    const std::regex stop_pattern(" ([a-zA-Z ]+)(?= |$)");
-    int offset = match.length();
-    while (std::regex_search(text.begin() + offset, text.end(), match, stop_pattern)) {
-        int stop_offset = std::distance(text.begin(), match[1].first);
-        result.stop_names.emplace_back(text.substr(stop_offset, match[1].length()));
-        offset = stop_offset + match.length() - 1;
+        result.stop_names.push_back(text.substr(stop_begin, stop_end - stop_begin));
+        stop_begin = (stop_end == std::string_view::npos) ? stop_end : stop_end + stops_separator.size();
     }
+
+    result.unique_stops = {result.stop_names.begin(), result.stop_names.end()};
 
     return result;
 }

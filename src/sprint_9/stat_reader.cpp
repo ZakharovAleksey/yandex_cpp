@@ -10,37 +10,21 @@
 
 namespace output_utils {
 
-std::string ParseBusStatisticsRequest(std::string_view text) {
-    std::regex pattern("^Bus (.+)$");
-    std::match_results<std::string_view::const_iterator> match;
+using namespace std::literals;
 
-    assert(std::regex_match(text.cbegin(), text.cend(), match, pattern) &&
-           "Bus statistics request pattern does not match");
-    return match[1];
+std::string_view ParseBusStatisticsRequest(std::string_view text) {
+    //! Input: Bus BusNumber
+    size_t bus_begin = text.find(" "sv) + (" "sv).size();
+    return text.substr(bus_begin, text.size() - bus_begin);
 }
 
-std::string ParseBusesPassingThroughStopRequest(std::string_view text) {
-    std::regex pattern("^Stop (.+)$");
-    std::match_results<std::string_view::const_iterator> match;
-
-    assert(std::regex_match(text.cbegin(), text.cend(), match, pattern) &&
-           "Buses passing through stop request pattern does not match");
-    return match[1];
+std::string_view ParseBusesPassingThroughStopRequest(std::string_view text) {
+    //! Input: Stop StopName
+    size_t stop_begin = text.find(" "sv) + (" "sv).size();
+    return text.substr(stop_begin, text.size() - stop_begin);
 }
 
-void PrintBusStatistics(std::ostream& os, std::string_view bus_number, std::optional<catalog::BusStatistics> bus_info) {
-    if (!bus_info) {
-        os << "Bus " << bus_number << ": not found" << std::endl;
-    } else {
-        os << "Bus " << bus_info->number << ": " << bus_info->stops_count << " stops on route, "
-           << bus_info->unique_stops_count << " unique stops, ";
-        os << bus_info->rout_length << " route length, ";
-        os << std::setprecision(6) << bus_info->curvature << " curvature" << std::endl;
-    }
-}
-
-void PrintBusesPassingThroughStop(std::ostream& os, std::string_view stop_name,
-                                  std::optional<std::set<std::string_view>> buses) {
+void PrintBusesPassingThroughStop(std::ostream& os, std::string_view stop_name, const std::set<std::string_view>* buses) {
     if (!buses) {
         os << "Stop " << stop_name << ": not found" << std::endl;
     } else if (buses->empty()) {

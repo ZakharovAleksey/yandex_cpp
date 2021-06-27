@@ -5,10 +5,6 @@
 struct Coordinates {
     double lat{0.};
     double lng{0.};
-
-    [[nodiscard]] bool IsEmpty() const {
-        return lat == 0. && lng == 0.;
-    }
 };
 
 inline double ComputeDistance(Coordinates from, Coordinates to) {

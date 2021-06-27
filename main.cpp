@@ -136,7 +136,7 @@ int main() {
 
     std::vector<std::string> bus_queries;
     bus_queries.reserve(queries_count);
-    std::unordered_map<std::string, std::string> stop_distances;
+    std::vector<std::pair<std::string, std::string>> stop_distances;
     stop_distances.reserve(queries_count);
 
     std::string query;
@@ -145,7 +145,7 @@ int main() {
         if (query.substr(0, 4) == "Stop"s) {
             auto [stop, is_store_query] = ParseBusStopInput(query);
             if (is_store_query)
-                stop_distances.insert({stop.name, std::move(query)});
+                stop_distances.emplace_back(stop.name, std::move(query));
             catalogue.AddStop(std::move(stop));
         } else if (query.substr(0, 3) == "Bus"s) {
             bus_queries.emplace_back(std::move(query));
@@ -153,25 +153,30 @@ int main() {
     }
 
     for (const auto& [stop_from, query] : stop_distances) {
-        auto distances_to_stops = ParsePredefinedDistancesBetweenStops(query);
-        catalogue.AddDistancesBetweenStops(stop_from, distances_to_stops);
+        for (auto [stop_to, distance] : ParsePredefinedDistancesBetweenStops(query))
+            catalogue.AddDistance(stop_from, stop_to, distance);
     }
 
-    for (auto query : bus_queries)
-        catalogue.AddBus(ParseBusRouteInput(query));
+    for (const auto& bus_query : bus_queries)
+        catalogue.AddBus(ParseBusRouteInput(bus_query));
 
     is >> queries_count;
     is.get();
     for (int id = 0; id < queries_count; ++id) {
         std::getline(is, query);
         if (query.substr(0, 3) == "Bus"s) {
-            const auto bus_number = ParseBusStatisticsRequest(query);
-            auto bus_statistics = catalogue.GetBusStatistics(bus_number);
-            PrintBusStatistics(std::cout, bus_number, bus_statistics);
+            std::string_view bus_number = ParseBusStatisticsRequest(query);
+
+            if (auto bus_statistics = catalogue.GetBusStatistics(bus_number)) {
+                std::cout << *bus_statistics << std::endl;
+            } else {
+                std::cout << "Bus " << bus_number << ": not found" << std::endl;
+            }
         } else if (query.substr(0, 4) == "Stop"s) {
-            const auto stop_name = ParseBusesPassingThroughStopRequest(query);
-            auto buses = catalogue.GetBusesPassingThroughTheStop(stop_name);
-            PrintBusesPassingThroughStop(std::cout, stop_name, std::move(buses));
+            std::string_view stop_name = ParseBusesPassingThroughStopRequest(query);
+            auto* buses = catalogue.GetBusesPassingThroughTheStop(stop_name);
+
+            PrintBusesPassingThroughStop(std::cout, stop_name, buses);
         }
     }
     return 0;

@@ -9,7 +9,7 @@ namespace input_utils {
 
 DistancesToStops ParsePredefinedDistancesBetweenStops(std::string_view text);
 
-std::pair<catalog::Stop, bool> ParseBusStopInput(std::string_view text);
+std::pair<catalog::Stop, bool> ParseBusStopInput(const std::string& text);
 
 catalog::Bus ParseBusRouteInput(std::string_view text);
 

@@ -12,7 +12,6 @@
 
 #include "geo.h"
 
-using StringViewPair = std::pair<std::string_view, std::string_view>;
 using DistancesToStops = std::vector<std::pair<std::string_view, int>>;
 
 namespace catalog {
@@ -31,15 +30,27 @@ struct Bus {
 struct Stop {
     std::string name;
     Coordinates point;
+
+    [[nodiscard]] size_t Hash() const {
+        return std::hash<std::string>{}(name) + even_value * std::hash<double>{}(point.lng) +
+               even_value * even_value * std::hash<double>{}(point.lat);
+    }
+
+private:
+    static const size_t even_value{37};
 };
+
+using StopPointersPair = std::pair<const Stop*, const Stop*>;
 
 struct BusStatistics {
     std::string_view number;
     size_t stops_count{0u};
     size_t unique_stops_count{0u};
-    uint64_t rout_length{0};
+    int rout_length{0};
     double curvature{0.};
 };
+
+std::ostream& operator<<(std::ostream& os, const BusStatistics& statistics);
 
 class TransportCatalogue {
 public:  // Constructors
@@ -48,25 +59,23 @@ public:  // Constructors
 public:  // Methods
     void AddStop(Stop stop);
     void AddBus(Bus bus);
-    void AddDistancesBetweenStops(std::string_view stop_from, const DistancesToStops& distances);
+    void AddDistance(std::string_view stop_from, std::string_view stop_to, int distance);
 
     [[nodiscard]] std::optional<BusStatistics> GetBusStatistics(std::string_view bus_number) const;
-    [[nodiscard]] std::optional<std::set<std::string_view>> GetBusesPassingThroughTheStop(
-        std::string_view stop_name) const;
+    [[nodiscard]] const std::set<std::string_view>* GetBusesPassingThroughTheStop(std::string_view stop_name) const;
 
 private:  // Types
-    struct StringViewPairHash {
-        size_t operator()(const StringViewPair& pair) const {
-            return hasher(pair.first) + prime_number * hasher(pair.second);
+    struct StopPointersPairHash {
+        size_t operator()(const StopPointersPair& pair) const {
+            return pair.first->Hash() + prime_number * pair.second->Hash();
         }
 
     private:
-        std::hash<std::string_view> hasher;
         static const size_t prime_number{31};
     };
 
 private:  // Methods
-    uint64_t CalculateRouteLength(const Bus* bus_info) const;
+    int CalculateRouteLength(const Bus* bus_info) const;
     double CalculateGeographicLength(const Bus* bus_info) const;
 
 private:  // Fields
@@ -77,7 +86,7 @@ private:  // Fields
     std::unordered_map<std::string_view, const Bus*> buses_;
 
     std::unordered_map<std::string_view, std::set<std::string_view>> buses_through_stop_;
-    std::unordered_map<StringViewPair, int, StringViewPairHash> distances_between_stops_;
+    std::unordered_map<StopPointersPair, int, StopPointersPairHash> distances_between_stops_;
 };
 
 }  // namespace catalog
