@@ -289,10 +289,12 @@ private:  // Class methods
         // Move words from the storage to the appropriate category <plus / minus>
         for (auto [_, query_word] : query_words) {
             if (!query_word.is_stop) {
-                if (query_word.is_minus)
+                if (query_word.is_minus) {
                     query.minus_words.insert(query_word.data);
-                else
+                }
+                else {
                     query.plus_words.insert(query_word.data);
+                }
             }
         }
 

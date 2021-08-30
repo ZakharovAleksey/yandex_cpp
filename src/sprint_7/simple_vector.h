@@ -195,8 +195,9 @@ public:  // Methods
             [[maybe_unused]] auto unused_pointer = data_.Release();
             data_.swap(new_data);
             capacity_ = new_size;
-        } else if (new_size > size_)
+        } else if (new_size > size_) {
             std::fill(data_.Get() + size_, data_.Get() + new_size, Type());
+        }
         size_ = new_size;
     }
 
