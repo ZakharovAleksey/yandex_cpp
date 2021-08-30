@@ -2,9 +2,7 @@
 
 #include <cmath>
 
-/// "засоряется" глобальное пространство имен
-/// желательно переместить все в namespace, т.к. эта структура независима от каталога, то в отдельное
-
+namespace geo {
 struct Coordinates {
     double lat{0.};
     double lng{0.};
@@ -17,3 +15,4 @@ inline double ComputeDistance(Coordinates from, Coordinates to) {
                 cos(from.lat * dr) * cos(to.lat * dr) * cos(abs(from.lng - to.lng) * dr)) *
            6371000;
 }
+}  // namespace geo
