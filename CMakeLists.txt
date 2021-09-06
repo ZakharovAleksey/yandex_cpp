@@ -2,12 +2,20 @@ cmake_minimum_required(VERSION 3.16)
 project(yp_cpp1)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" -Wall -Wextra)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
-#[[Compilation flags:
+#[[
+Compilation flags:
     WSL: -fsanitize=address -g -fno-omit-frame-pointer -fno-optimize-sibling-calls -ltbb -lpthread
     VS: -Wall -Wextra -fsanitize=address -fno-omit-frame-pointer -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -D_LIBCPP_DEBUG=1
 ]]
+
+if (MSVC)
+    # All flags: https://docs.microsoft.com/ru-ru/cpp/build/reference/compiler-options-listed-by-category?view=msvc-160
+    add_compile_options(/WX)
+else ()
+    add_compile_options(-Wall -Wextra)
+endif ()
 
 add_subdirectory(tests)
 
@@ -75,4 +83,4 @@ add_executable(yp_cpp1
         src/sprint_9/stat_reader.h
         src/sprint_9/transport_catalogue.cpp
         src/sprint_9/transport_catalogue.h
-)
+        )

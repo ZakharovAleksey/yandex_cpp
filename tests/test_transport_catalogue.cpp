@@ -6,9 +6,13 @@
 
 #include "../src/sprint_9/geo.h"
 #include "../src/sprint_9/input_reader.h"
+#include "../src/sprint_9/stat_reader.h"
+#include "../src/sprint_9/transport_catalogue.h"
 
-using namespace catalog::input_utils;
 using namespace geo;
+using namespace catalog::input_utils;
+using namespace catalog::output_utils;
+
 using namespace std::literals;
 
 constexpr double kDoubleThreshold{1e-3};
@@ -18,7 +22,8 @@ static const std::map<std::string, std::string> kStopNamesWithErrors = {
     {"Stop_Name"s, "Snake_Case letters ONLY"s},
     {"Stop Name"s, "letters with spaces"s},
     {"StopName1"s, "letters with numbers"s},
-    {"Stop Name 1"s, "letters with spaces and numbers"s}};
+    {"Stop Name 1"s, "letters with spaces and numbers"s},
+    {"Stop Name #1"s, "letters with spaces, numbers and special symbols"}};
 
 TEST(InputParsing, BusStopQueryStopName) {
     std::string stop_name;
@@ -73,5 +78,24 @@ TEST(InputParsing, DistancesBetweenStops) {
 
         EXPECT_EQ(actual_data[1].first, make_second_stop_name(stop_name)) << "Incorrect stop name parsing";
         EXPECT_EQ(actual_data[1].second, 100) << "Incorrect distance parsing";
+    }
+}
+
+TEST(StatParsing, BusNumber) {
+    // Stops names are identical to the bus names, that's why we use them
+    for (const auto& [bus_name, error_message] : kStopNamesWithErrors) {
+        std::string query = "Bus "s + bus_name;
+        std::string_view actual_bus_name = ParseBusStatisticsRequest(query);
+
+        EXPECT_EQ(bus_name, actual_bus_name) << "Incorrect bus number for query with " << error_message;
+    }
+}
+
+TEST(StatParsing, StopName) {
+    for (const auto& [stop_name, error_message] : kStopNamesWithErrors) {
+        std::string query = "Stop "s + stop_name;
+        std::string_view actual_stop_name = ParseBusesPassingThroughStopRequest(query);
+
+        EXPECT_EQ(stop_name, actual_stop_name) << "Incorrect stop for query with " << error_message;
     }
 }
