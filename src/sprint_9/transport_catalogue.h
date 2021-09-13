@@ -29,7 +29,7 @@ struct Bus {
 
 struct Stop {
     std::string name;
-    Coordinates point;
+    geo::Coordinates point;
 
     [[nodiscard]] size_t Hash() const {
         return std::hash<std::string>{}(name) + even_value * std::hash<double>{}(point.lng) +

@@ -7,7 +7,7 @@
 #include <cassert>
 #include <iomanip>
 
-namespace output_utils {
+namespace catalog::output_utils {
 
 using namespace std::literals;
 
@@ -23,7 +23,8 @@ std::string_view ParseBusesPassingThroughStopRequest(std::string_view text) {
     return text.substr(stop_begin, text.size() - stop_begin);
 }
 
-void PrintBusesPassingThroughStop(std::ostream& os, std::string_view stop_name, const std::set<std::string_view>* buses) {
+void PrintBusesPassingThroughStop(std::ostream& os, std::string_view stop_name,
+                                  const std::set<std::string_view>* buses) {
     if (!buses) {
         os << "Stop " << stop_name << ": not found" << std::endl;
     } else if (buses->empty()) {
@@ -40,4 +41,4 @@ void PrintBusesPassingThroughStop(std::ostream& os, std::string_view stop_name, 
     }
 }
 
-}  // namespace output_utils
+}  // namespace catalog::output_utils
