@@ -3,44 +3,56 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace json {
 
 class Node;
+
 using Dict = std::map<std::string, Node>;
 using Array = std::vector<Node>;
+using NodeContainer = std::variant<std::nullptr_t, bool, int, double, std::string, Dict, Array>;
 
-// Эта ошибка должна выбрасываться при ошибках парсинга JSON
+// All methods should throw this error while JSON parsing
 class ParsingError : public std::runtime_error {
 public:
     using runtime_error::runtime_error;
 };
 
 class Node {
-public:
-    explicit Node(Array array);
-    explicit Node(Dict map);
-    explicit Node(int value);
-    explicit Node(std::string value);
+public:  // Constructors
+    Node() = default;
 
-    const Array& AsArray() const;
-    const Dict& AsMap() const;
-    int AsInt() const;
-    const std::string& AsString() const;
+    explicit Node(std::nullptr_t /* value*/);
+    explicit Node(bool value);
+    explicit Node(int value);
+    explicit Node(double value);
+    explicit Node(std::string value);
+    explicit Node(Dict map);
+    explicit Node(Array array);
+
+public:  // Methods
+    [[nodiscard]] bool IsNull() const;
+
+    [[nodiscard]] const NodeContainer& AsPureNodeContainer() const;
+    [[nodiscard]] const std::string& AsString() const;
+    //    const Array& AsArray() const;
+    //    const Dict& AsMap() const;
+    //    int AsInt() const;
+
+public:
+    friend bool operator==(const Node& left, const Node& right);
 
 private:
-    Array as_array_;
-    Dict as_map_;
-    int as_int_ = 0;
-    std::string as_string_;
+    NodeContainer data_;
 };
 
 class Document {
 public:
     explicit Document(Node root);
 
-    const Node& GetRoot() const;
+    [[nodiscard]] const Node& GetRoot() const;
 
 private:
     Node root_;

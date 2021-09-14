@@ -9,7 +9,7 @@ using namespace json;
 using namespace std::literals;
 
 namespace {
-/*
+
 json::Document LoadJSON(const std::string& s) {
     std::istringstream strm(s);
     return json::Load(strm);
@@ -69,7 +69,7 @@ void TestNull() {
     assert(node.IsNull());
     assert(node == null_node);
 }
-
+/*
 void TestNumbers() {
     Node int_node{42};
     assert(int_node.IsInt());
@@ -212,12 +212,14 @@ void Benchmark() {
 }  // namespace
  */
 
+}  // namespace
+
 int main() {
-    /*
     TestNull();
+    /*
+    TestBool();
     TestNumbers();
     TestStrings();
-    TestBool();
     TestArray();
     TestMap();
     TestErrorHandling();
@@ -226,5 +228,3 @@ int main() {
     std::cout << "done" << std::endl;
     return 0;
 }
-
-}  // namespace
