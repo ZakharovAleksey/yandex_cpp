@@ -83,4 +83,4 @@ add_executable(yp_cpp1
         src/sprint_9/stat_reader.h
         src/sprint_9/transport_catalogue.cpp
         src/sprint_9/transport_catalogue.h
-        )
+        src/sprint_10/json.cpp src/sprint_10/json.h)
