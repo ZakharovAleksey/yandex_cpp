@@ -69,6 +69,23 @@ void TestNull() {
     assert(node.IsNull());
     assert(node == null_node);
 }
+
+void TestBool() {
+    Node true_node{true};
+    assert(true_node.IsBool());
+    assert(true_node.AsBool());
+
+    Node false_node{false};
+    assert(false_node.IsBool());
+    assert(!false_node.AsBool());
+
+    assert(Print(true_node) == "true"s);
+    assert(Print(false_node) == "false"s);
+
+    assert(LoadJSON("true"s).GetRoot() == true_node);
+    assert(LoadJSON("false"s).GetRoot() == false_node);
+}
+
 /*
 void TestNumbers() {
     Node int_node{42};
@@ -109,22 +126,6 @@ void TestStrings() {
     assert(Print(str_node) == "\"Hello, \\\"everybody\\\"\""s);
 
     assert(LoadJSON(Print(str_node)).GetRoot() == str_node);
-}
-
-void TestBool() {
-    Node true_node{true};
-    assert(true_node.IsBool());
-    assert(true_node.AsBool());
-
-    Node false_node{false};
-    assert(false_node.IsBool());
-    assert(!false_node.AsBool());
-
-    assert(Print(true_node) == "true"s);
-    assert(Print(false_node) == "false"s);
-
-    assert(LoadJSON("true"s).GetRoot() == true_node);
-    assert(LoadJSON("false"s).GetRoot() == false_node);
 }
 
 void TestArray() {
@@ -216,8 +217,8 @@ void Benchmark() {
 
 int main() {
     TestNull();
-    /*
     TestBool();
+    /*
     TestNumbers();
     TestStrings();
     TestArray();

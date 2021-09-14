@@ -12,7 +12,9 @@ struct NodeContainerPrinter {
     void operator()(std::nullptr_t /* value */) const {
         out << "null";
     }
-    void operator()(bool value) const {}
+    void operator()(bool value) const {
+        out << std::boolalpha << value;
+    }
     void operator()(int value) const {}
     void operator()(double value) const {}
     void operator()(const std::string& value) const {}
@@ -23,6 +25,13 @@ struct NodeContainerPrinter {
 /* Load methods */
 
 Node LoadNode(istream& input);
+
+Node LoadBool(std::istream& input) {
+    char symbol;
+    input >> symbol;
+
+    return symbol == 't' ? Node{true} : Node{false};
+}
 
 Node LoadArray(istream& input) {
     Array result;
@@ -74,6 +83,9 @@ Node LoadNode(istream& input) {
 
     if (c == 'n') {
         return Node();
+    } else if (c == 't' || c == 'f') {
+        input.putback(c);
+        return LoadBool(input);
     } else if (c == '[') {
         return LoadArray(input);
     } else if (c == '{') {
@@ -104,10 +116,18 @@ bool Node::IsNull() const {
     return std::holds_alternative<std::nullptr_t>(data_);
 }
 
+bool Node::IsBool() const {
+    return std::holds_alternative<bool>(data_);
+}
+
 /* As-like methods */
 
 const NodeContainer& Node::AsPureNodeContainer() const {
     return data_;
+}
+
+const bool& Node::AsBool() const {
+    return std::get<bool>(data_);
 }
 
 const std::string& Node::AsString() const {

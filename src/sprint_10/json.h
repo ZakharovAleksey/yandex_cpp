@@ -34,8 +34,10 @@ public:  // Constructors
 
 public:  // Methods
     [[nodiscard]] bool IsNull() const;
+    [[nodiscard]] bool IsBool() const;
 
     [[nodiscard]] const NodeContainer& AsPureNodeContainer() const;
+    [[nodiscard]] const bool& AsBool() const;
     [[nodiscard]] const std::string& AsString() const;
     //    const Array& AsArray() const;
     //    const Dict& AsMap() const;
