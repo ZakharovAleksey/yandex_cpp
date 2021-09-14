@@ -1,10 +1,13 @@
 #include "json.h"
 
+#include <cctype>
 using namespace std;
 
 namespace json {
 
 namespace {
+
+using Number = std::variant<int, double>;
 
 struct NodeContainerPrinter {
     std::ostream& out;
@@ -15,8 +18,12 @@ struct NodeContainerPrinter {
     void operator()(bool value) const {
         out << std::boolalpha << value;
     }
-    void operator()(int value) const {}
-    void operator()(double value) const {}
+    void operator()(int value) const {
+        out << value;
+    }
+    void operator()(double value) const {
+        out << value;
+    }
     void operator()(const std::string& value) const {}
     void operator()(const Dict& map) const {}
     void operator()(const Array& array) const {}
@@ -46,13 +53,72 @@ Node LoadArray(istream& input) {
     return Node(move(result));
 }
 
-Node LoadInt(istream& input) {
-    int result = 0;
-    while (isdigit(input.peek())) {
-        result *= 10;
-        result += input.get() - '0';
+Number LoadNumber(std::istream& input) {
+    using namespace std::literals;
+
+    std::string parsed_num;
+
+    // Считывает в parsed_num очередной символ из input
+    auto read_char = [&parsed_num, &input] {
+        parsed_num += static_cast<char>(input.get());
+        if (!input) {
+            throw ParsingError("Failed to read number from stream"s);
+        }
+    };
+
+    // Считывает одну или более цифр в parsed_num из input
+    auto read_digits = [&input, read_char] {
+        if (!std::isdigit(input.peek())) {
+            throw ParsingError("A digit is expected"s);
+        }
+        while (std::isdigit(input.peek())) {
+            read_char();
+        }
+    };
+
+    if (input.peek() == '-') {
+        read_char();
     }
-    return Node(result);
+    // Парсим целую часть числа
+    if (input.peek() == '0') {
+        read_char();
+        // После 0 в JSON не могут идти другие цифры
+    } else {
+        read_digits();
+    }
+
+    bool is_int = true;
+    // Парсим дробную часть числа
+    if (input.peek() == '.') {
+        read_char();
+        read_digits();
+        is_int = false;
+    }
+
+    // Парсим экспоненциальную часть числа
+    if (int ch = input.peek(); ch == 'e' || ch == 'E') {
+        read_char();
+        if (ch = input.peek(); ch == '+' || ch == '-') {
+            read_char();
+        }
+        read_digits();
+        is_int = false;
+    }
+
+    try {
+        if (is_int) {
+            // Сначала пробуем преобразовать строку в int
+            try {
+                return std::stoi(parsed_num);
+            } catch (...) {
+                // В случае неудачи, например, при переполнении,
+                // код ниже попробует преобразовать строку в double
+            }
+        }
+        return std::stod(parsed_num);
+    } catch (...) {
+        throw ParsingError("Failed to convert "s + parsed_num + " to number"s);
+    }
 }
 
 Node LoadString(istream& input) {
@@ -82,7 +148,7 @@ Node LoadNode(istream& input) {
     input >> c;
 
     if (c == 'n') {
-        return Node();
+        return Node{};
     } else if (c == 't' || c == 'f') {
         input.putback(c);
         return LoadBool(input);
@@ -94,7 +160,8 @@ Node LoadNode(istream& input) {
         return LoadString(input);
     } else {
         input.putback(c);
-        return LoadInt(input);
+        auto value = LoadNumber(input);
+        return std::holds_alternative<int>(value) ? Node{std::get<int>(value)} : Node{std::get<double>(value)};
     }
 }
 
@@ -120,6 +187,17 @@ bool Node::IsBool() const {
     return std::holds_alternative<bool>(data_);
 }
 
+bool Node::IsInt() const {
+    return std::holds_alternative<int>(data_);
+}
+bool Node::IsDouble() const {
+    return std::holds_alternative<double>(data_) || std::holds_alternative<int>(data_);
+}
+bool Node::IsPureDouble() const {
+    double integral_part{0.};
+    return !std::holds_alternative<int>(data_) && std::fmod(std::get<double>(data_), integral_part) != 0.;
+}
+
 /* As-like methods */
 
 const NodeContainer& Node::AsPureNodeContainer() const {
@@ -128,6 +206,14 @@ const NodeContainer& Node::AsPureNodeContainer() const {
 
 const bool& Node::AsBool() const {
     return std::get<bool>(data_);
+}
+
+int Node::AsInt() const {
+    return std::get<int>(data_);
+}
+
+double Node::AsDouble() const {
+    return std::holds_alternative<double>(data_) ? std::get<double>(data_) : static_cast<double>(std::get<int>(data_));
 }
 
 const std::string& Node::AsString() const {

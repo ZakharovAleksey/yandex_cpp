@@ -86,7 +86,6 @@ void TestBool() {
     assert(LoadJSON("false"s).GetRoot() == false_node);
 }
 
-/*
 void TestNumbers() {
     Node int_node{42};
     assert(int_node.IsInt());
@@ -114,6 +113,8 @@ void TestNumbers() {
     assert(LoadJSON("1.2e+5"s).GetRoot().AsDouble() == 1.2e5);
     assert(LoadJSON("-123456"s).GetRoot().AsInt() == -123456);
 }
+
+/*
 
 void TestStrings() {
     Node str_node{"Hello, \"everybody\""s};
@@ -218,8 +219,8 @@ void Benchmark() {
 int main() {
     TestNull();
     TestBool();
-    /*
     TestNumbers();
+    /*
     TestStrings();
     TestArray();
     TestMap();
