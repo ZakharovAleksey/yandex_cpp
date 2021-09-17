@@ -1,6 +1,8 @@
 #include "json.h"
 
 #include <cctype>
+#include <unordered_map>
+
 using namespace std;
 
 namespace json {
@@ -8,6 +10,9 @@ namespace json {
 namespace {
 
 using Number = std::variant<int, double>;
+
+static const std::unordered_map<char, std::string> kEscapeSymbols{
+    {'\n', "\\\n"s}, {'\t', "\\\t"s}, {'\r', "\\\r"s}, {'\"', "\\\""s}, {'\\', "\\\\"s}};
 
 struct NodeContainerPrinter {
     std::ostream& out;
@@ -24,7 +29,21 @@ struct NodeContainerPrinter {
     void operator()(double value) const {
         out << value;
     }
-    void operator()(const std::string& value) const {}
+    void operator()(const std::string& value) const {
+        // TODO: https://pastebin.com/CUZWMph0
+        //        "Hello, \"everybody\""
+        //        "\"Hello, \\\"everybody\\\"\""
+        std::string result;
+        result += "\"";
+        for (const char symbol : value) {
+            if (kEscapeSymbols.count(symbol) > 0)
+                result += kEscapeSymbols.at(symbol);
+            else
+                result += symbol;
+        }
+        result += '\"';
+        out << result;
+    }
     void operator()(const Dict& map) const {}
     void operator()(const Array& array) const {}
 };
@@ -121,10 +140,49 @@ Number LoadNumber(std::istream& input) {
     }
 }
 
-Node LoadString(istream& input) {
-    string line;
-    getline(input, line, '"');
-    return Node(move(line));
+Node LoadString(std::istream& input) {
+    input >> std::noskipws;
+    std::string result;
+
+    char current{' '};
+    char next{' '};
+
+    // |"\" \\r\\n \\\" \\t\\t \\\\ \""|
+    // |" \r\n \" \t\t \\ "|
+
+    while (input.get(current)) {
+        next = static_cast<char>(input.peek());
+
+        // If " is not a part of \" symbol - this is the end of the line
+        if (current == '"')
+            break;
+
+        // If string starts with '//' -> this is escape symbol
+        if (current == '\\') {
+            input.get(next);
+            switch (next) {
+                case '\\':  // Handle \\ symbol
+                    result += current;
+                    result += '\\';
+                    break;
+                case '"':  // Handle \" symbol
+                    // result += current;
+                    result += '"';
+                    break;
+                default:  // Handle symbols: \n, \r, \t
+                    result += current;
+                    result += next;
+            }
+        } else {
+            result += current;
+        }
+    }
+
+    input >> std::skipws;
+    if (result.empty() || current != '"')
+        throw ParsingError("Empty string on the input");
+
+    return Node(std::move(result));
 }
 
 Node LoadDict(istream& input) {
@@ -196,6 +254,10 @@ bool Node::IsDouble() const {
 bool Node::IsPureDouble() const {
     double integral_part{0.};
     return !std::holds_alternative<int>(data_) && std::fmod(std::get<double>(data_), integral_part) != 0.;
+}
+
+bool Node::IsString() const {
+    return std::holds_alternative<std::string>(data_);
 }
 
 /* As-like methods */

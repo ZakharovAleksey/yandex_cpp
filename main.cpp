@@ -114,8 +114,6 @@ void TestNumbers() {
     assert(LoadJSON("-123456"s).GetRoot().AsInt() == -123456);
 }
 
-/*
-
 void TestStrings() {
     Node str_node{"Hello, \"everybody\""s};
     assert(str_node.IsString());
@@ -124,11 +122,25 @@ void TestStrings() {
     assert(!str_node.IsInt());
     assert(!str_node.IsDouble());
 
-    assert(Print(str_node) == "\"Hello, \\\"everybody\\\"\""s);
+    auto lol = Print(str_node);
+    assert(lol == "\"Hello, \\\"everybody\\\"\""s);
 
-    assert(LoadJSON(Print(str_node)).GetRoot() == str_node);
+    auto doc = LoadJSON(lol);
+    auto node = doc.GetRoot();
+
+    assert(node == str_node);
+
+    Node lol1{" \\r\\n \\\" \\t\\t \\\\ "s};
+    assert(lol1.AsString() == " \\r\\n \\\" \\t\\t \\\\ ");
+
+    auto lol2 = Print(lol1);
+    assert(lol2 == "\" \\r\\n \\\" \\t\\t \\\\ \""s);
+
+    //auto p = LoadJSON().GetRoot();
+//    assert(p.AsString() == " \\r\\n \\\" \\t\\t \\\\ "s);
 }
 
+/*
 void TestArray() {
     Node arr_node{Array{1, 1.23, "Hello"s}};
     assert(arr_node.IsArray());
@@ -217,11 +229,14 @@ void Benchmark() {
 }  // namespace
 
 int main() {
+    //    auto p = LoadJSON("\" \\r\\n \\\" \\t\\t \\\\ \""s).GetRoot();
+    //    auto printed = Print(p);
+
     TestNull();
     TestBool();
     TestNumbers();
-    /*
     TestStrings();
+    /*
     TestArray();
     TestMap();
     TestErrorHandling();

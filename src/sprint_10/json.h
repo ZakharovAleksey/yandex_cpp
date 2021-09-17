@@ -38,6 +38,7 @@ public:  // Methods
     [[nodiscard]] bool IsInt() const;
     [[nodiscard]] bool IsDouble() const;
     [[nodiscard]] bool IsPureDouble() const;
+    [[nodiscard]] bool IsString() const;
 
     [[nodiscard]] const NodeContainer& AsPureNodeContainer() const;
     [[nodiscard]] const bool& AsBool() const;
