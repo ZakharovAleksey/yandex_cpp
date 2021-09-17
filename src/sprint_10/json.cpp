@@ -11,39 +11,47 @@ namespace {
 
 using Number = std::variant<int, double>;
 
-static const std::unordered_map<char, std::string> kEscapeSymbols{
-    {'\n', "\\\n"s}, {'\t', "\\\t"s}, {'\r', "\\\r"s}, {'\"', "\\\""s}, {'\\', "\\\\"s}};
+static const std::unordered_map<char, char> kEscapeSymbolsDirectOrder{
+    {'\n', 'n'}, {'\t', 't'}, {'\r', 'r'}, {'\\', '\\'}, {'\"', '"'}};
+
+static std::unordered_map<char, char> kEscapeSymbolsReversedOrder{
+    {'\\', '\\'}, {'"', '"'}, {'n', '\n'}, {'t', '\t'}, {'r', '\r'}};
 
 struct NodeContainerPrinter {
     std::ostream& out;
 
     void operator()(std::nullptr_t /* value */) const {
-        out << "null";
+        out << "null"s;
     }
+
     void operator()(bool value) const {
         out << std::boolalpha << value;
     }
+
     void operator()(int value) const {
         out << value;
     }
+
     void operator()(double value) const {
         out << value;
     }
+
     void operator()(const std::string& value) const {
-        // TODO: https://pastebin.com/CUZWMph0
-        //        "Hello, \"everybody\""
-        //        "\"Hello, \\\"everybody\\\"\""
-        std::string result;
-        result += "\"";
+        // Output string starts with "
+        out << "\"";
+
         for (const char symbol : value) {
-            if (kEscapeSymbols.count(symbol) > 0)
-                result += kEscapeSymbols.at(symbol);
-            else
-                result += symbol;
+            if (kEscapeSymbolsDirectOrder.count(symbol)) {
+                out << '\\' << kEscapeSymbolsDirectOrder.at(symbol);
+            } else {
+                out << symbol;
+            }
         }
-        result += '\"';
-        out << result;
+
+        // Output string ends with "
+        out << '\"';
     }
+
     void operator()(const Dict& map) const {}
     void operator()(const Array& array) const {}
 };
@@ -147,9 +155,6 @@ Node LoadString(std::istream& input) {
     char current{' '};
     char next{' '};
 
-    // |"\" \\r\\n \\\" \\t\\t \\\\ \""|
-    // |" \r\n \" \t\t \\ "|
-
     while (input.get(current)) {
         next = static_cast<char>(input.peek());
 
@@ -157,22 +162,13 @@ Node LoadString(std::istream& input) {
         if (current == '"')
             break;
 
-        // If string starts with '//' -> this is escape symbol
+        // If string starts with '\\' -> this is an escape symbol
         if (current == '\\') {
             input.get(next);
-            switch (next) {
-                case '\\':  // Handle \\ symbol
-                    result += current;
-                    result += '\\';
-                    break;
-                case '"':  // Handle \" symbol
-                    // result += current;
-                    result += '"';
-                    break;
-                default:  // Handle symbols: \n, \r, \t
-                    result += current;
-                    result += next;
-            }
+
+            if (kEscapeSymbolsReversedOrder.count(next) > 0)
+                result += kEscapeSymbolsReversedOrder.at(next);
+
         } else {
             result += current;
         }
@@ -180,7 +176,7 @@ Node LoadString(std::istream& input) {
 
     input >> std::skipws;
     if (result.empty() || current != '"')
-        throw ParsingError("Empty string on the input");
+        throw ParsingError("Empty string as an input");
 
     return Node(std::move(result));
 }

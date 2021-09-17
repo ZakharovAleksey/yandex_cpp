@@ -115,6 +115,10 @@ void TestNumbers() {
 }
 
 void TestStrings() {
+    auto one = LoadJSON("\" \\r\\n \\\" \\t\\t \\\\ \""s).GetRoot();
+    auto two = Node(" \r\n \" \t\t \\ "s);
+    assert(one == two);
+
     Node str_node{"Hello, \"everybody\""s};
     assert(str_node.IsString());
     assert(str_node.AsString() == "Hello, \"everybody\""s);
@@ -122,22 +126,17 @@ void TestStrings() {
     assert(!str_node.IsInt());
     assert(!str_node.IsDouble());
 
-    auto lol = Print(str_node);
-    assert(lol == "\"Hello, \\\"everybody\\\"\""s);
+    auto actual = Print(str_node);
+    auto expected = "\"Hello, \\\"everybody\\\"\""s;
+    std::cout << "actual:" << actual << std::endl;
+    std::cout << "expected:" << expected << std::endl;
+    assert(actual == expected);
 
-    auto doc = LoadJSON(lol);
-    auto node = doc.GetRoot();
+    actual = Print(one);
+    expected = "\" \\r\\n \\\" \\t\\t \\\\ \"";
+    assert(actual == expected);
 
-    assert(node == str_node);
 
-    Node lol1{" \\r\\n \\\" \\t\\t \\\\ "s};
-    assert(lol1.AsString() == " \\r\\n \\\" \\t\\t \\\\ ");
-
-    auto lol2 = Print(lol1);
-    assert(lol2 == "\" \\r\\n \\\" \\t\\t \\\\ \""s);
-
-    //auto p = LoadJSON().GetRoot();
-//    assert(p.AsString() == " \\r\\n \\\" \\t\\t \\\\ "s);
 }
 
 /*
