@@ -1,6 +1,7 @@
 #include "json.h"
 
 #include <cctype>
+#include <cmath>
 #include <unordered_map>
 
 using namespace std;
@@ -369,10 +370,22 @@ bool operator==(const Node& left, const Node& right) {
     return left.data_ == right.data_;
 }
 
+bool operator!=(const Node& left, const Node& right) {
+    return !(left == right);
+}
+
 Document::Document(Node root) : root_(move(root)) {}
 
 const Node& Document::GetRoot() const {
     return root_;
+}
+
+bool operator==(const Document& left, const Document& right) {
+    return left.GetRoot() == right.GetRoot();
+}
+
+bool operator!=(const Document& left, const Document& right) {
+    return !(left == right);
 }
 
 Document Load(istream& input) {

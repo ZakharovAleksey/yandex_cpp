@@ -135,8 +135,6 @@ void TestStrings() {
     actual = Print(one);
     expected = "\" \\r\\n \\\" \\t\\t \\\\ \"";
     assert(actual == expected);
-
-
 }
 
 void TestArray() {
@@ -150,7 +148,6 @@ void TestArray() {
     auto print = Print(arr_node);
     assert(LoadJSON(print).GetRoot() == arr_node);
 }
-
 
 void TestMap() {
     Node dict_node{Dict{{"key1"s, "value1"s}, {"key2"s, 42}}};
@@ -178,29 +175,16 @@ void TestErrorHandling() {
     MustFailToLoad("nul"s);
 
     Node dbl_node{3.5};
-    MustThrowLogicError([&dbl_node] {
-        dbl_node.AsInt();
-    });
-    MustThrowLogicError([&dbl_node] {
-        dbl_node.AsString();
-    });
-    MustThrowLogicError([&dbl_node] {
-        dbl_node.AsArray();
-    });
+    MustThrowLogicError([&dbl_node] { dbl_node.AsInt(); });
+    MustThrowLogicError([&dbl_node] { dbl_node.AsString(); });
+    MustThrowLogicError([&dbl_node] { dbl_node.AsArray(); });
 
     Node array_node{Array{}};
-    MustThrowLogicError([&array_node] {
-        array_node.AsMap();
-    });
-    MustThrowLogicError([&array_node] {
-        array_node.AsDouble();
-    });
-    MustThrowLogicError([&array_node] {
-        array_node.AsBool();
-    });
+    MustThrowLogicError([&array_node] { array_node.AsMap(); });
+    MustThrowLogicError([&array_node] { array_node.AsDouble(); });
+    MustThrowLogicError([&array_node] { array_node.AsBool(); });
 }
 
-/*
 void Benchmark() {
     const auto start = std::chrono::steady_clock::now();
     Array arr;
@@ -225,9 +209,6 @@ void Benchmark() {
 }
 
 }  // namespace
- */
-
-}  // namespace
 
 int main() {
     //    auto p = LoadJSON("\" \\r\\n \\\" \\t\\t \\\\ \""s).GetRoot();
@@ -240,9 +221,9 @@ int main() {
     TestArray();
     TestMap();
     TestErrorHandling();
-    /*
     Benchmark();
-    */
+    /*
+     */
     std::cout << "done" << std::endl;
     return 0;
 }

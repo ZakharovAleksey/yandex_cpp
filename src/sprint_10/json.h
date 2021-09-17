@@ -52,16 +52,22 @@ public:  // Methods
 
 public:  // Operators
     friend bool operator==(const Node& left, const Node& right);
+    friend bool operator!=(const Node& left, const Node& right);
 
 private:  // Fields
     NodeContainer data_;
 };
 
 class Document {
-public:
+public:  // Constructor
     explicit Document(Node root);
 
+public:  // Methods
     [[nodiscard]] const Node& GetRoot() const;
+
+public:  // Operators
+    friend bool operator==(const Document& left, const Document& right);
+    friend bool operator!=(const Document& left, const Document& right);
 
 private:
     Node root_;
