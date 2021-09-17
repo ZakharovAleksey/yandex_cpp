@@ -37,7 +37,6 @@ struct NodeContainerPrinter {
     }
 
     void operator()(const std::string& value) const {
-        // Output string starts with "
         out << "\"";
 
         for (const char symbol : value) {
@@ -48,20 +47,31 @@ struct NodeContainerPrinter {
             }
         }
 
-        // Output string ends with "
         out << '\"';
     }
 
-    void operator()(const Dict& map) const {}
+    void operator()(const Dict& map) const {
+        out << '{';
+        int id{0};
+        for (const auto&[key, value] : map) {
+            if (id++ != 0)
+                out << ", "s;
+            out << '"' << key << "\":";
+            std::visit(NodeContainerPrinter{out}, value.AsPureNodeContainer());
+        }
+        out << '}';
+    }
 
     void operator()(const Array& array) const {
         out << '[';
+
         int id{0};
         for (const auto& value : array) {
             if (id++ != 0)
                 out << ", "s;
             std::visit(NodeContainerPrinter{out}, value.AsPureNodeContainer());
         }
+
         out << ']';
     }
 };
@@ -270,6 +280,10 @@ bool Node::IsArray() const {
     return std::holds_alternative<Array>(data_);
 }
 
+bool Node::IsMap() const {
+    return std::holds_alternative<Dict>(data_);
+}
+
 /* As-like methods */
 
 const NodeContainer& Node::AsPureNodeContainer() const {
@@ -294,6 +308,10 @@ const std::string& Node::AsString() const {
 
 const Array& Node::AsArray() const {
     return std::get<Array>(data_);
+}
+
+const Dict& Node::AsMap() const {
+    return std::get<Dict>(data_);
 }
 
 /* Operators */

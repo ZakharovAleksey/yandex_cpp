@@ -40,6 +40,7 @@ public:  // Methods
     [[nodiscard]] bool IsPureDouble() const;
     [[nodiscard]] bool IsString() const;
     [[nodiscard]] bool IsArray() const;
+    [[nodiscard]] bool IsMap() const;
 
     [[nodiscard]] const NodeContainer& AsPureNodeContainer() const;
     [[nodiscard]] const bool& AsBool() const;
@@ -47,6 +48,7 @@ public:  // Methods
     [[nodiscard]] double AsDouble() const;
     [[nodiscard]] const std::string& AsString() const;
     [[nodiscard]] const Array& AsArray() const;
+    [[nodiscard]] const Dict& AsMap() const;
 
     //    const Array& AsArray() const;
     //    const Dict& AsMap() const;
