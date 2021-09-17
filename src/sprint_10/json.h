@@ -33,31 +33,27 @@ public:  // Constructors
     Node(Array array);
 
 public:  // Methods
-    [[nodiscard]] bool IsNull() const;
-    [[nodiscard]] bool IsBool() const;
-    [[nodiscard]] bool IsInt() const;
-    [[nodiscard]] bool IsDouble() const;
-    [[nodiscard]] bool IsPureDouble() const;
-    [[nodiscard]] bool IsString() const;
-    [[nodiscard]] bool IsArray() const;
-    [[nodiscard]] bool IsMap() const;
+    bool IsNull() const;
+    bool IsBool() const;
+    bool IsInt() const;
+    bool IsDouble() const;
+    bool IsPureDouble() const;
+    bool IsString() const;
+    bool IsArray() const;
+    bool IsMap() const;
 
-    [[nodiscard]] const NodeContainer& AsPureNodeContainer() const;
-    [[nodiscard]] const bool& AsBool() const;
-    [[nodiscard]] int AsInt() const;
-    [[nodiscard]] double AsDouble() const;
-    [[nodiscard]] const std::string& AsString() const;
-    [[nodiscard]] const Array& AsArray() const;
-    [[nodiscard]] const Dict& AsMap() const;
+    const NodeContainer& AsPureNodeContainer() const;
+    const bool& AsBool() const;
+    int AsInt() const;
+    double AsDouble() const;
+    const std::string& AsString() const;
+    const Array& AsArray() const;
+    const Dict& AsMap() const;
 
-    //    const Array& AsArray() const;
-    //    const Dict& AsMap() const;
-    //    int AsInt() const;
-
-public:
+public:  // Operators
     friend bool operator==(const Node& left, const Node& right);
 
-private:
+private:  // Fields
     NodeContainer data_;
 };
 

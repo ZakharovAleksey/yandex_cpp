@@ -17,6 +17,9 @@ static const std::unordered_map<char, char> kEscapeSymbolsDirectOrder{
 static std::unordered_map<char, char> kEscapeSymbolsReversedOrder{
     {'\\', '\\'}, {'"', '"'}, {'n', '\n'}, {'t', '\t'}, {'r', '\r'}};
 
+// Max size between "false"s.size() and "true"s.size()
+static constexpr int kMaxBooleanStringSize{5};
+
 struct NodeContainerPrinter {
     std::ostream& out;
 
@@ -53,7 +56,7 @@ struct NodeContainerPrinter {
     void operator()(const Dict& map) const {
         out << '{';
         int id{0};
-        for (const auto&[key, value] : map) {
+        for (const auto& [key, value] : map) {
             if (id++ != 0)
                 out << ", "s;
             out << '"' << key << "\":";
@@ -80,11 +83,34 @@ struct NodeContainerPrinter {
 
 Node LoadNode(istream& input);
 
-Node LoadBool(std::istream& input) {
-    char symbol;
-    input >> symbol;
+Node LoadNull(istream& input) {
+    static const std::string expected{"null"s};
+    std::string result;
+    result.reserve(4);
 
-    return symbol == 't' ? Node{true} : Node{false};
+    for (char symbol; input >> symbol && result.size() != expected.size();) {
+        result.push_back(symbol);
+        if (result == expected)
+            return Node{};
+    }
+
+    throw ParsingError("Incorrect null value: expected \"null\" string"s);
+}
+
+Node LoadBool(std::istream& input) {
+    std::string result;
+    result.reserve(kMaxBooleanStringSize);
+
+    int id{0};
+    for (char symbol; input >> symbol && id++ != kMaxBooleanStringSize;) {
+        result.push_back(symbol);
+        if (result == "true"s)
+            return Node{true};
+        if (result == "false"s)
+            return Node{false};
+    }
+
+    throw ParsingError("Incorrect boolean value: expected \"true\" or \"false\" strings"s);
 }
 
 Node LoadArray(istream& input) {
@@ -94,10 +120,13 @@ Node LoadArray(istream& input) {
         if (c != ',') {
             input.putback(c);
         }
-        result.push_back(LoadNode(input));
+        result.emplace_back(LoadNode(input));
     }
 
-    return Node(move(result));
+    if (result.empty())
+        throw ParsingError("Incorrect array parsing. Array could not be empty"s);
+
+    return Node(std::move(result));
 }
 
 Number LoadNumber(std::istream& input) {
@@ -214,6 +243,9 @@ Node LoadDict(istream& input) {
         result.insert({move(key), LoadNode(input)});
     }
 
+    if (result.empty())
+        throw ParsingError("Incorrect dictionary parsing. Dict could not be empty"s);
+
     return Node(move(result));
 }
 
@@ -222,7 +254,8 @@ Node LoadNode(istream& input) {
     input >> c;
 
     if (c == 'n') {
-        return Node{};
+        input.putback(c);
+        return LoadNull(input);
     } else if (c == 't' || c == 'f') {
         input.putback(c);
         return LoadBool(input);
@@ -291,27 +324,43 @@ const NodeContainer& Node::AsPureNodeContainer() const {
 }
 
 const bool& Node::AsBool() const {
-    return std::get<bool>(data_);
+    if (auto* value = std::get_if<bool>(&data_))
+        return *value;
+    throw std::logic_error("Impossible to parse node as Boolean"s);
 }
 
 int Node::AsInt() const {
-    return std::get<int>(data_);
+    if (auto* value = std::get_if<int>(&data_))
+        return *value;
+    throw std::logic_error("Impossible to parse node as Int "s);
 }
 
 double Node::AsDouble() const {
-    return std::holds_alternative<double>(data_) ? std::get<double>(data_) : static_cast<double>(std::get<int>(data_));
+    if (auto* value = std::get_if<double>(&data_))
+        return *value;
+
+    if (auto* value = std::get_if<int>(&data_))
+        return static_cast<double>(*value);
+
+    throw std::logic_error("Impossible to parse node as Double "s);
 }
 
 const std::string& Node::AsString() const {
-    return std::get<std::string>(data_);
+    if (auto* value = std::get_if<std::string>(&data_))
+        return *value;
+    throw std::logic_error("Impossible to parse node as String"s);
 }
 
 const Array& Node::AsArray() const {
-    return std::get<Array>(data_);
+    if (auto* value = std::get_if<Array>(&data_))
+        return *value;
+    throw std::logic_error("Impossible to parse node as Array"s);
 }
 
 const Dict& Node::AsMap() const {
-    return std::get<Dict>(data_);
+    if (auto* value = std::get_if<Dict>(&data_))
+        return *value;
+    throw std::logic_error("Impossible to parse node as Dict"s);
 }
 
 /* Operators */

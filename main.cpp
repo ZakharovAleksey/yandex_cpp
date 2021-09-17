@@ -164,7 +164,6 @@ void TestMap() {
     assert(LoadJSON(Print(dict_node)).GetRoot() == dict_node);
 }
 
-/*
 void TestErrorHandling() {
     MustFailToLoad("["s);
     MustFailToLoad("]"s);
@@ -201,6 +200,7 @@ void TestErrorHandling() {
     });
 }
 
+/*
 void Benchmark() {
     const auto start = std::chrono::steady_clock::now();
     Array arr;
@@ -239,8 +239,8 @@ int main() {
     TestStrings();
     TestArray();
     TestMap();
-    /*
     TestErrorHandling();
+    /*
     Benchmark();
     */
     std::cout << "done" << std::endl;
