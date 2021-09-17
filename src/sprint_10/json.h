@@ -24,13 +24,13 @@ class Node {
 public:  // Constructors
     Node() = default;
 
-    explicit Node(std::nullptr_t /* value*/);
-    explicit Node(bool value);
-    explicit Node(int value);
-    explicit Node(double value);
-    explicit Node(std::string value);
-    explicit Node(Dict map);
-    explicit Node(Array array);
+    Node(std::nullptr_t /* value*/);
+    Node(bool value);
+    Node(int value);
+    Node(double value);
+    Node(std::string value);
+    Node(Dict map);
+    Node(Array array);
 
 public:  // Methods
     [[nodiscard]] bool IsNull() const;
@@ -39,12 +39,15 @@ public:  // Methods
     [[nodiscard]] bool IsDouble() const;
     [[nodiscard]] bool IsPureDouble() const;
     [[nodiscard]] bool IsString() const;
+    [[nodiscard]] bool IsArray() const;
 
     [[nodiscard]] const NodeContainer& AsPureNodeContainer() const;
     [[nodiscard]] const bool& AsBool() const;
     [[nodiscard]] int AsInt() const;
     [[nodiscard]] double AsDouble() const;
     [[nodiscard]] const std::string& AsString() const;
+    [[nodiscard]] const Array& AsArray() const;
+
     //    const Array& AsArray() const;
     //    const Dict& AsMap() const;
     //    int AsInt() const;

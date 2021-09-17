@@ -53,7 +53,17 @@ struct NodeContainerPrinter {
     }
 
     void operator()(const Dict& map) const {}
-    void operator()(const Array& array) const {}
+
+    void operator()(const Array& array) const {
+        out << '[';
+        int id{0};
+        for (const auto& value : array) {
+            if (id++ != 0)
+                out << ", "s;
+            std::visit(NodeContainerPrinter{out}, value.AsPureNodeContainer());
+        }
+        out << ']';
+    }
 };
 
 /* Load methods */
@@ -256,6 +266,10 @@ bool Node::IsString() const {
     return std::holds_alternative<std::string>(data_);
 }
 
+bool Node::IsArray() const {
+    return std::holds_alternative<Array>(data_);
+}
+
 /* As-like methods */
 
 const NodeContainer& Node::AsPureNodeContainer() const {
@@ -276,6 +290,10 @@ double Node::AsDouble() const {
 
 const std::string& Node::AsString() const {
     return std::get<std::string>(data_);
+}
+
+const Array& Node::AsArray() const {
+    return std::get<Array>(data_);
 }
 
 /* Operators */
