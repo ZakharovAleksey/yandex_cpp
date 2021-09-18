@@ -4,7 +4,7 @@
 #include <cmath>
 #include <unordered_map>
 
-using namespace std;
+using namespace std::string_literals;
 
 namespace json {
 
@@ -12,14 +12,14 @@ namespace {
 
 using Number = std::variant<int, double>;
 
-static const std::unordered_map<char, char> kEscapeSymbolsDirectOrder{
+const std::unordered_map<char, char> kEscapeSymbolsDirectOrder{
     {'\n', 'n'}, {'\t', 't'}, {'\r', 'r'}, {'\\', '\\'}, {'\"', '"'}};
 
-static std::unordered_map<char, char> kEscapeSymbolsReversedOrder{
+const std::unordered_map<char, char> kEscapeSymbolsReversedOrder{
     {'\\', '\\'}, {'"', '"'}, {'n', '\n'}, {'t', '\t'}, {'r', '\r'}};
 
 // Max size between "false"s.size() and "true"s.size()
-static constexpr int kMaxBooleanStringSize{5};
+constexpr int kMaxBooleanStringSize{5};
 
 struct NodeContainerPrinter {
     std::ostream& out;
@@ -82,12 +82,12 @@ struct NodeContainerPrinter {
 
 /* Load methods */
 
-Node LoadNode(istream& input);
+Node LoadNode(std::istream& input);
 
-Node LoadNull(istream& input) {
+Node LoadNull(std::istream& input) {
     static const std::string expected{"null"s};
     std::string result;
-    result.reserve(4);
+    result.reserve(expected.size());
 
     for (char symbol; input >> symbol && result.size() != expected.size();) {
         result.push_back(symbol);
@@ -95,15 +95,14 @@ Node LoadNull(istream& input) {
             return Node{};
     }
 
-    throw ParsingError("Incorrect null value: expected \"null\" string"s);
+    throw ParsingError(R"(Incorrect null value: expected "null" string)");
 }
 
 Node LoadBool(std::istream& input) {
     std::string result;
     result.reserve(kMaxBooleanStringSize);
 
-    int id{0};
-    for (char symbol; input >> symbol && id++ != kMaxBooleanStringSize;) {
+    for (char symbol; input >> symbol && result.size() != kMaxBooleanStringSize;) {
         result.push_back(symbol);
         if (result == "true"s)
             return Node{true};
@@ -111,23 +110,24 @@ Node LoadBool(std::istream& input) {
             return Node{false};
     }
 
-    throw ParsingError("Incorrect boolean value: expected \"true\" or \"false\" strings"s);
+    throw ParsingError(R"(Incorrect boolean value: expected "true" or "false" strings)");
 }
 
-Node LoadArray(istream& input) {
+Node LoadArray(std::istream& input) {
     Array result;
 
-    for (char c; input >> c && c != ']';) {
-        if (c != ',') {
-            input.putback(c);
+    char symbol{' '};
+    for (; input >> symbol && symbol != ']';) {
+        if (symbol != ',') {
+            input.putback(symbol);
         }
         result.emplace_back(LoadNode(input));
     }
 
-    if (result.empty())
-        throw ParsingError("Incorrect array parsing. Array could not be empty"s);
+    if (symbol != ']')
+        throw ParsingError("Incorrect array parsing input format"s);
 
-    return Node(std::move(result));
+    return Node{std::move(result)};
 }
 
 Number LoadNumber(std::istream& input) {
@@ -226,48 +226,51 @@ Node LoadString(std::istream& input) {
 
     input >> std::skipws;
     if (result.empty() || current != '"')
-        throw ParsingError("Empty string as an input");
+        throw ParsingError("Incorrect input String"s);
 
-    return Node(std::move(result));
+    return Node{std::move(result)};
 }
 
-Node LoadDict(istream& input) {
+Node LoadDict(std::istream& input) {
     Dict result;
 
-    for (char c; input >> c && c != '}';) {
-        if (c == ',') {
-            input >> c;
+    char symbol{' '};
+    for (; input >> symbol && symbol != '}';) {
+        if (symbol == ',') {
+            input >> symbol;
         }
 
-        string key = LoadString(input).AsString();
-        input >> c;
-        result.insert({move(key), LoadNode(input)});
+        std::string key = LoadString(input).AsString();
+        if (input >> symbol && symbol != ':')
+            throw ParsingError("Incorrect dictionary parsing input format"s);
+
+        result.insert({std::move(key), LoadNode(input)});
     }
 
-    if (result.empty())
-        throw ParsingError("Incorrect dictionary parsing. Dict could not be empty"s);
+    if (symbol != '}')
+        throw ParsingError("Incorrect dictionary parsing input format"s);
 
-    return Node(move(result));
+    return Node{move(result)};
 }
 
-Node LoadNode(istream& input) {
-    char c;
-    input >> c;
+Node LoadNode(std::istream& input) {
+    char symbol;
+    input >> symbol;
 
-    if (c == 'n') {
-        input.putback(c);
+    if (symbol == 'n') {
+        input.putback(symbol);
         return LoadNull(input);
-    } else if (c == 't' || c == 'f') {
-        input.putback(c);
+    } else if (symbol == 't' || symbol == 'f') {
+        input.putback(symbol);
         return LoadBool(input);
-    } else if (c == '[') {
+    } else if (symbol == '[') {
         return LoadArray(input);
-    } else if (c == '{') {
+    } else if (symbol == '{') {
         return LoadDict(input);
-    } else if (c == '"') {
+    } else if (symbol == '"') {
         return LoadString(input);
     } else {
-        input.putback(c);
+        input.putback(symbol);
         auto value = LoadNumber(input);
         return std::holds_alternative<int>(value) ? Node{std::get<int>(value)} : Node{std::get<double>(value)};
     }
@@ -374,7 +377,7 @@ bool operator!=(const Node& left, const Node& right) {
     return !(left == right);
 }
 
-Document::Document(Node root) : root_(move(root)) {}
+Document::Document(Node root) : root_(std::move(root)) {}
 
 const Node& Document::GetRoot() const {
     return root_;
@@ -388,7 +391,7 @@ bool operator!=(const Document& left, const Document& right) {
     return !(left == right);
 }
 
-Document Load(istream& input) {
+Document Load(std::istream& input) {
     return Document{LoadNode(input)};
 }
 
