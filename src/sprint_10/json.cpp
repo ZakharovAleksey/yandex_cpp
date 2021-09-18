@@ -10,16 +10,11 @@ namespace json {
 
 namespace {
 
-using Number = std::variant<int, double>;
-
 const std::unordered_map<char, char> kEscapeSymbolsDirectOrder{
     {'\n', 'n'}, {'\t', 't'}, {'\r', 'r'}, {'\\', '\\'}, {'\"', '"'}};
 
 const std::unordered_map<char, char> kEscapeSymbolsReversedOrder{
     {'\\', '\\'}, {'"', '"'}, {'n', '\n'}, {'t', '\t'}, {'r', '\r'}};
-
-// Max size between "false"s.size() and "true"s.size()
-constexpr int kMaxBooleanStringSize{5};
 
 struct NodeContainerPrinter {
     std::ostream& out;
@@ -27,45 +22,40 @@ struct NodeContainerPrinter {
     void operator()(std::nullptr_t /* value */) const {
         out << "null"s;
     }
-
     void operator()(bool value) const {
-        out << std::boolalpha << value;
+        out << (value ? "true"s : "false"s);
     }
-
     void operator()(int value) const {
         out << value;
     }
-
     void operator()(double value) const {
         out << value;
     }
-
     void operator()(const std::string& value) const {
-        out << "\"";
+        out << '"';
 
         for (const char symbol : value) {
-            if (kEscapeSymbolsDirectOrder.count(symbol)) {
+            if (kEscapeSymbolsDirectOrder.count(symbol) > 0) {
                 out << '\\' << kEscapeSymbolsDirectOrder.at(symbol);
             } else {
                 out << symbol;
             }
         }
 
-        out << '\"';
+        out << '"';
     }
-
     void operator()(const Dict& map) const {
         out << '{';
         int id{0};
         for (const auto& [key, value] : map) {
             if (id++ != 0)
                 out << ", "s;
-            out << '"' << key << "\":";
+            out << '"' << key << '"';
+            out << ':';
             std::visit(NodeContainerPrinter{out}, value.AsPureNodeContainer());
         }
         out << '}';
     }
-
     void operator()(const Array& array) const {
         out << '[';
 
@@ -94,9 +84,9 @@ Node LoadNode(std::istream& input);
 
 Node LoadNull(std::istream& input) {
     if (auto value = LoadLetters(input); value == "null"s)
-        return Node{};
+        return Node{nullptr};
 
-    throw ParsingError(R"(Incorrect null node: expected "null" string)");
+    throw ParsingError(R"(Incorrect format for Null Node parsing. "null" expected)"s);
 }
 
 Node LoadBool(std::istream& input) {
@@ -106,22 +96,32 @@ Node LoadBool(std::istream& input) {
     if (value == "false"s)
         return Node{false};
 
-    throw ParsingError(R"(Incorrect boolean value: expected "true" or "false" strings)");
+    throw ParsingError(R"(Incorrect format for Boolean Node parsing. "true" or "false" expected)"s);
 }
 
 Node LoadArray(std::istream& input) {
     Array result;
 
-    char symbol{' '};
-    for (; input >> symbol && symbol != ']';) {
-        if (symbol != ',') {
+    for (char symbol; input >> symbol && symbol != ']';) {
+        if (symbol != ',')
             input.putback(symbol);
-        }
+
         result.emplace_back(LoadNode(input));
+
+        if (input >> symbol) {
+            // Break if this is the end of array
+            if (symbol == ']')
+                break;
+            // If parsed element was not last, but there is no "," afterwards
+            if (symbol != ',')
+                throw ParsingError(R"(All elements of the Array should be separated with the "," symbol)"s);
+        } else {
+            throw ParsingError(R"(During Array Node parsing expected "," or "]" symbols)"s);
+        }
     }
 
-    if (symbol != ']' || !input)
-        throw ParsingError("Incorrect array parsing input format"s);
+    if (!input)
+        throw ParsingError("Incorrect format for Array Node parsing"s);
 
     return Node{std::move(result)};
 }
@@ -193,34 +193,41 @@ Node LoadNumber(std::istream& input) {
 }
 
 Node LoadString(std::istream& input) {
+    if (!input)
+        throw ParsingError("Incorrect format for String Node parsing. Unexpected EOF"s);
+
     input >> std::noskipws;
     std::string result;
 
-    char current{' '};
-    char next{' '};
+    char current;
+    char escape_symbol;
 
-    while (input.get(current)) {
-        next = static_cast<char>(input.peek());
-
+    while (input >> current) {
         // If " is not a part of \" symbol - this is the end of the line
         if (current == '"')
             break;
 
         // If string starts with '\\' -> this is an escape symbol
         if (current == '\\') {
-            input.get(next);
-
-            if (kEscapeSymbolsReversedOrder.count(next) > 0)
-                result += kEscapeSymbolsReversedOrder.at(next);
-
+            // If it is possible to read escape symbol (// is not the end of the string)
+            if (input >> escape_symbol) {
+                if (kEscapeSymbolsReversedOrder.count(escape_symbol) > 0) {
+                    result += kEscapeSymbolsReversedOrder.at(escape_symbol);
+                } else {
+                    throw ParsingError("Unknown escape symbol: \\"s + std::string{escape_symbol});
+                }
+            } else {
+                throw ParsingError("Incorrect input String for parsing"s);
+            }
         } else {
             result += current;
         }
     }
 
     input >> std::skipws;
-    if (result.empty() || current != '"')
-        throw ParsingError("Incorrect input String"s);
+
+    if (!input)
+        throw ParsingError("Incorrect input String for parsing"s);
 
     return Node{std::move(result)};
 }
@@ -228,34 +235,31 @@ Node LoadString(std::istream& input) {
 Node LoadDict(std::istream& input) {
     Dict result;
 
-    char symbol;
-    for (; input >> symbol && symbol != '}';) {
+    for (char symbol; input >> symbol && symbol != '}';) {
         if (symbol == '"') {
             std::string key = LoadString(input).AsString();
             if (result.count(key) > 0)
                 throw ParsingError("Key "s + key + " is already exists in the Dict"s);
 
             if (input >> symbol && symbol != ':')
-                throw ParsingError(R"(Dict key should be separated form value with ":" symbol)"s);
+                throw ParsingError(R"(Dict "key" should be separated from "value" with ":" symbol)"s);
 
             result.emplace(std::move(key), LoadNode(input));
         } else if (symbol != ',') {
-            throw ParsingError(R"(Dict pairs should be separated with "," symbol)"s);
+            throw ParsingError(R"(Dict {"key":value} pairs should be separated with "," symbol)"s);
         }
     }
 
-    if (symbol != '}' || !input)
-        throw ParsingError("Incorrect dictionary parsing input format"s);
+    if (!input)
+        throw ParsingError("Incorrect format for Dict Node parsing"s);
 
     return Node{std::move(result)};
 }
 
 Node LoadNode(std::istream& input) {
-    if (!input)
-        throw ParsingError("Nothing to parse from the input"s);
-
     char symbol;
-    input >> symbol;
+    if (!(input >> symbol))
+        throw ParsingError("Incorrect format for Node parsing. Unexpected EOF"s);
 
     if (symbol == 'n') {
         input.putback(symbol);
@@ -370,6 +374,8 @@ bool operator==(const Node& left, const Node& right) {
 bool operator!=(const Node& left, const Node& right) {
     return !(left == right);
 }
+
+/* Document */
 
 Document::Document(Node root) : root_(std::move(root)) {}
 

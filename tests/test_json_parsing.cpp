@@ -20,6 +20,10 @@ std::string Print(const Node& node) {
     return out.str();
 }
 
+TEST(JsonParsing, ParsingEmptyString) {
+    EXPECT_THROW([[maybe_unused]] auto value = LoadJSON(""s).GetRoot(), json::ParsingError);
+}
+
 TEST(JsonParsing, NullNode) {
     Node node;
     EXPECT_TRUE(node.IsNull()) << "Default constructor should create null node";
@@ -29,13 +33,13 @@ TEST(JsonParsing, NullNode) {
     EXPECT_TRUE(node1.IsNull()) << "Constructor with {nullptr} should create null node";
 
     const Node node2 = LoadJSON("null"s).GetRoot();
-    EXPECT_TRUE(node2.IsNull()) << "Expected null node  with default constructor";
+    EXPECT_TRUE(node2.IsNull()) << "Expected null node  with null constructor";
 
     EXPECT_EQ(node, node2) << "operator== for null node does not work properly";
 }
 
 TEST(JsonParsing, NullNodeThrowsException) {
-    const std::vector<std::string> inputs{"n"s, "nu"s, "nul"s, "nula"s, "nulqwe"s};
+    const std::vector<std::string> inputs{"n"s, "nu"s, "nul"s, "nul1"s, "nullqwe"s, "nul\\t"s};
 
     for (const auto& input : inputs)
         EXPECT_THROW(LoadJSON(input), json::ParsingError) << "Should throw for incorrect input for " << input;
@@ -130,6 +134,13 @@ TEST(JsonParsing, StringNodeThrowsException) {
     //    TODO: тут продумать все возможные варианты (начинать с 0, ...)
 }
 
+TEST(JsonParsing, EmptyDictNodeParsing) {
+    auto node = LoadJSON("{}"s).GetRoot();
+
+    EXPECT_TRUE(node.IsMap());
+    EXPECT_TRUE(node.AsMap().empty());
+}
+
 TEST(JsonParsing, DictNode) {
     Node dict_node{Dict{{"k0"s, nullptr},
                         {"k1"s, true},
@@ -170,7 +181,9 @@ TEST(JsonParsing, DictNode) {
     EXPECT_EQ(LoadJSON(actual_print).GetRoot(), dict_node);
 }
 
-TEST(JsonParsing, DictNodeThrowsException) {}
+TEST(JsonParsing, DictNodeThrowsException) {
+
+}
 
 TEST(JsonParsing, ArrayNodeWithAndWithoutSpaces) {
     Node array_node{Array{1, 1.1}};
@@ -178,6 +191,13 @@ TEST(JsonParsing, ArrayNodeWithAndWithoutSpaces) {
     EXPECT_EQ(LoadJSON("[1,1.1]"s).GetRoot(), array_node) << "Should parse array without spaces between items";
     EXPECT_EQ(LoadJSON("[1, 1.1]"s).GetRoot(), array_node) << "Should parse array without spaces between items";
     EXPECT_EQ(LoadJSON("[1,   1.1]"s).GetRoot(), array_node) << "Should parse array without spaces between items";
+}
+
+TEST(JsonParsing, EmptyArrayNodeParsing) {
+    auto node = LoadJSON("[]"s).GetRoot();
+
+    EXPECT_TRUE(node.IsArray());
+    EXPECT_TRUE(node.AsArray().empty());
 }
 
 TEST(JsonParsing, ArrayNode) {
@@ -217,4 +237,6 @@ TEST(JsonParsing, ArrayNodeThrowsException) {
     EXPECT_THROW(LoadJSON("]"s), json::ParsingError);
 
     EXPECT_THROW(LoadJSON("[1, 1.1"s), json::ParsingError);
+    EXPECT_THROW(LoadJSON("[1, 1.1 1.2]"s), json::ParsingError);
+    EXPECT_THROW(LoadJSON("[1  1.1]"s), json::ParsingError);
 }
