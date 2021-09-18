@@ -25,6 +25,8 @@ add_executable(google_tests
         ../src/sprint_9/stat_reader.cpp
         ../src/sprint_9/transport_catalogue.h
         ../src/sprint_9/transport_catalogue.cpp
+        ../src/sprint_10/json.h
+        ../src/sprint_10/json.cpp
         test_log_duration.cpp
         test_paginator.cpp
         test_request_queue.cpp
@@ -33,6 +35,6 @@ add_executable(google_tests
         test_single_linked_list.cpp
         test_string_processing.cpp
         test_transport_catalogue.cpp
-)
+        test_json_parsing.cpp)
 
 target_link_libraries(google_tests gtest gtest_main)
