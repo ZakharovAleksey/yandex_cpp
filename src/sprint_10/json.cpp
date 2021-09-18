@@ -82,33 +82,29 @@ struct NodeContainerPrinter {
 
 /* Load methods */
 
+std::string LoadLetters(std::istream& input) {
+    std::string result;
+    while (std::isalpha(input.peek()))
+        result.push_back(static_cast<char>(input.get()));
+
+    return result;
+}
+
 Node LoadNode(std::istream& input);
 
 Node LoadNull(std::istream& input) {
-    static const std::string expected{"null"s};
-    std::string result;
-    result.reserve(expected.size());
+    if (auto value = LoadLetters(input); value == "null"s)
+        return Node{};
 
-    for (char symbol; input >> symbol && result.size() != expected.size();) {
-        result.push_back(symbol);
-        if (result == expected)
-            return Node{};
-    }
-
-    throw ParsingError(R"(Incorrect null value: expected "null" string)");
+    throw ParsingError(R"(Incorrect null node: expected "null" string)");
 }
 
 Node LoadBool(std::istream& input) {
-    std::string result;
-    result.reserve(kMaxBooleanStringSize);
-
-    for (char symbol; input >> symbol && result.size() != kMaxBooleanStringSize;) {
-        result.push_back(symbol);
-        if (result == "true"s)
-            return Node{true};
-        if (result == "false"s)
-            return Node{false};
-    }
+    std::string value = LoadLetters(input);
+    if (value == "true"s)
+        return Node{true};
+    if (value == "false"s)
+        return Node{false};
 
     throw ParsingError(R"(Incorrect boolean value: expected "true" or "false" strings)");
 }
@@ -124,15 +120,13 @@ Node LoadArray(std::istream& input) {
         result.emplace_back(LoadNode(input));
     }
 
-    if (symbol != ']')
+    if (symbol != ']' || !input)
         throw ParsingError("Incorrect array parsing input format"s);
 
     return Node{std::move(result)};
 }
 
-Number LoadNumber(std::istream& input) {
-    using namespace std::literals;
-
+Node LoadNumber(std::istream& input) {
     std::string parsed_num;
 
     // Считывает в parsed_num очередной символ из input
@@ -186,13 +180,13 @@ Number LoadNumber(std::istream& input) {
         if (is_int) {
             // Сначала пробуем преобразовать строку в int
             try {
-                return std::stoi(parsed_num);
+                return Node{std::stoi(parsed_num)};
             } catch (...) {
                 // В случае неудачи, например, при переполнении,
                 // код ниже попробует преобразовать строку в double
             }
         }
-        return std::stod(parsed_num);
+        return Node{std::stod(parsed_num)};
     } catch (...) {
         throw ParsingError("Failed to convert "s + parsed_num + " to number"s);
     }
@@ -234,26 +228,32 @@ Node LoadString(std::istream& input) {
 Node LoadDict(std::istream& input) {
     Dict result;
 
-    char symbol{' '};
+    char symbol;
     for (; input >> symbol && symbol != '}';) {
-        if (symbol == ',') {
-            input >> symbol;
+        if (symbol == '"') {
+            std::string key = LoadString(input).AsString();
+            if (result.count(key) > 0)
+                throw ParsingError("Key "s + key + " is already exists in the Dict"s);
+
+            if (input >> symbol && symbol != ':')
+                throw ParsingError(R"(Dict key should be separated form value with ":" symbol)"s);
+
+            result.emplace(std::move(key), LoadNode(input));
+        } else if (symbol != ',') {
+            throw ParsingError(R"(Dict pairs should be separated with "," symbol)"s);
         }
-
-        std::string key = LoadString(input).AsString();
-        if (input >> symbol && symbol != ':')
-            throw ParsingError("Incorrect dictionary parsing input format"s);
-
-        result.insert({std::move(key), LoadNode(input)});
     }
 
-    if (symbol != '}')
+    if (symbol != '}' || !input)
         throw ParsingError("Incorrect dictionary parsing input format"s);
 
-    return Node{move(result)};
+    return Node{std::move(result)};
 }
 
 Node LoadNode(std::istream& input) {
+    if (!input)
+        throw ParsingError("Nothing to parse from the input"s);
+
     char symbol;
     input >> symbol;
 
@@ -271,8 +271,7 @@ Node LoadNode(std::istream& input) {
         return LoadString(input);
     } else {
         input.putback(symbol);
-        auto value = LoadNumber(input);
-        return std::holds_alternative<int>(value) ? Node{std::get<int>(value)} : Node{std::get<double>(value)};
+        return LoadNumber(input);
     }
 }
 
@@ -293,11 +292,9 @@ Node::Node(Array array) : data_(std::move(array)) {}
 bool Node::IsNull() const {
     return std::holds_alternative<std::nullptr_t>(data_);
 }
-
 bool Node::IsBool() const {
     return std::holds_alternative<bool>(data_);
 }
-
 bool Node::IsInt() const {
     return std::holds_alternative<int>(data_);
 }
@@ -308,15 +305,12 @@ bool Node::IsPureDouble() const {
     double integral_part{0.};
     return !std::holds_alternative<int>(data_) && std::fmod(std::get<double>(data_), integral_part) != 0.;
 }
-
 bool Node::IsString() const {
     return std::holds_alternative<std::string>(data_);
 }
-
 bool Node::IsArray() const {
     return std::holds_alternative<Array>(data_);
 }
-
 bool Node::IsMap() const {
     return std::holds_alternative<Dict>(data_);
 }
