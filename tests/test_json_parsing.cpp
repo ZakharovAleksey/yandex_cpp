@@ -85,18 +85,6 @@ TEST(JsonParsing, IntNode) {
 
 TEST(JsonParsing, IntNodeThrowsException) {
     //    TODO: тут продумать все возможные варианты (начинать с 0, ...)
-    //    const std::vector<std::string> inputs{"01"s, "12str"s, "-01"s, "-12str"s};
-    //
-    //    for (const auto& input : inputs)
-    //        EXPECT_THROW(LoadJSON(input), json::ParsingError) << "Should throw for incorrect input for " << input;
-
-    //    assert(LoadJSON("42"s).GetRoot() == int_node);
-    //    assert(LoadJSON("123.45"s).GetRoot() == dbl_node);
-    //    assert(LoadJSON("0.25"s).GetRoot().AsDouble() == 0.25);
-    //    assert(LoadJSON("3e5"s).GetRoot().AsDouble() == 3e5);
-    //    assert(LoadJSON("1.2e-5"s).GetRoot().AsDouble() == 1.2e-5);
-    //    assert(LoadJSON("1.2e+5"s).GetRoot().AsDouble() == 1.2e5);
-    //    assert(LoadJSON("-123456"s).GetRoot().AsInt() == -123456);
 }
 
 TEST(JsonParsing, DoubleNode) {
@@ -229,5 +217,4 @@ TEST(JsonParsing, ArrayNodeThrowsException) {
     EXPECT_THROW(LoadJSON("]"s), json::ParsingError);
 
     EXPECT_THROW(LoadJSON("[1, 1.1"s), json::ParsingError);
-    //    EXPECT_THROW(LoadJSON("[1  1.1]"s), json::ParsingError);
 }
