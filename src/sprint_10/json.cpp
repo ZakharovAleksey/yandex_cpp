@@ -57,9 +57,9 @@ struct NodeContainerPrinter {
             if (id++ != 0)
                 out << ", "s;
             // Print "key" in this way to take into account escape symbols
-            std::visit(NodeContainerPrinter{out}, Node{key}.AsPureNodeContainer());
+            std::visit(NodeContainerPrinter{out}, Node{key}.GetValue());
             out << ':';
-            std::visit(NodeContainerPrinter{out}, value.AsPureNodeContainer());
+            std::visit(NodeContainerPrinter{out}, value.GetValue());
         }
         out << '}';
     }
@@ -70,7 +70,7 @@ struct NodeContainerPrinter {
         for (const auto& value : array) {
             if (id++ != 0)
                 out << ", "s;
-            std::visit(NodeContainerPrinter{out}, value.AsPureNodeContainer());
+            std::visit(NodeContainerPrinter{out}, value.GetValue());
         }
 
         out << ']';
@@ -304,86 +304,76 @@ Node LoadNode(std::istream& input) {
 
 }  // namespace
 
-/* Constructors */
-
-Node::Node(bool value) : data_(value) {}
-Node::Node(std::nullptr_t /* value*/) : Node() {}
-Node::Node(int value) : data_(value) {}
-Node::Node(double value) : data_(value) {}
-Node::Node(std::string value) : data_(std::move(value)) {}
-Node::Node(Dict map) : data_(std::move(map)) {}
-Node::Node(Array array) : data_(std::move(array)) {}
-
 /* Is-like methods */
 
 bool Node::IsNull() const {
-    return std::holds_alternative<std::nullptr_t>(data_);
+    return std::holds_alternative<std::nullptr_t>(*this);
 }
 bool Node::IsBool() const {
-    return std::holds_alternative<bool>(data_);
+    return std::holds_alternative<bool>(*this);
 }
 bool Node::IsInt() const {
-    return std::holds_alternative<int>(data_);
+    return std::holds_alternative<int>(*this);
 }
 bool Node::IsDouble() const {
-    return std::holds_alternative<double>(data_) || std::holds_alternative<int>(data_);
+    return std::holds_alternative<double>(*this) || std::holds_alternative<int>(*this);
 }
 bool Node::IsPureDouble() const {
-    return std::holds_alternative<double>(data_);
+    return std::holds_alternative<double>(*this);
 }
 bool Node::IsString() const {
-    return std::holds_alternative<std::string>(data_);
+    return std::holds_alternative<std::string>(*this);
 }
 bool Node::IsArray() const {
-    return std::holds_alternative<Array>(data_);
+    return std::holds_alternative<Array>(*this);
 }
 bool Node::IsMap() const {
-    return std::holds_alternative<Dict>(data_);
+    return std::holds_alternative<Dict>(*this);
 }
 
 /* As-like methods */
 
-const NodeContainer& Node::AsPureNodeContainer() const {
-    return data_;
+const Node::Value& Node::GetValue() const {
+    return *this;
 }
 
 bool Node::AsBool() const {
-    if (auto* value = std::get_if<bool>(&data_))
+    if (auto* value = std::get_if<bool>(this))
         return *value;
 
     throw std::logic_error("Impossible to parse node as Boolean"s);
 }
 
 int Node::AsInt() const {
-    if (auto* value = std::get_if<int>(&data_))
+    if (auto* value = std::get_if<int>(this))
         return *value;
     throw std::logic_error("Impossible to parse node as Int "s);
 }
 
 double Node::AsDouble() const {
-    if (auto* value = std::get_if<double>(&data_))
+    if (auto* value = std::get_if<double>(this))
         return *value;
 
-    if (auto* value = std::get_if<int>(&data_))
+    if (auto* value = std::get_if<int>(this))
         return static_cast<double>(*value);
 
     throw std::logic_error("Impossible to parse node as Double "s);
 }
 
 const std::string& Node::AsString() const {
-    if (auto* value = std::get_if<std::string>(&data_))
+    if (auto* value = std::get_if<std::string>(this))
         return *value;
     throw std::logic_error("Impossible to parse node as String"s);
 }
 
 const Array& Node::AsArray() const {
-    if (auto* value = std::get_if<Array>(&data_))
+    if (auto* value = std::get_if<Array>(this))
         return *value;
     throw std::logic_error("Impossible to parse node as Array"s);
 }
 
 const Dict& Node::AsMap() const {
-    if (auto* value = std::get_if<Dict>(&data_))
+    if (auto* value = std::get_if<Dict>(this))
         return *value;
     throw std::logic_error("Impossible to parse node as Dict"s);
 }
@@ -391,7 +381,7 @@ const Dict& Node::AsMap() const {
 /* Operators */
 
 bool operator==(const Node& left, const Node& right) {
-    return left.data_ == right.data_;
+    return left.GetValue() == right.GetValue();
 }
 
 bool operator!=(const Node& left, const Node& right) {
@@ -419,7 +409,7 @@ Document Load(std::istream& input) {
 }
 
 void Print(const Document& doc, std::ostream& output) {
-    std::visit(NodeContainerPrinter{output}, doc.GetRoot().AsPureNodeContainer());
+    std::visit(NodeContainerPrinter{output}, doc.GetRoot().GetValue());
 
     // Реализуйте функцию самостоятельно
 }

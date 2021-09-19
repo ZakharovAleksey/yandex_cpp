@@ -12,7 +12,6 @@ class Node;
 
 using Dict = std::map<std::string, Node>;
 using Array = std::vector<Node>;
-using NodeContainer = std::variant<std::nullptr_t, bool, int, double, std::string, Dict, Array>;
 
 // All methods should throw this error while JSON parsing
 class ParsingError : public std::runtime_error {
@@ -20,17 +19,11 @@ public:
     using runtime_error::runtime_error;
 };
 
-class Node {
-public:  // Constructors
-    Node() = default;
-
-    Node(std::nullptr_t /* value*/);
-    Node(bool value);
-    Node(int value);
-    Node(double value);
-    Node(std::string value);
-    Node(Dict map);
-    Node(Array array);
+class Node final : private std::variant<std::nullptr_t, bool, int, double, std::string, Dict, Array> {
+public:  // Using
+    // Make available all constructors of the parent variant class
+    using variant::variant;
+    using Value = variant;
 
 public:  // Methods
     bool IsNull() const;
@@ -42,7 +35,7 @@ public:  // Methods
     bool IsArray() const;
     bool IsMap() const;
 
-    const NodeContainer& AsPureNodeContainer() const;
+    const Value& GetValue() const;
     bool AsBool() const;
     int AsInt() const;
     double AsDouble() const;
@@ -53,9 +46,6 @@ public:  // Methods
 public:  // Operators
     friend bool operator==(const Node& left, const Node& right);
     friend bool operator!=(const Node& left, const Node& right);
-
-private:  // Fields
-    NodeContainer data_;
 };
 
 class Document {
