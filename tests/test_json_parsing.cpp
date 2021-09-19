@@ -62,8 +62,8 @@ TEST(JsonParsing, BooleanNode) {
 }
 
 TEST(JsonParsing, BooleanNodeThrowsException) {
-    const std::vector<std::string> inputs{"t"s, "tr"s,  "tru"s,  "trus"s,  "trueqwe"s,  "tru1e"s,  "tru\\te"s,
-                                          "f"s, "fal"s, "fals"s, "falsa"s, "falseqwe"s, "fals1e"s, "fals\\te"s};
+    const std::vector<std::string> inputs{"t"s, "tr"s,  "tru"s,  "trus"s,  "trueqwe"s, "tru1e"s,    "tru\\te"s,
+                                          "f"s, "fal"s, "fals"s, "falsa"s, "fals1e"s,  "fals\\te"s, "falseqwe"s};
 
     for (const auto& input : inputs)
         EXPECT_THROW(LoadJSON(input), json::ParsingError) << "Should throw for incorrect input for " << input;
@@ -201,9 +201,9 @@ TEST(JsonParsing, DictNode) {
 }
 
 TEST(JsonParsing, DictNodeThrowsException) {
-    std::vector<std::string> inputs {"{"s, "}"s, "{key:1}"s, "{\"key:1"s, "{\"key\",1}"s, "{\"key\"  , 1}"s};
+    std::vector<std::string> inputs{"{"s, "}"s, "{key:1}"s, "{\"key:1"s, "{\"key\",1}"s, "{\"key\"  , 1}"s};
 
-    for (const auto& value: inputs)
+    for (const auto& value : inputs)
         EXPECT_THROW(auto node = LoadJSON(value).GetRoot(), json::ParsingError);
 }
 

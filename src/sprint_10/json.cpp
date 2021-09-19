@@ -10,12 +10,6 @@ namespace json {
 
 namespace {
 
-const std::unordered_map<char, char> kEscapeSymbolsDirectOrder{
-    {'\n', 'n'}, {'\t', 't'}, {'\r', 'r'}, {'\\', '\\'}, {'"', '"'}};
-
-const std::unordered_map<char, char> kEscapeSymbolsReversedOrder{
-    {'n', '\n'}, {'t', '\t'}, {'r', '\r'}, {'\\', '\\'}, {'"', '"'}};
-
 struct NodeContainerPrinter {
     std::ostream& out;
 
@@ -33,15 +27,27 @@ struct NodeContainerPrinter {
     }
     void operator()(const std::string& value) const {
         out << '"';
-
         for (const char symbol : value) {
-            if (kEscapeSymbolsDirectOrder.count(symbol) > 0) {
-                out << '\\' << kEscapeSymbolsDirectOrder.at(symbol);
-            } else {
-                out << symbol;
+            switch (symbol) {
+                case '\r':
+                    out << "\\r"s;
+                    break;
+                case '\n':
+                    out << "\\n"s;
+                    break;
+                case '\t':
+                    out << "\\t"s;
+                    break;
+                case '"':
+                    [[fallthrough]];
+                case '\\':
+                    out << '\\';
+                    [[fallthrough]];
+                default:
+                    out << symbol;
+                    break;
             }
         }
-
         out << '"';
     }
     void operator()(const Dict& map) const {
@@ -195,41 +201,57 @@ Node LoadNumber(std::istream& input) {
 }
 
 Node LoadString(std::istream& input) {
-    if (!input)
-        throw ParsingError("Incorrect format for String Node parsing. Unexpected EOF"s);
-
-    input >> std::noskipws;
-    std::string result;
+    auto position = std::istreambuf_iterator<char>(input);
+    auto end = std::istreambuf_iterator<char>();
 
     char current;
     char escape_symbol;
-    while (input >> current) {
-        // If " is not a part of \" symbol - this is the end of the line
-        if (current == '"')
+
+    std::string result;
+    while (true) {
+        if (position == end)
+            throw ParsingError("Incorrect format for String Node parsing. Unexpected EOF"s);
+
+        current = *position;
+
+        // If " is not a part of \" current - this is the end of the line
+        if (current == '"') {
+            ++position;
             break;
+        } else if (current == '\\') {
+            // If string starts with '\\' -> this is an escape symbol \n \t or \r
+            if (++position == end)
+                throw ParsingError("Incorrect input String for parsing. Part of escape current is missed"s);
 
-        // If string starts with '\\' -> this is an escape symbol
-        if (current == '\\') {
-            // If it is possible to read escape symbol (// is not the end of the string)
-            if (input >> escape_symbol) {
-                if (kEscapeSymbolsReversedOrder.count(escape_symbol) > 0) {
-                    result += kEscapeSymbolsReversedOrder.at(escape_symbol);
-                } else {
-                    throw ParsingError("Unknown escape symbol: \\"s + std::string{escape_symbol});
-                }
-            } else {
-                throw ParsingError("Incorrect input String for parsing"s);
+            escape_symbol = *position;
+            switch (escape_symbol) {
+                case 'n':
+                    result.push_back('\n');
+                    break;
+                case 't':
+                    result.push_back('\t');
+                    break;
+                case 'r':
+                    result.push_back('\r');
+                    break;
+                case '"':
+                    result.push_back('"');
+                    break;
+                case '\\':
+                    result.push_back('\\');
+                    break;
+                default:
+                    throw ParsingError("Incorrect input String for parsing. Unknown escape current \\"s +
+                                       escape_symbol);
             }
+        } else if (current == '\n' || current == '\r') {
+            throw ParsingError("Incorrect input String for parsing. Unexpected EOF"s);
         } else {
-            result += current;
+            result.push_back(current);
         }
+
+        ++position;
     }
-
-    input >> std::skipws;
-
-    if (!input)
-        throw ParsingError("Incorrect input String for parsing"s);
-
     return Node{std::move(result)};
 }
 
@@ -259,24 +281,27 @@ Node LoadDict(std::istream& input) {
 
 Node LoadNode(std::istream& input) {
     char symbol;
-    if (!(input >> symbol))
-        throw ParsingError("Incorrect format for Node parsing. Unexpected EOF"s);
-
-    if (symbol == 'n') {
-        input.putback(symbol);
-        return LoadNull(input);
-    } else if (symbol == 't' || symbol == 'f') {
-        input.putback(symbol);
-        return LoadBool(input);
-    } else if (symbol == '[') {
-        return LoadArray(input);
-    } else if (symbol == '{') {
-        return LoadDict(input);
-    } else if (symbol == '"') {
-        return LoadString(input);
-    } else {
-        input.putback(symbol);
-        return LoadNumber(input);
+    if (!(input >> symbol)) {
+        throw ParsingError("Unexpected EOF"s);
+    }
+    switch (symbol) {
+        case '[':
+            return LoadArray(input);
+        case '{':
+            return LoadDict(input);
+        case '"':
+            return LoadString(input);
+        case 't':
+            [[fallthrough]];
+        case 'f':
+            input.putback(symbol);
+            return LoadBool(input);
+        case 'n':
+            input.putback(symbol);
+            return LoadNull(input);
+        default:
+            input.putback(symbol);
+            return LoadNumber(input);
     }
 }
 
@@ -307,8 +332,7 @@ bool Node::IsDouble() const {
     return std::holds_alternative<double>(data_) || std::holds_alternative<int>(data_);
 }
 bool Node::IsPureDouble() const {
-    double integral_part{0.};
-    return !std::holds_alternative<int>(data_) && std::fmod(std::get<double>(data_), integral_part) != 0.;
+    return std::holds_alternative<double>(data_);
 }
 bool Node::IsString() const {
     return std::holds_alternative<std::string>(data_);
