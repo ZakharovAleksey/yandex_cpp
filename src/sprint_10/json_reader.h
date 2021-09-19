@@ -11,9 +11,6 @@
 
 namespace request {
 
-void PrintBusesPassingThroughStop(std::ostream& os, std::string_view stop_name,
-                                  const std::set<std::string_view>* buses);
-
-void ParseTransportCatalogueQueries(std::istream& input_stream);
+void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output);
 
 }  // namespace request

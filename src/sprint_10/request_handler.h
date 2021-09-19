@@ -6,21 +6,12 @@
  */
 
 #include "domain.h"
+#include "json.h"
 
 namespace request::utils {
 
-/* Requests for input */
+std::pair<catalogue::Stop, bool> ParseBusStopInput(const json::Dict& info);
 
-catalogue::DistancesToStops ParsePredefinedDistancesBetweenStops(std::string_view text);
-
-std::pair<catalogue::Stop, bool> ParseBusStopInput(const std::string& text);
-
-catalogue::Bus ParseBusRouteInput(std::string_view text);
-
-/* Requests for output */
-
-std::string_view ParseBusStatisticsRequest(std::string_view text);
-
-std::string_view ParseBusesPassingThroughStopRequest(std::string_view text);
+catalogue::Bus ParseBusRouteInput(const json::Dict& info);
 
 }  // namespace request::utils
