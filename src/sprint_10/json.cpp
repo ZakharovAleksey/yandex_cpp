@@ -281,27 +281,24 @@ Node LoadDict(std::istream& input) {
 
 Node LoadNode(std::istream& input) {
     char symbol;
-    if (!(input >> symbol)) {
-        throw ParsingError("Unexpected EOF"s);
-    }
-    switch (symbol) {
-        case '[':
-            return LoadArray(input);
-        case '{':
-            return LoadDict(input);
-        case '"':
-            return LoadString(input);
-        case 't':
-            [[fallthrough]];
-        case 'f':
-            input.putback(symbol);
-            return LoadBool(input);
-        case 'n':
-            input.putback(symbol);
-            return LoadNull(input);
-        default:
-            input.putback(symbol);
-            return LoadNumber(input);
+    if (!(input >> symbol))
+        throw ParsingError("Incorrect format for Node parsing. Unexpected EOF"s);
+
+    if (symbol == 'n') {
+        input.putback(symbol);
+        return LoadNull(input);
+    } else if (symbol == 't' || symbol == 'f') {
+        input.putback(symbol);
+        return LoadBool(input);
+    } else if (symbol == '[') {
+        return LoadArray(input);
+    } else if (symbol == '{') {
+        return LoadDict(input);
+    } else if (symbol == '"') {
+        return LoadString(input);
+    } else {
+        input.putback(symbol);
+        return LoadNumber(input);
     }
 }
 
