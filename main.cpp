@@ -1,12 +1,10 @@
 #include <cassert>
-#include <chrono>
-#include <sstream>
-#include <string_view>
+#include <iostream>
 
-#include "src/sprint_10/json.h"
+#include "src/sprint_10/json_reader.h"
+#include "src/sprint_10/request_handler.h"
 
-using namespace json;
-using namespace std::literals;
+using namespace catalogue;
 
 int main() {
     std::cout << "done" << std::endl;

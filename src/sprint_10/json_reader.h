@@ -1,10 +1,19 @@
-//
-// Created by azakharov on 9/19/2021.
-//
+#pragma once
 
-#ifndef YP_CPP1_JSON_READER_H
-#define YP_CPP1_JSON_READER_H
+/*
+ * Description: parses JSON data built during parsing and forms an array
+ * of JSON responses
+ */
 
-class json_reader {};
+#include <iostream>
+#include <set>
+#include <string_view>
 
-#endif  // YP_CPP1_JSON_READER_H
+namespace request {
+
+void PrintBusesPassingThroughStop(std::ostream& os, std::string_view stop_name,
+                                  const std::set<std::string_view>* buses);
+
+void ParseTransportCatalogueQueries(std::istream& input_stream);
+
+}  // namespace request

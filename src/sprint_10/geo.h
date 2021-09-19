@@ -1,10 +1,19 @@
-//
-// Created by azakharov on 9/19/2021.
-//
+#pragma once
 
-#ifndef YP_CPP1_GEO_H
-#define YP_CPP1_GEO_H
+/*
+ * Description: Announces coordinates on the earth's surface and
+ * calculates the distance between them
+ */
 
-class geo {};
+#include <cmath>
 
-#endif  // YP_CPP1_GEO_H
+namespace geo {
+
+struct Coordinates {
+    double lat{0.};
+    double lng{0.};
+};
+
+inline double ComputeDistance(Coordinates from, Coordinates to);
+
+}  // namespace geo
