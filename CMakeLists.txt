@@ -83,4 +83,17 @@ add_executable(yp_cpp1
         src/sprint_9/stat_reader.h
         src/sprint_9/transport_catalogue.cpp
         src/sprint_9/transport_catalogue.h
-        src/sprint_10/json.cpp src/sprint_10/json.h)
+        src/sprint_10/json.cpp
+        src/sprint_10/json.h
+        src/sprint_10/domain.cpp
+        src/sprint_10/domain.h
+        src/sprint_10/geo.cpp
+        src/sprint_10/geo.h
+        src/sprint_10/json_reader.cpp
+        src/sprint_10/json_reader.h
+        src/sprint_10/map_renderer.cpp
+        src/sprint_10/map_renderer.h
+        src/sprint_10/request_handler.cpp
+        src/sprint_10/request_handler.h
+        src/sprint_10/transport_catalogue.cpp
+        src/sprint_10/transport_catalogue.h)
