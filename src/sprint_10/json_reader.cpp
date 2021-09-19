@@ -61,70 +61,72 @@ TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
     return catalogue;
 }
 
-//json::Node MakeBusResponse(int request_id, const BusStatistics& statistics) {
-//    json::Dict response;
-//
-//    // P.S. no need to use std::move() because all types on the right are trivial
-//    response.emplace("curvature"s, statistics.curvature);
-//    response.emplace("request_id"s, request_id);
-//    response.emplace("route_length"s, statistics.rout_length);
-//    response.emplace("stop_count"s, static_cast<int>(statistics.stops_count));
-//    response.emplace("unique_stop_count"s, static_cast<int>(statistics.unique_stops_count));
-//
-//    return {std::move(response)};
-//}
-//
-//json::Node MakeStopResponse(int request_id, const std::set<std::string_view>& buses) {
-//    json::Dict response;
-//
-//    response.emplace("request_id"s, request_id);
-//
-//    json::Array buses_array;
-//    buses_array.reserve(buses.size());
-//    for (std::string_view bus : buses)
-//        buses_array.emplace_back(bus);
-//
-//    response.emplace("buses"s, std::move(buses_array));
-//
-//    return {std::move(response)};
-//}
-//
-//json::Node MakeErrorResponse(int request_id) {
-//    json::Dict response;
-//
-//    response.emplace("request_id"s, request_id);
-//    response.emplace("error_message"s, "not found"s);
-//
-//    return {std::move(response)};
-//}
-//
-//json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Array& requests) {
-//    json::Array response;
-//    response.reserve(requests.size());
-//
-//    for (const auto& request : requests) {
-//        const auto& request_dict_view = request.AsMap();
-//
-//        int request_id = request_dict_view.at("id"s).AsInt();
-//        std::string type = request_dict_view.at("type"s).AsString();
-//        std::string name = request_dict_view.at("name"s).AsString();
-//
-//        if (type == "Bus"s) {
-//            if (auto bus_statistics = catalogue.GetBusStatistics(name)) {
-//                response.emplace_back(MakeBusResponse(request_id, *bus_statistics));
-//            } else {
-//                response.emplace_back(MakeErrorResponse(request_id));
-//            }
-//        } else if (type == "Stop"s) {
-//            // TODO: make smart pointer here
-//            if (auto* buses = catalogue.GetBusesPassingThroughTheStop(name)) {
-//                response.emplace_back(MakeStopResponse(request_id, *buses));
-//            } else {
-//                response.emplace_back(MakeErrorResponse(request_id));
-//            }
-//        }
-//    }
-//}
+json::Node MakeBusResponse(int request_id, const BusStatistics& statistics) {
+    json::Dict response;
+
+    // P.S. no need to use std::move() because all types on the right are trivial
+    response.emplace("curvature"s, statistics.curvature);
+    response.emplace("request_id"s, request_id);
+    response.emplace("route_length"s, statistics.rout_length);
+    response.emplace("stop_count"s, static_cast<int>(statistics.stops_count));
+    response.emplace("unique_stop_count"s, static_cast<int>(statistics.unique_stops_count));
+
+    return response;
+}
+
+json::Node MakeStopResponse(int request_id, const std::set<std::string_view>& buses) {
+    json::Dict response;
+
+    response.emplace("request_id"s, request_id);
+
+    json::Array buses_array;
+    buses_array.reserve(buses.size());
+    for (std::string_view bus : buses)
+        buses_array.emplace_back(std::string(bus));
+
+    response.emplace("buses"s, std::move(buses_array));
+
+    return response;
+}
+
+json::Node MakeErrorResponse(int request_id) {
+    json::Dict response;
+
+    response.emplace("request_id"s, request_id);
+    response.emplace("error_message"s, "not found"s);
+
+    return response;
+}
+
+json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Array& requests) {
+    json::Array response;
+    response.reserve(requests.size());
+
+    for (const auto& request : requests) {
+        const auto& request_dict_view = request.AsMap();
+
+        int request_id = request_dict_view.at("id"s).AsInt();
+        std::string type = request_dict_view.at("type"s).AsString();
+        std::string name = request_dict_view.at("name"s).AsString();
+
+        if (type == "Bus"s) {
+            if (auto bus_statistics = catalogue.GetBusStatistics(name)) {
+                response.emplace_back(MakeBusResponse(request_id, *bus_statistics));
+            } else {
+                response.emplace_back(MakeErrorResponse(request_id));
+            }
+        } else if (type == "Stop"s) {
+            // TODO: make smart pointer here
+            if (auto* buses = catalogue.GetBusesPassingThroughTheStop(name)) {
+                response.emplace_back(MakeStopResponse(request_id, *buses));
+            } else {
+                response.emplace_back(MakeErrorResponse(request_id));
+            }
+        }
+    }
+
+    return response;
+}
 
 }  // namespace
 
@@ -136,11 +138,11 @@ void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
     const auto& base_requests = input_json.AsMap().at("base_requests").AsArray();
     auto transport_catalogue = ProcessBaseRequest(base_requests);
 
-    //    // Step 2. Form response
-    //    const auto& stat_requests = input_json.AsMap().at("stat_requests").AsArray();
-    //    auto response = MakeStatResponse(transport_catalogue, stat_requests);
-    //
-    //    json::Print(json::Document{std::move(response)}, output);
+    // Step 2. Form response
+    const auto& stat_requests = input_json.AsMap().at("stat_requests").AsArray();
+    auto response = MakeStatResponse(transport_catalogue, stat_requests);
+
+    json::Print(json::Document{std::move(response)}, output);
 }
 
 }  // namespace request

@@ -9,6 +9,7 @@
 using namespace catalogue;
 
 int main() {
+    //    TODO: почитать аро устройство проекта - как расположить
     std::fstream in{"D:\\education\\cpp\\yandex_cpp\\input.json"};
     std::ofstream out{"D:\\education\\cpp\\yandex_cpp\\output.json"};
 

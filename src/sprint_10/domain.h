@@ -6,14 +6,13 @@
  */
 
 #include <set>
+#include <string>
 #include <string_view>
 #include <vector>
 
 #include "geo.h"
 
 namespace catalogue {
-
-using DistancesToStops = std::vector<std::pair<std::string_view, int>>;
 
 enum class RouteType { CIRCLE, TWO_DIRECTIONAL };
 
@@ -50,4 +49,4 @@ struct BusStatistics {
 };
 
 std::ostream& operator<<(std::ostream& os, const BusStatistics& statistics);
-}  // namespace catalog
+}  // namespace catalogue
