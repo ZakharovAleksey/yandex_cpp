@@ -43,7 +43,7 @@ public:  // Methods
     bool IsMap() const;
 
     const NodeContainer& AsPureNodeContainer() const;
-    const bool& AsBool() const;
+    bool AsBool() const;
     int AsInt() const;
     double AsDouble() const;
     const std::string& AsString() const;

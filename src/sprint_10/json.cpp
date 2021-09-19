@@ -11,10 +11,10 @@ namespace json {
 namespace {
 
 const std::unordered_map<char, char> kEscapeSymbolsDirectOrder{
-    {'\n', 'n'}, {'\t', 't'}, {'\r', 'r'}, {'\\', '\\'}, {'\"', '"'}};
+    {'\n', 'n'}, {'\t', 't'}, {'\r', 'r'}, {'\\', '\\'}, {'"', '"'}};
 
 const std::unordered_map<char, char> kEscapeSymbolsReversedOrder{
-    {'\\', '\\'}, {'"', '"'}, {'n', '\n'}, {'t', '\t'}, {'r', '\r'}};
+    {'n', '\n'}, {'t', '\t'}, {'r', '\r'}, {'\\', '\\'}, {'"', '"'}};
 
 struct NodeContainerPrinter {
     std::ostream& out;
@@ -50,7 +50,8 @@ struct NodeContainerPrinter {
         for (const auto& [key, value] : map) {
             if (id++ != 0)
                 out << ", "s;
-            out << '"' << key << '"';
+            // Print "key" in this way to take into account escape symbols
+            std::visit(NodeContainerPrinter{out}, Node{key}.AsPureNodeContainer());
             out << ':';
             std::visit(NodeContainerPrinter{out}, value.AsPureNodeContainer());
         }
@@ -74,7 +75,8 @@ struct NodeContainerPrinter {
 
 std::string LoadLetters(std::istream& input) {
     std::string result;
-    while (std::isalpha(input.peek()))
+    // isalpha: https://en.cppreference.com/w/cpp/string/byte/isalpha
+    while (std::isalpha(static_cast<unsigned char>(input.peek())))
         result.push_back(static_cast<char>(input.get()));
 
     return result;
@@ -201,7 +203,6 @@ Node LoadString(std::istream& input) {
 
     char current;
     char escape_symbol;
-
     while (input >> current) {
         // If " is not a part of \" symbol - this is the end of the line
         if (current == '"')
@@ -325,9 +326,10 @@ const NodeContainer& Node::AsPureNodeContainer() const {
     return data_;
 }
 
-const bool& Node::AsBool() const {
+bool Node::AsBool() const {
     if (auto* value = std::get_if<bool>(&data_))
         return *value;
+
     throw std::logic_error("Impossible to parse node as Boolean"s);
 }
 

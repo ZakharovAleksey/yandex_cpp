@@ -20,8 +20,8 @@ std::string Print(const Node& node) {
     return out.str();
 }
 
-TEST(JsonParsing, ParsingEmptyString) {
-    EXPECT_THROW([[maybe_unused]] auto value = LoadJSON(""s).GetRoot(), json::ParsingError);
+TEST(JsonParsing, ParsingEmptyInput) {
+    EXPECT_THROW(auto value = LoadJSON(""s).GetRoot(), json::ParsingError);
 }
 
 TEST(JsonParsing, NullNode) {
@@ -62,8 +62,8 @@ TEST(JsonParsing, BooleanNode) {
 }
 
 TEST(JsonParsing, BooleanNodeThrowsException) {
-    const std::vector<std::string> inputs{"t"s, "tr"s,  "tru"s,  "trus"s,  "trust"s,
-                                          "f"s, "fal"s, "fals"s, "falsa"s, "falsqwe"s};
+    const std::vector<std::string> inputs{"t"s, "tr"s,  "tru"s,  "trus"s,  "trueqwe"s,  "tru1e"s,  "tru\\te"s,
+                                          "f"s, "fal"s, "fals"s, "falsa"s, "falseqwe"s, "fals1e"s, "fals\\te"s};
 
     for (const auto& input : inputs)
         EXPECT_THROW(LoadJSON(input), json::ParsingError) << "Should throw for incorrect input for " << input;
@@ -88,7 +88,11 @@ TEST(JsonParsing, IntNode) {
 }
 
 TEST(JsonParsing, IntNodeThrowsException) {
-    //    TODO: тут продумать все возможные варианты (начинать с 0, ...)
+    // TODO: maybe consider inputs like: 01, -01, -01qwe, etc.
+    std::vector<std::string> input{"qwe"s, "-qwe"s, "0qwe"s, "-0qwe"s};
+
+    for (const auto& value : input)
+        EXPECT_THROW(auto node = LoadJSON("-qwe").GetRoot(), json::ParsingError);
 }
 
 TEST(JsonParsing, DoubleNode) {
@@ -110,7 +114,19 @@ TEST(JsonParsing, DoubleNode) {
 }
 
 TEST(JsonParsing, DoubleNodeThrowsException) {
-    //    TODO: тут продумать все возможные варианты (начинать с 0, ...)
+    // TODO: maybe consider inputs like: 0.1qwe, 0e10, etc.
+    std::vector<std::string> input{"0.qwe"s,  "-0.qwe"s, "12.qwe"s, "-12.qwe"s, "1eqwe"s,
+                                   "-1eqwe"s, "1Eqwe"s,  "-1Eqwe"s, "12qwe.3"s};
+
+    for (const auto& value : input)
+        EXPECT_THROW(auto node = LoadJSON("-qwe").GetRoot(), json::ParsingError);
+}
+
+TEST(JsonParsing, EmptyStringNodeParsing) {
+    auto node = LoadJSON("\"\""s).GetRoot();
+
+    EXPECT_TRUE(node.IsString());
+    EXPECT_TRUE(node.AsString().empty());
 }
 
 TEST(JsonParsing, StringNode) {
@@ -131,7 +147,10 @@ TEST(JsonParsing, StringNode) {
 }
 
 TEST(JsonParsing, StringNodeThrowsException) {
-    //    TODO: тут продумать все возможные варианты (начинать с 0, ...)
+    std::vector<std::string> input{"\""s, "\"qwe", "\"qw\\", "\"qw\\o"};
+
+    for (const auto& value : input)
+        EXPECT_THROW(auto node = LoadJSON("-qwe").GetRoot(), json::ParsingError);
 }
 
 TEST(JsonParsing, EmptyDictNodeParsing) {
@@ -182,7 +201,10 @@ TEST(JsonParsing, DictNode) {
 }
 
 TEST(JsonParsing, DictNodeThrowsException) {
+    std::vector<std::string> inputs {"{"s, "}"s, "{key:1}"s, "{\"key:1"s, "{\"key\",1}"s, "{\"key\"  , 1}"s};
 
+    for (const auto& value: inputs)
+        EXPECT_THROW(auto node = LoadJSON(value).GetRoot(), json::ParsingError);
 }
 
 TEST(JsonParsing, ArrayNodeWithAndWithoutSpaces) {
