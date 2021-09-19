@@ -3,11 +3,10 @@
 #include <cassert>
 #include <string>
 
-namespace catalog::output_utils {
+namespace request::utils {
 
 using namespace std::literals;
-using namespace catalog;
-using namespace output_utils;
+using namespace catalogue;
 
 DistancesToStops ParsePredefinedDistancesBetweenStops(std::string_view text) {
     //! Input format: Stop X: latitude, longitude, D1m to stop1, D2m to stop2, ...
@@ -35,7 +34,7 @@ DistancesToStops ParsePredefinedDistancesBetweenStops(std::string_view text) {
     return result;
 }
 
-std::pair<catalog::Stop, bool> ParseBusStopInput(const std::string& text) {
+std::pair<catalogue::Stop, bool> ParseBusStopInput(const std::string& text) {
     //! Input format without stops info: Stop X: latitude, longitude
     //! Input format with stops info: Stop X: latitude, longitude, D1m to stop1, D2m to stop2, ...
 
@@ -95,4 +94,4 @@ std::string_view ParseBusesPassingThroughStopRequest(std::string_view text) {
     return text.substr(stop_begin, text.size() - stop_begin);
 }
 
-}  // namespace catalog::output_utils
+}  // namespace request::utils
