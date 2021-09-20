@@ -69,15 +69,8 @@ void MapImageRenderer::PutRouteLines() {
         route_id = is_previous_route_empty ? route_id : route_id + 1;
 
         svg::Polyline route;
-        // Forward route
         for (const auto& stop : stops)
             route.AddPoint(ToScreenPosition(stop->point));
-
-        // Backward route
-        if (bus->type == catalogue::RouteType::TWO_DIRECTIONAL) {
-            for (auto stop = std::next(stops.rbegin()); stop != stops.rend(); ++stop)
-                route.AddPoint(ToScreenPosition((*stop)->point));
-        }
 
         image_.Add(route.SetStrokeColor(TakeColorById(route_id))
                        .SetFillColor("none"s)
@@ -88,7 +81,54 @@ void MapImageRenderer::PutRouteLines() {
         is_previous_route_empty = stops.empty();
     }
 }
-void MapImageRenderer::PutRouteNames() {}
+
+void MapImageRenderer::PutRouteNames() {
+    const auto& bus_settings = settings_.labels_.at(LabelType::Bus);
+    const auto& under_layer_settings = settings_.under_layer_;
+
+    int route_id{0};
+    bool is_previous_route_empty{true};
+
+    for (std::string_view bus_name : catalogue_.GetOrderedBusList()) {
+        auto [bus, stops] = catalogue_.GetFinalStops(bus_name);
+
+        // If there are no stops on the route, the route following it must use the same index in the palette
+        route_id = is_previous_route_empty ? route_id : route_id + 1;
+
+        // If the route does not have stops, its name should not be drawn
+        if (stops.empty())
+            continue;
+
+        // TODO: check space at the end of the text tag > in output - maybe not needed !
+        for (const auto& stop : stops) {
+            // Background - first
+            image_.Add(svg::Text()
+                           .SetData(bus->number)
+                           .SetFillColor(under_layer_settings.color_)
+                           .SetStrokeColor(under_layer_settings.color_)
+                           .SetStrokeWidth(under_layer_settings.width_)
+                           .SetStrokeLineCap(svg::StrokeLineCap::ROUND)
+                           .SetStrokeLineJoin(svg::StrokeLineJoin::ROUND)
+                           .SetPosition(ToScreenPosition(stop->point))
+                           .SetOffset(bus_settings.offset_)
+                           .SetFontSize(bus_settings.font_size_)
+                           .SetFontFamily("Verdana")
+                           .SetFontWeight("bold"));
+
+            // Text - second
+            image_.Add(svg::Text()
+                           .SetData(bus->number)
+                           .SetPosition(ToScreenPosition(stop->point))
+                           .SetOffset(bus_settings.offset_)
+                           .SetFontSize(bus_settings.font_size_)
+                           .SetFontFamily("Verdana")
+                           .SetFontWeight("bold")
+                           .SetFillColor(TakeColorById(route_id)));
+        }
+
+        is_previous_route_empty = stops.empty();
+    }
+}
 void MapImageRenderer::PutStopCircles() {}
 void MapImageRenderer::PutStopNames() {}
 
