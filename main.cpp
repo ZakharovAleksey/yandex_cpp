@@ -1,4 +1,5 @@
 #include <cassert>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -14,7 +15,13 @@ int main() {
     std::ofstream out{"D:\\education\\cpp\\yandex_cpp\\output.json"};
 
     try {
+        auto start = std::chrono::system_clock::now();
+
         request::ProcessTransportCatalogueQuery(in, out);
+
+        auto end = std::chrono::system_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        std::cout << elapsed.count() << "ms." << '\n';
     } catch (std::exception& e) {
         std::cout << "Exception: " << e.what() << std::endl;
     }

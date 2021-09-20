@@ -104,7 +104,7 @@ render::UnderLayer ParseLayer(const json::Dict& settings) {
     render::UnderLayer layer;
 
     layer.color_ = ParseColor(settings.at("underlayer_color"s));
-    layer.width_ = settings.at("underlayer_width"s).AsInt();
+    layer.width_ = settings.at("underlayer_width"s).AsDouble();
 
     return layer;
 }

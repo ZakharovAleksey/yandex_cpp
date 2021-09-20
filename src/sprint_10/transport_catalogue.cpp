@@ -12,6 +12,7 @@ void TransportCatalogue::AddStop(Stop stop) {
     const auto position = stops_storage_.insert(stops_storage_.begin(), std::move(stop));
     stops_.insert({position->name, std::make_shared<Stop>(*position)});
     // Add stop for <stop-bus> correspondence
+    // TODO: !!! При вычислении коэффициентов масштабирования карты должны учитываться только те остановки, которые входят в какой-либо маршрут. Остановки, которые не входят ни в один из маршрутов, учитываться не должны.
     buses_through_stop_.insert({position->name, {}});
 }
 

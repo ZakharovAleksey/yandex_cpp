@@ -17,7 +17,7 @@ struct Screen {
 // Background color under the names of stops and routes
 struct UnderLayer {
     svg::Color color_;
-    int width_;
+    double width_;
 };
 
 // Settings to display stops and buses names
