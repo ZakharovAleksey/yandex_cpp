@@ -129,7 +129,15 @@ void MapImageRenderer::PutRouteNames() {
         is_previous_route_empty = stops.empty();
     }
 }
-void MapImageRenderer::PutStopCircles() {}
+
+void MapImageRenderer::PutStopCircles() {
+    for (const auto& [_, stop] : catalogue_.GetAllStopsFromRoutes())
+        image_.Add(svg::Circle()
+                       .SetCenter(ToScreenPosition(stop->point))
+                       .SetRadius(settings_.stop_radius_)
+                       .SetFillColor("white"s));
+}
+
 void MapImageRenderer::PutStopNames() {}
 
 /* HELPER METHODS */

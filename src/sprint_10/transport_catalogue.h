@@ -5,6 +5,7 @@
  */
 
 #include <deque>
+#include <map>
 #include <optional>
 #include <unordered_map>
 
@@ -71,6 +72,21 @@ public:  // Methods
         }
 
         return std::make_pair(std::move(bus), std::move(stops));
+    }
+
+    [[nodiscard]] inline auto GetAllStopsFromRoutes() const {
+        // TODO: maybe do it faster
+        std::unordered_map<std::string_view, std::shared_ptr<Stop>> stops;
+
+        // Take only stops, which are part of any bus route
+        for (const auto& [_, bus] : buses_) {
+            for (const auto stop : bus->stop_names) {
+                if (stops.count(stop) == 0)
+                    stops.emplace(stop, stops_.at(stop));
+            }
+        }
+
+        return std::map(stops.begin(), stops.end());
     }
 
 private:  // Types
