@@ -6,13 +6,12 @@
 namespace catalogue {
 
 void TransportCatalogue::AddStop(Stop stop) {
-    UpdateMinMaxStopCoordinates(stop.point);
-
     // Add stop logic
     const auto position = stops_storage_.insert(stops_storage_.begin(), std::move(stop));
     stops_.insert({position->name, std::make_shared<Stop>(*position)});
     // Add stop for <stop-bus> correspondence
-    // TODO: !!! При вычислении коэффициентов масштабирования карты должны учитываться только те остановки, которые входят в какой-либо маршрут. Остановки, которые не входят ни в один из маршрутов, учитываться не должны.
+    // TODO: !!! При вычислении коэффициентов масштабирования карты должны учитываться только те остановки, которые
+    // входят в какой-либо маршрут. Остановки, которые не входят ни в один из маршрутов, учитываться не должны.
     buses_through_stop_.insert({position->name, {}});
 }
 
@@ -23,8 +22,10 @@ void TransportCatalogue::AddDistance(std::string_view stop_from, std::string_vie
 
 void TransportCatalogue::AddBus(Bus bus) {
     //! On this step we suppose that ALL stops have been parsed
-    for (auto& stop : bus.stop_names)
+    for (auto& stop : bus.stop_names) {
         stop = stops_.find(stop)->first;
+        UpdateMinMaxStopCoordinates(stops_.at(stop)->point);
+    }
     bus.unique_stops = {bus.stop_names.begin(), bus.stop_names.end()};
 
     const auto position = buses_storage_.insert(buses_storage_.begin(), std::move(bus));
