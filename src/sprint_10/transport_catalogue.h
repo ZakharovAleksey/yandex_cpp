@@ -28,7 +28,20 @@ public:  // Methods
 
     [[nodiscard]] const geo::Coordinates& GetMinStopCoordinates() const;
     [[nodiscard]] const geo::Coordinates& GetMaxStopCoordinates() const;
-    
+
+    [[nodiscard]] const std::set<std::string_view>& GetOrderedBusList() const;
+
+    [[nodiscard]] inline auto GetRouteInfo(std::string_view bus_name) const {
+        auto bus = buses_.at(bus_name);
+        std::vector<std::shared_ptr<Stop>> stops;
+        stops.reserve(bus->stop_names.size());
+
+        for (std::string_view stop : bus->stop_names)
+            stops.emplace_back(stops_.at(stop));
+
+        return std::make_pair(std::move(bus), std::move(stops));
+    }
+
 private:  // Types
     struct StopPointersPairHash {
         size_t operator()(const StopPointersPair& pair) const {
@@ -60,7 +73,9 @@ private:  // Fields
     geo::Coordinates coordinates_min_{std::numeric_limits<double>::max(), std::numeric_limits<double>::max()};
     geo::Coordinates coordinates_max_{std::numeric_limits<double>::min(), std::numeric_limits<double>::min()};
 
-    std::set<std::string_view> buses_list_;
+    // We use unordered containers for faster search in queries.
+    // Ordered list in necessary for image rendering only
+    std::set<std::string_view> ordered_bus_list;
 };
 
 }  // namespace catalogue

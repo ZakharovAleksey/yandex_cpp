@@ -6,6 +6,8 @@
 
 namespace render {
 
+using namespace std::literals;
+
 Visualization& Visualization::SetScreen(const Screen& screen) {
     screen_ = screen;
     return *this;
@@ -54,7 +56,38 @@ void MapImageRenderer::Render() {
     PutStopNames();
 }
 
-void MapImageRenderer::PutRouteLines() {}
+void MapImageRenderer::PutRouteLines() {
+    const double& width = settings_.line_width_;
+
+    int route_id{0};
+    bool is_previous_route_empty{true};
+
+    for (std::string_view bus_name : catalogue_.GetOrderedBusList()) {
+        auto [bus, stops] = catalogue_.GetRouteInfo(bus_name);
+
+        // If there are no stops on the route, the route following it must use the same index in the palette
+        route_id = is_previous_route_empty ? route_id : route_id + 1;
+
+        svg::Polyline route;
+        // Forward route
+        for (const auto& stop : stops)
+            route.AddPoint(ToScreenPosition(stop->point));
+
+        // Backward route
+        if (bus->type == catalogue::RouteType::TWO_DIRECTIONAL) {
+            for (auto stop = std::next(stops.rbegin()); stop != stops.rend(); ++stop)
+                route.AddPoint(ToScreenPosition((*stop)->point));
+        }
+
+        image_.Add(route.SetStrokeColor(TakeColorById(route_id))
+                       .SetFillColor("none"s)
+                       .SetStrokeWidth(width)
+                       .SetStrokeLineCap(svg::StrokeLineCap::ROUND)
+                       .SetStrokeLineJoin(svg::StrokeLineJoin::ROUND));
+
+        is_previous_route_empty = stops.empty();
+    }
+}
 void MapImageRenderer::PutRouteNames() {}
 void MapImageRenderer::PutStopCircles() {}
 void MapImageRenderer::PutStopNames() {}
@@ -84,6 +117,11 @@ double MapImageRenderer::CalculateZoom() const {
     return zoom;
 }
 
+svg::Color MapImageRenderer::TakeColorById(int route_id) const {
+    unsigned int color_id = route_id % settings_.colors_.size();
+    return settings_.colors_.at(color_id);
+}
+
 svg::Point MapImageRenderer::ToScreenPosition(geo::Coordinates position) {
     svg::Point point;
 
@@ -104,8 +142,10 @@ void RenderTransportMap(const catalogue::TransportCatalogue& catalogue, const Vi
     const auto& image = renderer.GetImage();
 
     // TODO: remove - temporary
-    std::fstream out("D:\\education\\cpp\\yandex_cpp\\out.svg");
+    std::ofstream out("D:\\education\\cpp\\yandex_cpp\\out.svg", std::ios::trunc);
     image.Render(out);
+
+    out.close();
 }
 
 }  // namespace render

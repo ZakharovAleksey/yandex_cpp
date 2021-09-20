@@ -28,7 +28,7 @@ void TransportCatalogue::AddBus(Bus bus) {
 
     const auto position = buses_storage_.insert(buses_storage_.begin(), std::move(bus));
     buses_.insert({position->number, std::make_shared<Bus>(*position)});
-    buses_list_.emplace(position->number);
+    ordered_bus_list.emplace(position->number);
 
     // Add stop for <stop-bus> correspondence
     for (std::string_view stop : position->stop_names)
@@ -90,7 +90,7 @@ void TransportCatalogue::UpdateMinMaxStopCoordinates(const geo::Coordinates& coo
     coordinates_min_.lng = std::min(coordinates_min_.lng, coordinates.lng);
 
     coordinates_max_.lat = std::max(coordinates_max_.lat, coordinates.lat);
-    coordinates_max_.lat = std::max(coordinates_max_.lat, coordinates.lat);
+    coordinates_max_.lng = std::max(coordinates_max_.lng, coordinates.lng);
 }
 
 const geo::Coordinates& TransportCatalogue::GetMinStopCoordinates() const {
@@ -99,6 +99,10 @@ const geo::Coordinates& TransportCatalogue::GetMinStopCoordinates() const {
 
 const geo::Coordinates& TransportCatalogue::GetMaxStopCoordinates() const {
     return coordinates_max_;
+}
+
+const std::set<std::string_view>& TransportCatalogue::GetOrderedBusList() const {
+    return ordered_bus_list;
 }
 
 const std::set<std::string_view>* TransportCatalogue::GetBusesPassingThroughTheStop(std::string_view stop_name) const {
