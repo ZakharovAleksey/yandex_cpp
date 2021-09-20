@@ -37,7 +37,7 @@ void ColorPrinter::operator()(Rgba color) const {
 
     std::stringstream ss;
     // TODO: maybe here with precision
-    ss << std::fixed /* << std::setprecision(2) */ << color.opacity;
+    ss /* << std::fixed  << std::setprecision(2) */ << color.opacity;
 
     os << ss.str() << ")"s;
 }
