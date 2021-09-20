@@ -1,9 +1,9 @@
 #include "map_renderer.h"
 
-#include "geo.h"
-#include "svg.h"
+// TODO: remove
+#include <fstream>
 
-namespace render_settings {
+namespace render {
 
 Visualization& Visualization::SetScreen(const Screen& screen) {
     screen_ = screen;
@@ -33,4 +33,38 @@ Visualization& Visualization::SetColors(std::vector<svg::Color> colors) {
     return *this;
 }
 
-}  // namespace render_settings
+/* MAP IMAGE RENDERED */
+
+MapImageRenderer::MapImageRenderer(const catalogue::TransportCatalogue& catalogue, const Visualization& settings)
+    : catalogue_(catalogue), settings_(settings) {}
+
+svg::Document MapImageRenderer::GetImage() const {
+    return image_;
+}
+
+void MapImageRenderer::Render() {
+    PutRouteLines();
+    PutRouteNames();
+    PutStopCircles();
+    PutStopNames();
+}
+
+void MapImageRenderer::PutRouteLines() {}
+void MapImageRenderer::PutRouteNames() {}
+void MapImageRenderer::PutStopCircles() {}
+void MapImageRenderer::PutStopNames() {}
+
+/* RENDERING METHODS */
+
+void RenderTransportMap(const catalogue::TransportCatalogue& catalogue, const Visualization& settings) {
+    MapImageRenderer renderer{catalogue, settings};
+    renderer.Render();
+
+    const auto image = renderer.GetImage();
+
+    // TODO: remove - temporary
+    std::fstream out("D:\\education\\cpp\\yandex_cpp\\out.svg");
+    image.Render(out);
+}
+
+}  // namespace render

@@ -11,8 +11,8 @@ namespace request {
 
 using namespace catalogue;
 using namespace request::utils;
+
 using namespace std::literals;
-using namespace render_settings;
 
 namespace {
 
@@ -61,8 +61,8 @@ TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
     return catalogue;
 }
 
-Screen ParseScreenSettings(const json::Dict& settings) {
-    Screen screen;
+render::Screen ParseScreenSettings(const json::Dict& settings) {
+    render::Screen screen;
 
     screen.width_ = settings.at("width"s).AsDouble();
     screen.height_ = settings.at("height"s).AsDouble();
@@ -71,7 +71,7 @@ Screen ParseScreenSettings(const json::Dict& settings) {
     return screen;
 }
 
-Label ParseLabelSettings(const json::Dict& settings, const std::string& key_type) {
+render::Label ParseLabelSettings(const json::Dict& settings, const std::string& key_type) {
     int font_size = settings.at(key_type + "_label_font_size"s).AsInt();
     const json::Array offset = settings.at(key_type + "_label_offset"s).AsArray();
 
@@ -100,8 +100,8 @@ svg::Color ParseColor(const json::Node& node) {
     return svg::Rgba(red, green, blue, alpha);
 }
 
-UnderLayer ParseLayer(const json::Dict& settings) {
-    UnderLayer layer;
+render::UnderLayer ParseLayer(const json::Dict& settings) {
+    render::UnderLayer layer;
 
     layer.color_ = ParseColor(settings.at("underlayer_color"s));
     layer.width_ = settings.at("underlayer_width"s).AsInt();
@@ -109,8 +109,8 @@ UnderLayer ParseLayer(const json::Dict& settings) {
     return layer;
 }
 
-Visualization ParseVisualizationSettings(const json::Dict& settings) {
-    Visualization final_settings;
+render::Visualization ParseVisualizationSettings(const json::Dict& settings) {
+    render::Visualization final_settings;
 
     double line_width = settings.at("line_width"s).AsDouble();
     double stop_radius = settings.at("stop_radius"s).AsDouble();
@@ -125,8 +125,8 @@ Visualization ParseVisualizationSettings(const json::Dict& settings) {
     final_settings.SetScreen(ParseScreenSettings(settings))
         .SetLineWidth(line_width)
         .SetStopRadius(stop_radius)
-        .SetLabels(LabelType::Stop, ParseLabelSettings(settings, "stop"s))
-        .SetLabels(LabelType::Bus, ParseLabelSettings(settings, "bus"s))
+        .SetLabels(render::LabelType::Stop, ParseLabelSettings(settings, "stop"s))
+        .SetLabels(render::LabelType::Bus, ParseLabelSettings(settings, "bus"s))
         .SetUnderLayer(ParseLayer(settings))
         .SetColors(std::move(svg_colors));
 
@@ -170,7 +170,8 @@ json::Node MakeErrorResponse(int request_id) {
     return response;
 }
 
-json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Array& requests) {
+json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Array& requests,
+                            const render::Visualization& settings) {
     json::Array response;
     response.reserve(requests.size());
 
@@ -179,21 +180,26 @@ json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Arr
 
         int request_id = request_dict_view.at("id"s).AsInt();
         std::string type = request_dict_view.at("type"s).AsString();
-        std::string name = request_dict_view.at("name"s).AsString();
+        std::string name;  //> Could be a name of bus or a stop
 
         if (type == "Bus"s) {
+            name = request_dict_view.at("name"s).AsString();
+
             if (auto bus_statistics = catalogue.GetBusStatistics(name)) {
                 response.emplace_back(MakeBusResponse(request_id, *bus_statistics));
             } else {
                 response.emplace_back(MakeErrorResponse(request_id));
             }
         } else if (type == "Stop"s) {
+            name = request_dict_view.at("name"s).AsString();
             // TODO: make smart pointer here
             if (auto* buses = catalogue.GetBusesPassingThroughTheStop(name)) {
                 response.emplace_back(MakeStopResponse(request_id, *buses));
             } else {
                 response.emplace_back(MakeErrorResponse(request_id));
             }
+        } else if (type == "Map"s) {
+            RenderTransportMap(catalogue, settings);
         }
     }
 
@@ -216,7 +222,7 @@ void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
 
     // Step 3. Form response
     const auto& stat_requests = input_json.AsMap().at("stat_requests").AsArray();
-    auto response = MakeStatResponse(transport_catalogue, stat_requests);
+    auto response = MakeStatResponse(transport_catalogue, stat_requests, visualization_settings);
 
     json::Print(json::Document{std::move(response)}, output);
 }

@@ -1,8 +1,9 @@
 #pragma once
 
 #include "svg.h"
+#include "transport_catalogue.h"
 
-namespace render_settings {
+namespace render {
 
 enum class LabelType { Bus = 0, Stop = 1 };
 
@@ -25,7 +26,10 @@ struct Label {
     svg::Point offset_;
 };
 
-//    TODO: Make this class SingleTone
+/*
+ * Class stores all visualization settings for map image3 rendering
+ */
+
 class Visualization {
 public:
     Visualization() = default;
@@ -48,4 +52,41 @@ private:
     std::vector<svg::Color> colors_;
 };
 
-}  // namespace render_settings
+/* MAP IMAGE RENDERED */
+
+/*
+ * The map consists of four types of objects.
+ * The order of their output:
+ * - route lines
+ * - route names
+ * - circles indicating stops
+ * - stop names
+ */
+
+class MapImageRenderer {
+public:  // Constructor
+    MapImageRenderer(const catalogue::TransportCatalogue& catalogue, const Visualization& settings);
+
+public:  // Method
+    svg::Document GetImage() const;
+    void Render();
+
+private:  // Method
+    void PutRouteLines();
+    void PutRouteNames();
+    void PutStopCircles();
+    void PutStopNames();
+
+
+
+private:  // Fields
+    const catalogue::TransportCatalogue& catalogue_;
+    const Visualization& settings_;
+    svg::Document image_;
+};
+
+/* RENDERING METHODS */
+
+void RenderTransportMap(const catalogue::TransportCatalogue& catalogue, const Visualization& settings);
+
+}  // namespace render
