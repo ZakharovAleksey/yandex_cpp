@@ -112,8 +112,8 @@ void MapImageRenderer::PutRouteNames() {
                            .SetPosition(ToScreenPosition(stop->point))
                            .SetOffset(bus_settings.offset_)
                            .SetFontSize(bus_settings.font_size_)
-                           .SetFontFamily("Verdana")
-                           .SetFontWeight("bold"));
+                           .SetFontFamily("Verdana"s)
+                           .SetFontWeight("bold"s));
 
             // Text - second
             image_.Add(svg::Text()
@@ -121,8 +121,8 @@ void MapImageRenderer::PutRouteNames() {
                            .SetPosition(ToScreenPosition(stop->point))
                            .SetOffset(bus_settings.offset_)
                            .SetFontSize(bus_settings.font_size_)
-                           .SetFontFamily("Verdana")
-                           .SetFontWeight("bold")
+                           .SetFontFamily("Verdana"s)
+                           .SetFontWeight("bold"s)
                            .SetFillColor(TakeColorById(route_id)));
         }
 
@@ -138,7 +138,35 @@ void MapImageRenderer::PutStopCircles() {
                        .SetFillColor("white"s));
 }
 
-void MapImageRenderer::PutStopNames() {}
+void MapImageRenderer::PutStopNames() {
+    // TODO: tags order has been changed -> check why
+    const auto& stop_settings = settings_.labels_.at(LabelType::Stop);
+    const auto& under_layer_settings = settings_.under_layer_;
+
+    for (const auto& [_, stop] : catalogue_.GetAllStopsFromRoutes()) {
+        // Background - first
+        image_.Add(svg::Text()
+                       .SetData(stop->name)
+                       .SetFillColor(under_layer_settings.color_)
+                       .SetStrokeColor(under_layer_settings.color_)
+                       .SetStrokeWidth(under_layer_settings.width_)
+                       .SetStrokeLineCap(svg::StrokeLineCap::ROUND)
+                       .SetStrokeLineJoin(svg::StrokeLineJoin::ROUND)
+                       .SetPosition(ToScreenPosition(stop->point))
+                       .SetOffset(stop_settings.offset_)
+                       .SetFontSize(stop_settings.font_size_)
+                       .SetFontFamily("Verdana"s));
+
+        // Text - second
+        image_.Add(svg::Text()
+                       .SetData(stop->name)
+                       .SetFillColor("black"s)
+                       .SetPosition(ToScreenPosition(stop->point))
+                       .SetOffset(stop_settings.offset_)
+                       .SetFontSize(stop_settings.font_size_)
+                       .SetFontFamily("Verdana"s));
+    }
+}
 
 /* HELPER METHODS */
 
