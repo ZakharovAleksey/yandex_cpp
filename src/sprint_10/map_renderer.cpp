@@ -111,8 +111,8 @@ void MapImageRenderer::PutRouteNames() {
                            .SetPosition(ToScreenPosition(stop->point))
                            .SetOffset(bus_settings.offset_)
                            .SetFontSize(bus_settings.font_size_)
-                           .SetFontFamily("Verdana"s)
-                           .SetFontWeight("bold"s));
+                           .SetFontFamily("Verdana")
+                           .SetFontWeight("bold"));
 
             // Text - second
             image_.Add(svg::Text()

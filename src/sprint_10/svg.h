@@ -179,13 +179,11 @@ private:  // Methods
     template <class PropertyType>
     void PrintProperty(std::ostream& os, std::string tag_name, const std::optional<PropertyType>& tag_value,
                        bool& is_space_needed) const {
-        if (is_space_needed)
-            os << " ";
+        // TODO: remove - not needed
+        is_space_needed = !is_space_needed;
 
         if (tag_value)
-            os << std::move(tag_name) << "=\"" << *tag_value << "\"";
-
-        is_space_needed = (tag_value) ? true : false;
+            os << " " << std::move(tag_name) << "=\"" << *tag_value << "\"";
     }
 };
 

@@ -36,7 +36,8 @@ void ColorPrinter::operator()(Rgba color) const {
     // clang-format on
 
     std::stringstream ss;
-    ss << std::fixed << std::setprecision(1) << color.opacity;
+    // TODO: maybe here with precision
+    ss << std::fixed /* << std::setprecision(2) */ << color.opacity;
 
     os << ss.str() << ")"s;
 }
@@ -113,7 +114,7 @@ Circle& Circle::SetRadius(double radius) {
 void Circle::RenderObject(const RenderContext& context) const {
     auto& out = context.out;
     out << "<circle cx=\""sv << center_.x << "\" cy=\""sv << center_.y << "\" "sv;
-    out << "r=\""sv << radius_ << "\" "sv;
+    out << "r=\""sv << radius_ << "\""sv;
     RenderAttrs(out);
     out << "/>"sv;
 }
@@ -136,7 +137,7 @@ void Polyline::RenderObject(const RenderContext& context) const {
         out << vertex.x << ","sv << vertex.y;
     }
 
-    out << "\" "sv;
+    out << "\""sv;
     RenderAttrs(out);
     out << "/>"sv;
 }
@@ -192,8 +193,10 @@ std::string Text::PreprocessTest(const std::string& input_text) const {
 
 void Text::RenderObject(const RenderContext& context) const {
     auto& out = context.out;
-    out << "<text "sv;
+    out << "<text"sv;
 
+    RenderAttrs(out);
+    out << " ";
     // Text position
     out << "x=\""sv << position_.x << "\" y=\"" << position_.y << "\" "sv;
     out << "dx=\""sv << offset_.x << "\" dy=\"" << offset_.y << "\""sv;
@@ -204,8 +207,7 @@ void Text::RenderObject(const RenderContext& context) const {
         out << " font-family=\"" << font_family_ << "\"";
     if (!font_weight_.empty())
         out << " font-weight=\"" << font_weight_ << "\"";
-    out << " ";
-    RenderAttrs(out);
+
     out << ">" << PreprocessTest(text_) << "</text>";
 }
 
@@ -224,7 +226,7 @@ void Document::Render(std::ostream& out) const {
     out << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << std::endl;
     for (const auto& object : storage_)
         object->Render(out);
-    out << "</svg>"sv << std::endl;
+    out << "</svg>"sv;
 }
 
 }  // namespace svg
