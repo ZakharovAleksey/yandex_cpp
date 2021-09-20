@@ -1,6 +1,7 @@
 #include "map_renderer.h"
 
 // TODO: remove
+#include <algorithm>
 #include <fstream>
 
 namespace render {
@@ -36,9 +37,13 @@ Visualization& Visualization::SetColors(std::vector<svg::Color> colors) {
 /* MAP IMAGE RENDERED */
 
 MapImageRenderer::MapImageRenderer(const catalogue::TransportCatalogue& catalogue, const Visualization& settings)
-    : catalogue_(catalogue), settings_(settings) {}
+    : catalogue_(catalogue),
+      settings_(settings),
+      min_lng_(catalogue_.GetMinStopCoordinates().lng),
+      max_lat_(catalogue_.GetMaxStopCoordinates().lat),
+      zoom_(CalculateZoom()) {}
 
-svg::Document MapImageRenderer::GetImage() const {
+const svg::Document& MapImageRenderer::GetImage() const {
     return image_;
 }
 
@@ -54,13 +59,49 @@ void MapImageRenderer::PutRouteNames() {}
 void MapImageRenderer::PutStopCircles() {}
 void MapImageRenderer::PutStopNames() {}
 
+/* HELPER METHODS */
+
+double MapImageRenderer::CalculateZoom() const {
+    double zoom{0.};
+
+    const auto [min_lat, min_lng] = catalogue_.GetMinStopCoordinates();
+    const auto [max_lat, max_lng] = catalogue_.GetMaxStopCoordinates();
+    const double& padding = settings_.screen_.padding_;
+
+    // Calculate zoom coefficient along Ox or Oy axis
+    auto make_zoom_coefficient = [&](double max_min_diff, double screen_size) -> double {
+        return (max_min_diff == 0.) ? std::numeric_limits<double>::max() : (screen_size - 2. * padding) / max_min_diff;
+    };
+
+    double zoom_x = make_zoom_coefficient(max_lng - min_lng, settings_.screen_.width_);
+    double zoom_y = make_zoom_coefficient(max_lat - min_lat, settings_.screen_.height_);
+
+    zoom = std::min(zoom_x, zoom_y);
+    // If all stops have same lat or long -> chose where there is no division by zero
+    // If all stops are in the same point -> set to zero
+    zoom = (zoom == std::numeric_limits<double>::max()) ? 0. : zoom;
+
+    return zoom;
+}
+
+svg::Point MapImageRenderer::ToScreenPosition(geo::Coordinates position) {
+    svg::Point point;
+
+    const double& padding = settings_.screen_.padding_;
+
+    point.x = (position.lng - min_lng_) * zoom_ + padding;
+    point.y = (max_lat_ - position.lat) * zoom_ + padding;
+
+    return point;
+}
+
 /* RENDERING METHODS */
 
 void RenderTransportMap(const catalogue::TransportCatalogue& catalogue, const Visualization& settings) {
     MapImageRenderer renderer{catalogue, settings};
     renderer.Render();
 
-    const auto image = renderer.GetImage();
+    const auto& image = renderer.GetImage();
 
     // TODO: remove - temporary
     std::fstream out("D:\\education\\cpp\\yandex_cpp\\out.svg");

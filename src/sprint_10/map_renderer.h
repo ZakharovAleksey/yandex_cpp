@@ -31,9 +31,12 @@ struct Label {
  */
 
 class Visualization {
-public:
+    friend class MapImageRenderer;
+
+public:  // Constructor
     Visualization() = default;
 
+public:  // Methods
     Visualization& SetScreen(const Screen& screen);
     Visualization& SetLineWidth(double width);
     Visualization& SetStopRadius(double radius);
@@ -42,7 +45,7 @@ public:
     Visualization& SetUnderLayer(UnderLayer layer);
     Visualization& SetColors(std::vector<svg::Color> colors);
 
-private:
+private:  // Fields
     Screen screen_;
     double line_width_{0.};
     double stop_radius_{0.};
@@ -68,7 +71,7 @@ public:  // Constructor
     MapImageRenderer(const catalogue::TransportCatalogue& catalogue, const Visualization& settings);
 
 public:  // Method
-    svg::Document GetImage() const;
+    const svg::Document& GetImage() const;
     void Render();
 
 private:  // Method
@@ -77,12 +80,18 @@ private:  // Method
     void PutStopCircles();
     void PutStopNames();
 
-
+    /* HELPER METHODS */
+    [[nodiscard]] double CalculateZoom() const;
+    svg::Point ToScreenPosition(geo::Coordinates position);
 
 private:  // Fields
     const catalogue::TransportCatalogue& catalogue_;
     const Visualization& settings_;
     svg::Document image_;
+
+    double min_lng_{0.};
+    double max_lat_{0.};
+    double zoom_{0.};
 };
 
 /* RENDERING METHODS */

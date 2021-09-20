@@ -6,6 +6,9 @@
 namespace catalogue {
 
 void TransportCatalogue::AddStop(Stop stop) {
+    UpdateMinMaxStopCoordinates(stop.point);
+
+    // Add stop logic
     const auto position = stops_storage_.insert(stops_storage_.begin(), std::move(stop));
     stops_.insert({position->name, &(*position)});
     // Add stop for <stop-bus> correspondence
@@ -81,10 +84,26 @@ double TransportCatalogue::CalculateGeographicLength(const Bus* bus_info) const 
     return (bus_info->type == RouteType::CIRCLE) ? geographic_length : geographic_length * 2.;
 }
 
+void TransportCatalogue::UpdateMinMaxStopCoordinates(const geo::Coordinates& coordinates) {
+    coordinates_min_.lat = std::min(coordinates_min_.lat, coordinates.lat);
+    coordinates_min_.lng = std::min(coordinates_min_.lng, coordinates.lng);
+
+    coordinates_max_.lat = std::max(coordinates_max_.lat, coordinates.lat);
+    coordinates_max_.lat = std::max(coordinates_max_.lat, coordinates.lat);
+}
+
+const geo::Coordinates& TransportCatalogue::GetMinStopCoordinates() const {
+    return coordinates_min_;
+}
+
+const geo::Coordinates& TransportCatalogue::GetMaxStopCoordinates() const {
+    return coordinates_max_;
+}
+
 const std::set<std::string_view>* TransportCatalogue::GetBusesPassingThroughTheStop(std::string_view stop_name) const {
     if (const auto position = buses_through_stop_.find(stop_name); position != buses_through_stop_.cend())
         return &position->second;
     return nullptr;
 }
 
-}  // namespace catalog
+}  // namespace catalogue
