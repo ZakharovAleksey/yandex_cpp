@@ -38,7 +38,7 @@ private:
     static const size_t even_value{37};
 };
 
-using StopPointersPair = std::pair<const Stop*, const Stop*>;
+using StopPointersPair = std::pair<std::shared_ptr<Stop>, std::shared_ptr<Stop>>;
 
 struct BusStatistics {
     std::string_view number;

@@ -10,7 +10,7 @@ void TransportCatalogue::AddStop(Stop stop) {
 
     // Add stop logic
     const auto position = stops_storage_.insert(stops_storage_.begin(), std::move(stop));
-    stops_.insert({position->name, &(*position)});
+    stops_.insert({position->name, std::make_shared<Stop>(*position)});
     // Add stop for <stop-bus> correspondence
     buses_through_stop_.insert({position->name, {}});
 }
@@ -27,7 +27,8 @@ void TransportCatalogue::AddBus(Bus bus) {
     bus.unique_stops = {bus.stop_names.begin(), bus.stop_names.end()};
 
     const auto position = buses_storage_.insert(buses_storage_.begin(), std::move(bus));
-    buses_.insert({position->number, &(*position)});
+    buses_.insert({position->number, std::make_shared<Bus>(*position)});
+    buses_list_.emplace(position->number);
 
     // Add stop for <stop-bus> correspondence
     for (std::string_view stop : position->stop_names)
@@ -38,7 +39,7 @@ std::optional<BusStatistics> TransportCatalogue::GetBusStatistics(std::string_vi
     if (buses_.count(bus_number) == 0)
         return std::nullopt;
 
-    const Bus* bus_info = buses_.at(bus_number);
+    auto bus_info = buses_.at(bus_number);
 
     BusStatistics result;
     result.number = bus_info->number;
@@ -50,7 +51,7 @@ std::optional<BusStatistics> TransportCatalogue::GetBusStatistics(std::string_vi
     return result;
 }
 
-int TransportCatalogue::CalculateRouteLength(const Bus* bus_info) const {
+int TransportCatalogue::CalculateRouteLength(const std::shared_ptr<Bus>& bus_info) const {
     auto get_route_length = [this](std::string_view from, std::string_view to) {
         auto key = std::make_pair(stops_.at(from), stops_.at(to));
         // If we not found 'from -> to' than we are looking for 'to -> from'
@@ -74,7 +75,7 @@ int TransportCatalogue::CalculateRouteLength(const Bus* bus_info) const {
     return forward_route + backward_route;
 }
 
-double TransportCatalogue::CalculateGeographicLength(const Bus* bus_info) const {
+double TransportCatalogue::CalculateGeographicLength(const std::shared_ptr<Bus>& bus_info) const {
     double geographic_length = std::transform_reduce(
         std::next(bus_info->stop_names.begin()), bus_info->stop_names.end(), bus_info->stop_names.begin(), 0.,
         std::plus<>(), [this](std::string_view from, std::string_view to) {

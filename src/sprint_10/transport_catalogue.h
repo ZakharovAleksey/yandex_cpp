@@ -24,9 +24,11 @@ public:  // Methods
     [[nodiscard]] std::optional<BusStatistics> GetBusStatistics(std::string_view bus_number) const;
     [[nodiscard]] const std::set<std::string_view>* GetBusesPassingThroughTheStop(std::string_view stop_name) const;
 
+    /* METHODS FOR MAP IMAGE RENDERING */
+
     [[nodiscard]] const geo::Coordinates& GetMinStopCoordinates() const;
     [[nodiscard]] const geo::Coordinates& GetMaxStopCoordinates() const;
-
+    
 private:  // Types
     struct StopPointersPairHash {
         size_t operator()(const StopPointersPair& pair) const {
@@ -38,17 +40,17 @@ private:  // Types
     };
 
 private:  // Methods
-    int CalculateRouteLength(const Bus* bus_info) const;
-    double CalculateGeographicLength(const Bus* bus_info) const;
+    int CalculateRouteLength(const std::shared_ptr<Bus>& bus_info) const;
+    double CalculateGeographicLength(const std::shared_ptr<Bus>& bus_info) const;
 
     void UpdateMinMaxStopCoordinates(const geo::Coordinates& coordinates);
 
 private:  // Fields
     std::deque<Stop> stops_storage_;
-    std::unordered_map<std::string_view, const Stop*> stops_;
+    std::unordered_map<std::string_view, std::shared_ptr<Stop>> stops_;
 
     std::deque<Bus> buses_storage_;
-    std::unordered_map<std::string_view, const Bus*> buses_;
+    std::unordered_map<std::string_view, std::shared_ptr<Bus>> buses_;
 
     std::unordered_map<std::string_view, std::set<std::string_view>> buses_through_stop_;
     std::unordered_map<StopPointersPair, int, StopPointersPairHash> distances_between_stops_;
@@ -57,6 +59,8 @@ private:  // Fields
     // TODO: move std::numeric_limits<double>::max() -> to constant
     geo::Coordinates coordinates_min_{std::numeric_limits<double>::max(), std::numeric_limits<double>::max()};
     geo::Coordinates coordinates_max_{std::numeric_limits<double>::min(), std::numeric_limits<double>::min()};
+
+    std::set<std::string_view> buses_list_;
 };
 
 }  // namespace catalogue
