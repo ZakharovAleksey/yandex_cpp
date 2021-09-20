@@ -8,7 +8,7 @@ struct Coordinates {
     double lng{0.};
 };
 
-inline double ComputeDistance(Coordinates from, Coordinates to) {
+inline double ComputeDistance1(Coordinates from, Coordinates to) {
     using namespace std;
     static const double dr = 3.1415926535 / 180.;
     return acos(sin(from.lat * dr) * sin(to.lat * dr) +

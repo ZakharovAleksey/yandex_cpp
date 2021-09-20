@@ -92,7 +92,7 @@ double TransportCatalogue::CalculateGeographicLength(const Bus* bus_info) const 
     double geographic_length = std::transform_reduce(
         std::next(bus_info->stop_names.begin()), bus_info->stop_names.end(), bus_info->stop_names.begin(), 0.,
         std::plus<>(), [this](std::string_view from, std::string_view to) {
-            return ComputeDistance(stops_.at(from)->point, stops_.at(to)->point);
+            return ComputeDistance1(stops_.at(from)->point, stops_.at(to)->point);
         });
 
     return (bus_info->type == RouteType::CIRCLE) ? geographic_length : geographic_length * 2.;

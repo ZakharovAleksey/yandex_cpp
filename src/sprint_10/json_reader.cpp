@@ -3,6 +3,7 @@
 #include <string>
 
 #include "json.h"
+#include "map_renderer.h"
 #include "request_handler.h"
 #include "transport_catalogue.h"
 
@@ -11,8 +12,7 @@ namespace request {
 using namespace catalogue;
 using namespace request::utils;
 using namespace std::literals;
-
-using StringPair = std::pair<std::string, std::string>;
+using namespace render_settings;
 
 namespace {
 
@@ -59,6 +59,78 @@ TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
     }
 
     return catalogue;
+}
+
+Screen ParseScreenSettings(const json::Dict& settings) {
+    Screen screen;
+
+    screen.width_ = settings.at("width"s).AsDouble();
+    screen.height_ = settings.at("height"s).AsDouble();
+    screen.padding_ = settings.at("padding"s).AsDouble();
+
+    return screen;
+}
+
+Label ParseLabelSettings(const json::Dict& settings, const std::string& key_type) {
+    int font_size = settings.at(key_type + "_label_font_size"s).AsInt();
+    const json::Array offset = settings.at(key_type + "_label_offset"s).AsArray();
+
+    double offset_x = offset.at(0).AsDouble();
+    double offset_y = offset.at(1).AsDouble();
+
+    return {font_size, {offset_x, offset_y}};
+}
+
+svg::Color ParseColor(const json::Node& node) {
+    // Node with color could be: string, rgb, rgba
+    if (node.IsString())
+        return node.AsString();
+
+    const auto& array = node.AsArray();
+    uint8_t red = array.at(0).AsInt();
+    uint8_t green = array.at(1).AsInt();
+    uint8_t blue = array.at(2).AsInt();
+
+    // In case there is only 3 colors in the array - it is egb
+    if (array.size() == 3)
+        return svg::Rgb(red, green, blue);
+
+    // Otherwise - this is rgba
+    double alpha = array.at(3).AsDouble();
+    return svg::Rgba(red, green, blue, alpha);
+}
+
+UnderLayer ParseLayer(const json::Dict& settings) {
+    UnderLayer layer;
+
+    layer.color_ = ParseColor(settings.at("underlayer_color"s));
+    layer.width_ = settings.at("underlayer_width"s).AsInt();
+
+    return layer;
+}
+
+Visualization ParseVisualizationSettings(const json::Dict& settings) {
+    Visualization final_settings;
+
+    double line_width = settings.at("line_width"s).AsDouble();
+    double stop_radius = settings.at("stop_radius"s).AsDouble();
+
+    // Parse list of colors
+    const auto& colors = settings.at("color_palette"s).AsArray();
+    std::vector<svg::Color> svg_colors;
+    svg_colors.reserve(colors.size());
+    for (const auto& color : colors)
+        svg_colors.emplace_back(ParseColor(color));
+
+    final_settings.SetScreen(ParseScreenSettings(settings))
+        .SetLineWidth(line_width)
+        .SetStopRadius(stop_radius)
+        .SetLabels(LabelType::Stop, ParseLabelSettings(settings, "stop"s))
+        .SetLabels(LabelType::Bus, ParseLabelSettings(settings, "bus"s))
+        .SetUnderLayer(ParseLayer(settings))
+        .SetColors(std::move(svg_colors));
+
+    return final_settings;
 }
 
 json::Node MakeBusResponse(int request_id, const BusStatistics& statistics) {
@@ -138,7 +210,11 @@ void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
     const auto& base_requests = input_json.AsMap().at("base_requests").AsArray();
     auto transport_catalogue = ProcessBaseRequest(base_requests);
 
-    // Step 2. Form response
+    // Step 2. Parse rendering settings
+    const auto& render_settings = input_json.AsMap().at("render_settings").AsMap();
+    const auto& visualization_settings = ParseVisualizationSettings(render_settings);
+
+    // Step 3. Form response
     const auto& stat_requests = input_json.AsMap().at("stat_requests").AsArray();
     auto response = MakeStatResponse(transport_catalogue, stat_requests);
 

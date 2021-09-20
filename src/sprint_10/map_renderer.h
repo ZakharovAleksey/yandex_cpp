@@ -4,7 +4,7 @@
 
 namespace render_settings {
 
-enum class ObjectType { Bus = 0, Stop = 1 };
+enum class LabelType { Bus = 0, Stop = 1 };
 
 // Used to project coordinates on map
 struct Screen {
@@ -16,7 +16,7 @@ struct Screen {
 // Background color under the names of stops and routes
 struct UnderLayer {
     svg::Color color_;
-    svg::Color width_;
+    int width_;
 };
 
 // Settings to display stops and buses names
@@ -34,16 +34,16 @@ public:
     Visualization& SetLineWidth(double width);
     Visualization& SetStopRadius(double radius);
 
-    Visualization& SetLabels(ObjectType type, Label label);
+    Visualization& SetLabels(LabelType type, Label label);
     Visualization& SetUnderLayer(UnderLayer layer);
-    Visualization& SetUnderLayer(std::vector<svg::Color> colors);
+    Visualization& SetColors(std::vector<svg::Color> colors);
 
 private:
     Screen screen_;
     double line_width_{0.};
     double stop_radius_{0.};
 
-    std::unordered_map<ObjectType, Label> labels_;
+    std::unordered_map<LabelType, Label> labels_;
     UnderLayer under_layer_;
     std::vector<svg::Color> colors_;
 };

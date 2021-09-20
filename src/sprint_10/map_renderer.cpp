@@ -18,7 +18,7 @@ Visualization& Visualization::SetStopRadius(double radius) {
     return *this;
 }
 
-Visualization& Visualization::SetLabels(ObjectType type, Label label) {
+Visualization& Visualization::SetLabels(LabelType type, Label label) {
     labels_.emplace(type, label);
     return *this;
 }
@@ -28,7 +28,7 @@ Visualization& Visualization::SetUnderLayer(UnderLayer layer) {
     return *this;
 }
 
-Visualization& Visualization::SetUnderLayer(std::vector<svg::Color> colors) {
+Visualization& Visualization::SetColors(std::vector<svg::Color> colors) {
     colors_ = std::move(colors);
     return *this;
 }
