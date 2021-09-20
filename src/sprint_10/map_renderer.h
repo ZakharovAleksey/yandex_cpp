@@ -68,10 +68,9 @@ private:  // Fields
 
 class MapImageRenderer {
 public:  // Constructor
-    MapImageRenderer(const catalogue::TransportCatalogue& catalogue, const Visualization& settings);
+    MapImageRenderer(const catalogue::TransportCatalogue& catalogue, const Visualization& settings, svg::Document& image);
 
 public:  // Method
-    const svg::Document& GetImage() const;
     void Render();
 
 private:  // Method
@@ -89,7 +88,7 @@ private:  // Method
 private:  // Fields
     const catalogue::TransportCatalogue& catalogue_;
     const Visualization& settings_;
-    svg::Document image_;
+    svg::Document& image_;
 
     double min_lng_{0.};
     double max_lat_{0.};
@@ -98,6 +97,6 @@ private:  // Fields
 
 /* RENDERING METHODS */
 
-void RenderTransportMap(const catalogue::TransportCatalogue& catalogue, const Visualization& settings);
+std::string RenderTransportMap(const catalogue::TransportCatalogue& catalogue, const Visualization& settings);
 
 }  // namespace render

@@ -170,6 +170,15 @@ json::Node MakeErrorResponse(int request_id) {
     return response;
 }
 
+json::Node MakeMapImageResponse(int request_id, const std::string& image) {
+    json::Dict response;
+
+    response.emplace("request_id"s, request_id);
+    response.emplace("map"s, image);
+
+    return response;
+}
+
 json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Array& requests,
                             const render::Visualization& settings) {
     json::Array response;
@@ -199,7 +208,8 @@ json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Arr
                 response.emplace_back(MakeErrorResponse(request_id));
             }
         } else if (type == "Map"s) {
-            RenderTransportMap(catalogue, settings);
+            std::string image = RenderTransportMap(catalogue, settings);
+            response.emplace_back(MakeMapImageResponse(request_id, image));
         }
     }
 

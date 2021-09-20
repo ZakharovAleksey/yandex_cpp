@@ -3,6 +3,7 @@
 // TODO: remove
 #include <algorithm>
 #include <fstream>
+#include <sstream>
 
 namespace render {
 
@@ -38,16 +39,14 @@ Visualization& Visualization::SetColors(std::vector<svg::Color> colors) {
 
 /* MAP IMAGE RENDERED */
 
-MapImageRenderer::MapImageRenderer(const catalogue::TransportCatalogue& catalogue, const Visualization& settings)
+MapImageRenderer::MapImageRenderer(const catalogue::TransportCatalogue& catalogue, const Visualization& settings,
+                                   svg::Document& image)
     : catalogue_(catalogue),
       settings_(settings),
+      image_(image),
       min_lng_(catalogue_.GetMinStopCoordinates().lng),
       max_lat_(catalogue_.GetMaxStopCoordinates().lat),
       zoom_(CalculateZoom()) {}
-
-const svg::Document& MapImageRenderer::GetImage() const {
-    return image_;
-}
 
 void MapImageRenderer::Render() {
     PutRouteLines();
@@ -211,17 +210,20 @@ svg::Point MapImageRenderer::ToScreenPosition(geo::Coordinates position) {
 
 /* RENDERING METHODS */
 
-void RenderTransportMap(const catalogue::TransportCatalogue& catalogue, const Visualization& settings) {
-    MapImageRenderer renderer{catalogue, settings};
-    renderer.Render();
+std::string RenderTransportMap(const catalogue::TransportCatalogue& catalogue, const Visualization& settings) {
+    svg::Document image;
 
-    const auto& image = renderer.GetImage();
+    MapImageRenderer renderer{catalogue, settings, image};
+    renderer.Render();
 
     // TODO: remove - temporary
     std::ofstream out("D:\\education\\cpp\\yandex_cpp\\out.svg", std::ios::trunc);
     image.Render(out);
-
     out.close();
+
+    std::stringstream ss;
+    image.Render(ss);
+    return ss.str();
 }
 
 }  // namespace render
