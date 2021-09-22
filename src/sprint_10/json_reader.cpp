@@ -2,62 +2,91 @@
 
 #include <string>
 
-#include "json.h"
-#include "map_renderer.h"
-#include "request_handler.h"
-
 namespace request {
 
 using namespace catalogue;
-using namespace request::utils;
+using namespace request;
 
 using namespace std::literals;
 
 namespace {
 
-// TODO: mb move logic to another place
-TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
-    TransportCatalogue catalogue;
+std::pair<catalogue::Stop, bool> ParseBusStopInput(const json::Dict& info) {
+    Stop stop;
 
-    // We could add distances between stops ONLY when they EXIST in catalogue
-    std::vector<int> requests_ids_with_road_distances;
-    requests_ids_with_road_distances.reserve(requests.size());
+    stop.name = info.at("name"s).AsString();
+    stop.point.lat = info.at("latitude"s).AsDouble();
+    stop.point.lng = info.at("longitude"s).AsDouble();
 
-    std::vector<int> requests_ids_with_buses;
-    requests_ids_with_buses.reserve(requests.size());
+    bool has_road_distances = !info.at("road_distances"s).AsMap().empty();
 
-    // Step 1. Store all stops to the catalog and mark requests, needed to be processed afterward
-    for (int id = 0; id != requests.size(); ++id) {
-        const auto& request_dict_view = requests.at(id).AsMap();
-
-        if (request_dict_view.at("type"s) == "Stop"s) {
-            auto [stop, has_road_distances] = ParseBusStopInput(request_dict_view);
-            if (has_road_distances)
-                requests_ids_with_road_distances.emplace_back(id);
-
-            catalogue.AddStop(std::move(stop));
-        } else if (request_dict_view.at("type"s) == "Bus"s) {
-            requests_ids_with_buses.emplace_back(id);
-        }
-    }
-
-    // Step 2. Add distances between all stops
-    for (int id : requests_ids_with_road_distances) {
-        const auto& request_dict_view = requests.at(id).AsMap();
-
-        std::string_view stop_from = request_dict_view.at("name"s).AsString();
-        for (const auto& [stop_to, distance] : request_dict_view.at("road_distances"s).AsMap())
-            catalogue.AddDistance(stop_from, stop_to, distance.AsInt());
-    }
-
-    // Step 3. Add info about buses routes through stops
-    for (int id : requests_ids_with_buses) {
-        const auto& request_dict_view = requests.at(id).AsMap();
-        catalogue.AddBus(ParseBusRouteInput(request_dict_view));
-    }
-
-    return catalogue;
+    return {std::move(stop), has_road_distances};
 }
+
+Bus ParseBusRouteInput(const json::Dict& info) {
+    Bus bus;
+
+    bus.number = info.at("name"s).AsString();
+    bus.type = info.at("is_roundtrip"s).AsBool() ? RouteType::CIRCLE : RouteType::TWO_DIRECTIONAL;
+
+    const auto& stops = info.at("stops"s).AsArray();
+    bus.stop_names.reserve(stops.size());
+
+    for (const auto& stop : stops)
+        bus.stop_names.emplace_back(stop.AsString());
+
+    bus.unique_stops = {bus.stop_names.begin(), bus.stop_names.end()};
+
+    return bus;
+}
+
+json::Node MakeBusResponse(int request_id, const BusStatistics& statistics) {
+    json::Dict response;
+
+    // P.S. no need to use std::move() because all types on the right are trivial
+    response.emplace("curvature"s, statistics.curvature);
+    response.emplace("request_id"s, request_id);
+    response.emplace("route_length"s, statistics.rout_length);
+    response.emplace("stop_count"s, static_cast<int>(statistics.stops_count));
+    response.emplace("unique_stop_count"s, static_cast<int>(statistics.unique_stops_count));
+
+    return response;
+}
+
+json::Node MakeStopResponse(int request_id, const std::set<std::string_view>& buses) {
+    json::Dict response;
+
+    response.emplace("request_id"s, request_id);
+
+    json::Array buses_array;
+    buses_array.reserve(buses.size());
+    for (std::string_view bus : buses)
+        buses_array.emplace_back(std::string(bus));
+
+    response.emplace("buses"s, std::move(buses_array));
+
+    return response;
+}
+
+json::Node MakeErrorResponse(int request_id) {
+    json::Dict response;
+
+    response.emplace("request_id"s, request_id);
+    response.emplace("error_message"s, "not found"s);
+
+    return response;
+}
+
+json::Node MakeMapImageResponse(int request_id, const std::string& image) {
+    json::Dict response;
+
+    response.emplace("request_id"s, request_id);
+    response.emplace("map"s, image);
+
+    return response;
+}
+
+/* METHODS FOR MAP IMAGE RENDERING */
 
 render::Screen ParseScreenSettings(const json::Dict& settings) {
     render::Screen screen;
@@ -107,6 +136,51 @@ render::UnderLayer ParseLayer(const json::Dict& settings) {
     return layer;
 }
 
+}  // namespace
+
+TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
+    TransportCatalogue catalogue;
+
+    // We could add distances between stops ONLY when they EXIST in catalogue
+    std::vector<int> requests_ids_with_road_distances;
+    requests_ids_with_road_distances.reserve(requests.size());
+
+    std::vector<int> requests_ids_with_buses;
+    requests_ids_with_buses.reserve(requests.size());
+
+    // Step 1. Store all stops to the catalog and mark requests, needed to be processed afterward
+    for (int id = 0; id != requests.size(); ++id) {
+        const auto& request_dict_view = requests.at(id).AsMap();
+
+        if (request_dict_view.at("type"s) == "Stop"s) {
+            auto [stop, has_road_distances] = ParseBusStopInput(request_dict_view);
+            if (has_road_distances)
+                requests_ids_with_road_distances.emplace_back(id);
+
+            catalogue.AddStop(std::move(stop));
+        } else if (request_dict_view.at("type"s) == "Bus"s) {
+            requests_ids_with_buses.emplace_back(id);
+        }
+    }
+
+    // Step 2. Add distances between all stops
+    for (int id : requests_ids_with_road_distances) {
+        const auto& request_dict_view = requests.at(id).AsMap();
+
+        std::string_view stop_from = request_dict_view.at("name"s).AsString();
+        for (const auto& [stop_to, distance] : request_dict_view.at("road_distances"s).AsMap())
+            catalogue.AddDistance(stop_from, stop_to, distance.AsInt());
+    }
+
+    // Step 3. Add info about buses routes through stops
+    for (int id : requests_ids_with_buses) {
+        const auto& request_dict_view = requests.at(id).AsMap();
+        catalogue.AddBus(ParseBusRouteInput(request_dict_view));
+    }
+
+    return catalogue;
+}
+
 render::Visualization ParseVisualizationSettings(const json::Dict& settings) {
     render::Visualization final_settings;
 
@@ -129,52 +203,6 @@ render::Visualization ParseVisualizationSettings(const json::Dict& settings) {
         .SetColors(std::move(svg_colors));
 
     return final_settings;
-}
-
-json::Node MakeBusResponse(int request_id, const BusStatistics& statistics) {
-    json::Dict response;
-
-    // P.S. no need to use std::move() because all types on the right are trivial
-    response.emplace("curvature"s, statistics.curvature);
-    response.emplace("request_id"s, request_id);
-    response.emplace("route_length"s, statistics.rout_length);
-    response.emplace("stop_count"s, static_cast<int>(statistics.stops_count));
-    response.emplace("unique_stop_count"s, static_cast<int>(statistics.unique_stops_count));
-
-    return response;
-}
-
-json::Node MakeStopResponse(int request_id, const std::set<std::string_view>& buses) {
-    json::Dict response;
-
-    response.emplace("request_id"s, request_id);
-
-    json::Array buses_array;
-    buses_array.reserve(buses.size());
-    for (std::string_view bus : buses)
-        buses_array.emplace_back(std::string(bus));
-
-    response.emplace("buses"s, std::move(buses_array));
-
-    return response;
-}
-
-json::Node MakeErrorResponse(int request_id) {
-    json::Dict response;
-
-    response.emplace("request_id"s, request_id);
-    response.emplace("error_message"s, "not found"s);
-
-    return response;
-}
-
-json::Node MakeMapImageResponse(int request_id, const std::string& image) {
-    json::Dict response;
-
-    response.emplace("request_id"s, request_id);
-    response.emplace("map"s, image);
-
-    return response;
 }
 
 json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Array& requests,
@@ -211,27 +239,6 @@ json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Arr
     }
 
     return response;
-}
-
-}  // namespace
-
-void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
-    const auto input_json = json::Load(input).GetRoot();
-
-    // Step 1. Form catalogue, basing on the input
-    TransportCatalogue catalogue;
-    const auto& base_requests = input_json.AsMap().at("base_requests").AsArray();
-    auto transport_catalogue = ProcessBaseRequest(base_requests);
-
-    // Step 2. Parse rendering settings
-    const auto& render_settings = input_json.AsMap().at("render_settings").AsMap();
-    const auto& visualization_settings = ParseVisualizationSettings(render_settings);
-
-    // Step 3. Form response
-    const auto& stat_requests = input_json.AsMap().at("stat_requests").AsArray();
-    auto response = MakeStatResponse(transport_catalogue, stat_requests, visualization_settings);
-
-    json::Print(json::Document{std::move(response)}, output);
 }
 
 }  // namespace request

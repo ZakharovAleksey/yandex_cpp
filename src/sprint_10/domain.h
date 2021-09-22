@@ -5,11 +5,11 @@
  * describe buses and stops
  */
 
+#include <memory>
 #include <set>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <memory>
 
 #include "geo.h"
 
@@ -35,7 +35,7 @@ struct Stop {
                even_value * even_value * std::hash<double>{}(point.lat);
     }
 
-private:
+private:  // Fields
     static const size_t even_value{37};
 };
 

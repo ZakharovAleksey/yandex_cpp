@@ -5,15 +5,10 @@
  * Acts as a Facade that simplifies interaction with the transport directory
  */
 
-#include "domain.h"
-#include "json.h"
+#include "json_reader.h"
 
-namespace request::utils {
+namespace request {
 
-std::pair<catalogue::Stop, bool> ParseBusStopInput(const json::Dict& info);
+void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output);
 
-catalogue::Bus ParseBusRouteInput(const json::Dict& info);
-
-
-
-}  // namespace request::utils
+}  // namespace request

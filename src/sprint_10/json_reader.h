@@ -5,12 +5,17 @@
  * of JSON responses
  */
 
-#include <iostream>
-#include <set>
-#include <string_view>
+#include "json.h"
+#include "map_renderer.h"
+#include "transport_catalogue.h"
 
 namespace request {
 
-void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output);
+catalogue::TransportCatalogue ProcessBaseRequest(const json::Array& requests);
+
+render::Visualization ParseVisualizationSettings(const json::Dict& settings);
+
+json::Node MakeStatResponse(const catalogue::TransportCatalogue& catalogue, const json::Array& requests,
+                            const render::Visualization& settings);
 
 }  // namespace request

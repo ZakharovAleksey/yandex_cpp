@@ -2,37 +2,28 @@
 
 #include <string>
 
-namespace request::utils {
+namespace request {
 
 using namespace std::literals;
 using namespace catalogue;
 
-std::pair<catalogue::Stop, bool> ParseBusStopInput(const json::Dict& info) {
-    Stop stop;
+void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
+    const auto input_json = json::Load(input).GetRoot();
 
-    stop.name = info.at("name"s).AsString();
-    stop.point.lat = info.at("latitude"s).AsDouble();
-    stop.point.lng = info.at("longitude"s).AsDouble();
+    // Step 1. Form catalogue, basing on the input
+    TransportCatalogue catalogue;
+    const auto& base_requests = input_json.AsMap().at("base_requests"s).AsArray();
+    auto transport_catalogue = ProcessBaseRequest(base_requests);
 
-    bool has_road_distances = !info.at("road_distances"s).AsMap().empty();
+    // Step 2. Parse rendering settings
+    const auto& render_settings = input_json.AsMap().at("render_settings"s).AsMap();
+    const auto& visualization_settings = ParseVisualizationSettings(render_settings);
 
-    return {std::move(stop), has_road_distances};
+    // Step 3. Form response
+    const auto& stat_requests = input_json.AsMap().at("stat_requests"s).AsArray();
+    auto response = MakeStatResponse(transport_catalogue, stat_requests, visualization_settings);
+
+    json::Print(json::Document{std::move(response)}, output);
 }
 
-Bus ParseBusRouteInput(const json::Dict& info) {
-    Bus bus;
-
-    bus.number = info.at("name"s).AsString();
-    bus.type = info.at("is_roundtrip"s).AsBool() ? RouteType::CIRCLE : RouteType::TWO_DIRECTIONAL;
-
-    const auto& stops = info.at("stops"s).AsArray();
-    bus.stop_names.reserve(stops.size());
-
-    for (const auto& stop : stops)
-        bus.stop_names.emplace_back(stop.AsString());
-
-    bus.unique_stops = {bus.stop_names.begin(), bus.stop_names.end()};
-
-    return bus;
-}
-}  // namespace request::utils
+}  // namespace request
