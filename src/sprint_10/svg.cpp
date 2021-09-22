@@ -2,8 +2,6 @@
 #include "svg.h"
 
 #include <cmath>
-#include <iomanip>
-#include <iterator>
 #include <sstream>
 #include <string_view>
 
@@ -35,11 +33,7 @@ void ColorPrinter::operator()(Rgba color) const {
        << std::to_string(color.blue) << ","s;
     // clang-format on
 
-    std::stringstream ss;
-    // TODO: maybe here with precision
-    ss /* << std::fixed  << std::setprecision(2) */ << color.opacity;
-
-    os << ss.str() << ")"s;
+    os << color.opacity << ")"s;
 }
 
 std::ostream& operator<<(std::ostream& os, const Color& color) {

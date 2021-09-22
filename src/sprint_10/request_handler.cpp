@@ -11,10 +11,10 @@ std::pair<catalogue::Stop, bool> ParseBusStopInput(const json::Dict& info) {
     Stop stop;
 
     stop.name = info.at("name"s).AsString();
-    stop.point.lat = info.at("latitude").AsDouble();
-    stop.point.lng = info.at("longitude").AsDouble();
+    stop.point.lat = info.at("latitude"s).AsDouble();
+    stop.point.lng = info.at("longitude"s).AsDouble();
 
-    bool has_road_distances = !info.at("road_distances").AsMap().empty();
+    bool has_road_distances = !info.at("road_distances"s).AsMap().empty();
 
     return {std::move(stop), has_road_distances};
 }

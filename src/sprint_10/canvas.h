@@ -5,18 +5,19 @@
 
 #include "shapes.h"
 
-// Холст, на котором размещаются фигуры
+// Canvas on which we draw figures
 class Canvas {
-public:
+public:  // Using
     using ShapeId = size_t;
 
+public:  // Constructor
     explicit Canvas(Size size) : size_(size) {}
 
+public:  // Methods
     void SetSize(Size size) {
         size_ = size;
     }
 
-    // Добавляет на холст фигуру указанного типа,
     ShapeId AddShape(ShapeType shape_type, Point position, Size size, std::shared_ptr<Texture> texture) {
         auto shape = std::make_unique<Shape>(shape_type);
         shape->SetPosition(position);
@@ -25,34 +26,28 @@ public:
         return InsertShape(std::move(shape));
     }
 
-    // Создаёт копию фигуры в новых координатах
     ShapeId DuplicateShape(ShapeId source_id, Point target_position) {
         auto shape = std::make_unique<Shape>(*GetShapeNodeById(source_id)->second);
         shape->SetPosition(target_position);
         return InsertShape(std::move(shape));
     }
 
-    // Удаляет фигуру с заданным id
     void RemoveShape(ShapeId id) {
         shapes_.erase(GetShapeNodeById(id));
     }
 
-    // Изменяет координаты фигуры
     void MoveShape(ShapeId id, Point position) {
         GetShapeNodeById(id)->second->SetPosition(position);
     }
 
-    // Изменяет размеры фигуры
     void ResizeShape(ShapeId id, Size size) {
         GetShapeNodeById(id)->second->SetSize(size);
     }
 
-    // Возвращает количество фигур
     int GetShapesCount() const {
         return static_cast<int>(shapes_.size());
     }
 
-    // Вывод содержимого холста в поток
     void Print(std::ostream& output) const {
         using namespace std::literals;
 

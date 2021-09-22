@@ -1,6 +1,5 @@
 #include "map_renderer.h"
 
-// TODO: remove
 #include <algorithm>
 #include <fstream>
 #include <sstream>
@@ -98,7 +97,6 @@ void MapImageRenderer::PutRouteNames() {
         if (stops.empty())
             continue;
 
-        // TODO: check space at the end of the text tag > in output - maybe not needed !
         for (const auto& stop : stops) {
             // Background - first
             image_.Add(svg::Text()
@@ -138,7 +136,6 @@ void MapImageRenderer::PutStopCircles() {
 }
 
 void MapImageRenderer::PutStopNames() {
-    // TODO: tags order has been changed -> check why
     const auto& stop_settings = settings_.labels_.at(LabelType::Stop);
     const auto& under_layer_settings = settings_.under_layer_;
 
@@ -216,10 +213,12 @@ std::string RenderTransportMap(const catalogue::TransportCatalogue& catalogue, c
     MapImageRenderer renderer{catalogue, settings, image};
     renderer.Render();
 
-    // TODO: remove - temporary
-    std::ofstream out("D:\\education\\cpp\\yandex_cpp\\out.svg", std::ios::trunc);
-    image.Render(out);
-    out.close();
+    // TODO: this is temporary output to file (just for debug)
+    if (true) {
+        std::ofstream out("D:\\education\\cpp\\yandex_cpp\\out.svg", std::ios::trunc);
+        image.Render(out);
+        out.close();
+    }
 
     std::stringstream ss;
     image.Render(ss);

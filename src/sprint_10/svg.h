@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <variant>
 #include <vector>
@@ -27,7 +28,7 @@ struct Point {
  */
 struct RenderContext {
 public:  // Constructors
-    RenderContext(std::ostream& out) : out(out) {}
+    explicit RenderContext(std::ostream& out) : out(out) {}
 
     RenderContext(std::ostream& out, int indent_step, int indent = 0)
         : out(out), indent_step(indent_step), indent(indent) {}
@@ -151,13 +152,12 @@ protected:  // Methods
         using namespace std::literals;
 
         // By default, we assume that primitives declaration has space at the end
-        bool is_space_needed = false;
 
-        PrintProperty(os, "fill"s, color_, is_space_needed);
-        PrintProperty(os, "stroke"s, stroke_color_, is_space_needed);
-        PrintProperty(os, "stroke-width"s, stroke_width_, is_space_needed);
-        PrintProperty(os, "stroke-linecap"s, line_cap_, is_space_needed);
-        PrintProperty(os, "stroke-linejoin"s, line_join_, is_space_needed);
+        PrintProperty(os, "fill"sv, color_);
+        PrintProperty(os, "stroke"sv, stroke_color_);
+        PrintProperty(os, "stroke-width"sv, stroke_width_);
+        PrintProperty(os, "stroke-linecap"sv, line_cap_);
+        PrintProperty(os, "stroke-linejoin"sv, line_join_);
     }
 
     void RenderAttrs(const RenderContext& context) const {
@@ -177,13 +177,10 @@ private:  // Methods
     }
 
     template <class PropertyType>
-    void PrintProperty(std::ostream& os, std::string tag_name, const std::optional<PropertyType>& tag_value,
-                       bool& is_space_needed) const {
-        // TODO: remove - not needed
-        is_space_needed = !is_space_needed;
-
+    void PrintProperty(std::ostream& os, std::string_view tag_name,
+                       const std::optional<PropertyType>& tag_value) const {
         if (tag_value)
-            os << " " << std::move(tag_name) << "=\"" << *tag_value << "\"";
+            os << " " << tag_name << "=\"" << *tag_value << "\"";
     }
 };
 
@@ -331,7 +328,7 @@ class Snowman : public svg::Drawable {
 public:  // Constructors
     Snowman(svg::Point head_center, double head_radius) : head_center_(head_center), head_radius_(head_radius) {}
 
-public:
+public:  // Methods
     void Draw(svg::ObjectContainer& container) const override;
 
 private:  // Fields
@@ -343,7 +340,7 @@ private:  // Fields
 };
 
 class Triangle : public svg::Drawable {
-public:
+public:  // Constructor
     Triangle(svg::Point first, svg::Point second, svg::Point third) : first_(first), second_(second), third_(third) {}
 
 public:  // Methods

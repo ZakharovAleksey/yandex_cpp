@@ -80,9 +80,9 @@ private:  // Method
     void PutStopNames();
 
     /* HELPER METHODS */
+
     [[nodiscard]] double CalculateZoom() const;
     [[nodiscard]] svg::Color TakeColorById(int route_id) const;
-    // TODO: maybe make it inline
     svg::Point ToScreenPosition(geo::Coordinates position);
 
 private:  // Fields

@@ -59,7 +59,7 @@ public:  // Operators
     friend bool operator==(const Document& left, const Document& right);
     friend bool operator!=(const Document& left, const Document& right);
 
-private:
+private:  // Fields
     Node root_;
 };
 

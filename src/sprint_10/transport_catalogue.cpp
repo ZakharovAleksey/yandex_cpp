@@ -30,7 +30,7 @@ void TransportCatalogue::AddBus(Bus bus) {
 
     const auto position = buses_storage_.insert(buses_storage_.begin(), std::move(bus));
     buses_.insert({position->number, std::make_shared<Bus>(*position)});
-    ordered_bus_list.emplace(position->number);
+    ordered_bus_list_.emplace(position->number);
 
     // Add stop for <stop-bus> correspondence
     for (std::string_view stop : position->stop_names)
@@ -104,12 +104,68 @@ const geo::Coordinates& TransportCatalogue::GetMaxStopCoordinates() const {
 }
 
 const std::set<std::string_view>& TransportCatalogue::GetOrderedBusList() const {
-    return ordered_bus_list;
+    return ordered_bus_list_;
 }
 
-const std::set<std::string_view>* TransportCatalogue::GetBusesPassingThroughTheStop(std::string_view stop_name) const {
-    if (const auto position = buses_through_stop_.find(stop_name); position != buses_through_stop_.cend())
-        return &position->second;
+BusStopsStorage TransportCatalogue::GetFinalStops(std::string_view bus_name) const {
+    auto bus = buses_.at(bus_name);
+
+    std::vector<std::shared_ptr<Stop>> stops;
+
+    if (bus->stop_names.empty())
+        return std::make_pair(bus, stops);
+
+    if (bus->type == RouteType::CIRCLE) {
+        // In a circular route, the first stop on the route is considered the final stop
+        stops.emplace_back(stops_.at(bus->stop_names.front()));
+    } else if (bus->type == RouteType::TWO_DIRECTIONAL) {
+        // In a non-circular route, the first and the last stops on the route are considered the final stops
+        stops.emplace_back(stops_.at(bus->stop_names.front()));
+
+        if (bus->stop_names.front() != bus->stop_names.back())
+            stops.emplace_back(stops_.at(bus->stop_names.back()));
+    }
+
+    return std::make_pair(bus, stops);
+}
+
+BusStopsStorage TransportCatalogue::GetRouteInfo(std::string_view bus_name, bool include_backward_way) const {
+    auto bus = buses_.at(bus_name);
+
+    std::vector<std::shared_ptr<Stop>> stops;
+    stops.reserve(bus->GetStopsCount());
+
+    // Forward way
+    for (std::string_view stop : bus->stop_names)
+        stops.emplace_back(stops_.at(stop));
+
+    // Backward way
+    if (include_backward_way && bus->type == catalogue::RouteType::TWO_DIRECTIONAL) {
+        for (auto stop = std::next(bus->stop_names.rbegin()); stop != bus->stop_names.rend(); ++stop)
+            stops.emplace_back(stops_.at(*stop));
+    }
+
+    return std::make_pair(std::move(bus), std::move(stops));
+}
+
+StopsStorage TransportCatalogue::GetAllStopsFromRoutes() const {
+    std::unordered_map<std::string_view, std::shared_ptr<Stop>> stops;
+
+    // Take only stops, which are part of any bus route
+    for (const auto& [_, bus] : buses_) {
+        for (std::string_view stop : bus->stop_names) {
+            if (stops.count(stop) == 0)
+                stops.emplace(stop, stops_.at(stop));
+        }
+    }
+
+    return {stops.begin(), stops.end()};
+}
+
+std::unique_ptr<std::set<std::string_view>> TransportCatalogue::GetBusesPassingThroughTheStop(
+    std::string_view stop_name) const {
+    if (const auto position = buses_through_stop_.find(stop_name); position != buses_through_stop_.end())
+        return std::make_unique<std::set<std::string_view>>(position->second);
     return nullptr;
 }
 

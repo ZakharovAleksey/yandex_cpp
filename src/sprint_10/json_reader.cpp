@@ -5,7 +5,6 @@
 #include "json.h"
 #include "map_renderer.h"
 #include "request_handler.h"
-#include "transport_catalogue.h"
 
 namespace request {
 
@@ -52,7 +51,6 @@ TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
     }
 
     // Step 3. Add info about buses routes through stops
-    // TODO: check if move works here and if YES - override everywhere
     for (int id : requests_ids_with_buses) {
         const auto& request_dict_view = requests.at(id).AsMap();
         catalogue.AddBus(ParseBusRouteInput(request_dict_view));
@@ -201,8 +199,7 @@ json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Arr
             }
         } else if (type == "Stop"s) {
             name = request_dict_view.at("name"s).AsString();
-            // TODO: make smart pointer here
-            if (auto* buses = catalogue.GetBusesPassingThroughTheStop(name)) {
+            if (auto buses = catalogue.GetBusesPassingThroughTheStop(name)) {
                 response.emplace_back(MakeStopResponse(request_id, *buses));
             } else {
                 response.emplace_back(MakeErrorResponse(request_id));

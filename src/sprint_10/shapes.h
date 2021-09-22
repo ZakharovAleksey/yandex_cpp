@@ -7,9 +7,10 @@
 enum class ShapeType { RECTANGLE, ELLIPSE };
 
 class Shape {
-public:
+public:  // Constructor
     explicit Shape(ShapeType type) : type_(type) {}
 
+public:  // Methods
     void SetPosition(Point pos) {
         position_ = pos;
     }
@@ -22,11 +23,13 @@ public:
         texture_ = std::move(texture);
     }
 
-    // Рисует фигуру на указанном изображении
-    // В зависимости от типа фигуры должен рисоваться либо эллипс, либо прямоугольник
-    // Пиксели фигуры, выходящие за пределы текстуры, а также в случае, когда текстура не задана,
-    // должны отображаться с помощью символа точка '.'
-    // Части фигуры, выходящие за границы объекта image, должны отбрасываться.
+    /*
+     * Method draws a shape on the specified image
+     * Depending on the type of shape, either an ellipse or a rectangle should be drawn
+     * The pixels of the shape that go outside the texture, and also in the case
+     * when the texture is not specified, should be rendered with a dot '.'
+     * The parts of the shape outside the bounds of the image object should be discarded.
+     */
     void Draw(Image& image) const {
         const auto [image_width, image_height] = GetImageSize(image);
 
@@ -50,7 +53,7 @@ public:
         }
     }
 
-private:
+private:  // Fields
     ShapeType type_;
     Point position_;
     Size size_;
