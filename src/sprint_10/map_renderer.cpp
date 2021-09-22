@@ -215,7 +215,7 @@ std::string RenderTransportMap(const catalogue::TransportCatalogue& catalogue, c
 
     // TODO: this is temporary output to file (just for debug)
     if (true) {
-        std::ofstream out("D:\\education\\cpp\\yandex_cpp\\out.svg", std::ios::trunc);
+        std::ofstream out("D:\\education\\cpp\\yandex_cpp\\data\\local\\out.svg", std::ios::trunc);
         image.Render(out);
         out.close();
     }
