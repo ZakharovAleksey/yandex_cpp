@@ -1,5 +1,8 @@
 #pragma once
 
+#include <optional>
+#include <queue>
+
 #include "json.h"
 
 namespace json_11 {
@@ -20,7 +23,10 @@ public:  // Methods
     const Node& Build() const;
 
 private:  // Fields
-    std::string temporary_key;
+    mutable bool is_ready_{false};
+    std::queue<bool> array_checker;
+    std::queue<bool> dict_checker;
+    std::optional<std::string> temporary_key{std::nullopt};
     Node root_{nullptr};
     std::vector<Node*> nodes_stack_;
 };
