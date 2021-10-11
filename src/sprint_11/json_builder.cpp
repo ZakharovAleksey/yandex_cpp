@@ -16,9 +16,25 @@ DictContext& StartContainersContext::StartDict() {
     return builder_.StartDict();
 }
 
+KeyContext::KeyContext(Builder& builder) : StartContainersContext(builder) {}
+
+ValueContext KeyContext::Value(Node::Value value) {
+    return builder_.Value(std::move(value));
+}
+
+ValueContext::ValueContext(Builder& builder) : BaseContext(builder) {}
+
+KeyContext& ValueContext::Key(std::string key) {
+    return builder_.Key(std::move(key));
+}
+
+Builder& ValueContext::EndDict() {
+    return builder_.EndDict();
+}
+
 DictContext::DictContext(Builder& builder) : BaseContext(builder) {}
 
-Builder& DictContext::Key(std::string key) {
+KeyContext& DictContext::Key(std::string key) {
     return builder_.Key(std::move(key));
 }
 
@@ -38,13 +54,9 @@ Builder& ArrayContext::EndArray() {
 
 /* JSON BUILDER */
 
-Builder::Builder()
-    :  // KeyContext(*this),
-       //  DictKeyItemContext(*this),
-      DictContext(*this),
-      ArrayContext(*this) {}
+Builder::Builder() : KeyContext(*this), ValueContext(*this), DictContext(*this), ArrayContext(*this) {}
 
-Builder& Builder::Key(std::string key) {
+KeyContext& Builder::Key(std::string key) {
     if (!root_.IsNull() || nodes_stack_.empty() || !nodes_stack_.back()->IsDict())
         throw std::logic_error("Incorrect attempt to add key :" + key);
 
