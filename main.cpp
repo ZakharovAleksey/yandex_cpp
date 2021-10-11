@@ -284,7 +284,7 @@ string GetFileContents(string file) {
 using namespace std;
 
 int main() {
-    //    json_11::Builder{}.StartDict().Build();                       // правило 3
+//        json_11::Builder{}.StartDict().Build();                       // правило 3
 //    json_11::Builder{}.StartDict().Key("1"s).Value(1).Value(1);   // правило 2
 //    json_11::Builder{}.StartDict().Key("1"s).Key(""s);            // правило 1
 //    json_11::Builder{}.StartArray().Key("1"s);                    // правило 4

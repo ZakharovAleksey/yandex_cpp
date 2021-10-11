@@ -22,46 +22,47 @@ protected:
     Builder& builder_;
 };
 
-// class StartContainersContext : public BaseContext {
-// public:
-//     explicit StartContainersContext(Builder& builder);
-//
-// public:
-//     ArrayContext StartArray();
-//     DictContext StartDict();
-// };
+class StartContainersContext : public BaseContext {
+public:
+    explicit StartContainersContext(Builder& builder);
+
+public:
+    ArrayContext& StartArray();
+    DictContext& StartDict();
+};
 
 class KeyContext {
     // Value | StartDict, StartArray
 };
 
-class DictKeyItemContext {};
+class DictKeyItemContext {
+    /* Methods: Key, EndDict : dict value call*/
+};
 
 class DictContext : public BaseContext {
     /* Methods: Key, EndDict */
 public:
-    DictContext(Builder& builder);
+    explicit DictContext(Builder& builder);
 
 public:
     Builder& Key(std::string key);
     Builder& EndDict();
 };
 
-// class ArrayContext : public StartContainersContext {
-//     // Value, EndArray | StartDict, StartArray
-// public:
-//     explicit ArrayContext(Builder& builder);
-//
-// public:
-//     Builder& Value(Node::Value value);
-//     Builder& EndArray();
-// };
+class ArrayContext : public StartContainersContext {
+    /* Methods: Value, EndArray | StartDict, StartArray */
+public:
+    explicit ArrayContext(Builder& builder);
+
+public:
+    Builder& Value(Node::Value value);
+    Builder& EndArray();
+};
 
 class Builder final :  // virtual public KeyContext,
                        // virtual public DictKeyItemContext,
-                       virtual public DictContext
-// virtual public ArrayContext
-{
+                       virtual public DictContext,
+                       virtual public ArrayContext {
 public:  // Constructor
     Builder();
 
@@ -72,7 +73,7 @@ public:  // Methods
     DictContext& StartDict();
     Builder& EndDict();
 
-    Builder& StartArray();
+    ArrayContext& StartArray();
     Builder& EndArray();
 
     const Node& Build() const;

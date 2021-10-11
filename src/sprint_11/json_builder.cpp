@@ -6,6 +6,16 @@ namespace json_11 {
 
 BaseContext::BaseContext(Builder& builder) : builder_(builder) {}
 
+StartContainersContext::StartContainersContext(Builder& builder) : BaseContext(builder) {}
+
+ArrayContext& StartContainersContext::StartArray() {
+    return builder_.StartArray();
+}
+
+DictContext& StartContainersContext::StartDict() {
+    return builder_.StartDict();
+}
+
 DictContext::DictContext(Builder& builder) : BaseContext(builder) {}
 
 Builder& DictContext::Key(std::string key) {
@@ -16,14 +26,23 @@ Builder& DictContext::EndDict() {
     return builder_.EndDict();
 }
 
+ArrayContext::ArrayContext(Builder& builder) : StartContainersContext(builder) {}
+
+Builder& ArrayContext::Value(Node::Value value) {
+    return builder_.Value(std::move(value));
+}
+
+Builder& ArrayContext::EndArray() {
+    return builder_.EndArray();
+}
+
 /* JSON BUILDER */
 
 Builder::Builder()
     :  // KeyContext(*this),
        //  DictKeyItemContext(*this),
-      DictContext(*this)
-// ArrayContext(*this) {}
-{}
+      DictContext(*this),
+      ArrayContext(*this) {}
 
 Builder& Builder::Key(std::string key) {
     if (!root_.IsNull() || nodes_stack_.empty() || !nodes_stack_.back()->IsDict())
@@ -58,7 +77,7 @@ Builder& Builder::EndDict() {
     return *this;
 }
 
-Builder& Builder::StartArray() {
+ArrayContext& Builder::StartArray() {
     if (!root_.IsNull() || !CouldAddNode())
         throw std::logic_error("Incorrect attempt to start Array()");
 
