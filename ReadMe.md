@@ -1,6 +1,6 @@
 # Yandex Practicum C++
 
-:boom: **Sprint #10 description added [here](#Sprint-10)** 
+:boom: **Sprint #10 description added [here](#Sprint-11)** 
 
 - [ ] Add `conan` package manager (could not find packages)
 - [ ] Make good `CMAKE` basing on chosen compiler
@@ -136,8 +136,6 @@ Implemented items:
 
 ## Sprint 10
 
-:exclamation: :exclamation: :exclamation:
-
 Code with transport catalogue visualization map: [dev/sprint-10](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-10)
 
 Implemented items:
@@ -150,4 +148,18 @@ Implemented items:
 
 ![alt text](/data/img/simple_map.jpg)
 
+
+## Sprint 11
+
+:exclamation: :exclamation: :exclamation:
+
+Code with JSON builder could be found here: [dev/sprint-11](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-11)
+
+Implemented items:
+1. Class `Builder`, which provides an interface for JSON creation:
+   * [json_builder.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-11/src/sprint_11/json_builder.h)
+   * [json_builder.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-11/src/sprint_11/json_builder.cpp)
+2. Request handler adjustment to creation of JSON response via `Builder` class. 
+   * [request_handler.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-11/src/sprint_11/request_handler.cpp)
+   
 # Notes
