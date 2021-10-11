@@ -2,6 +2,29 @@
 
 namespace json_11 {
 
+/* CONTEXT */
+
+BaseContext::BaseContext(Builder& builder) : builder_(builder) {}
+
+DictContext::DictContext(Builder& builder) : BaseContext(builder) {}
+
+Builder& DictContext::Key(std::string key) {
+    return builder_.Key(std::move(key));
+}
+
+Builder& DictContext::EndDict() {
+    return builder_.EndDict();
+}
+
+/* JSON BUILDER */
+
+Builder::Builder()
+    :  // KeyContext(*this),
+       //  DictKeyItemContext(*this),
+      DictContext(*this)
+// ArrayContext(*this) {}
+{}
+
 Builder& Builder::Key(std::string key) {
     if (!root_.IsNull() || nodes_stack_.empty() || !nodes_stack_.back()->IsDict())
         throw std::logic_error("Incorrect attempt to add key :" + key);
@@ -19,7 +42,7 @@ Builder& Builder::Value(Node::Value value) {
     return *this;
 }
 
-Builder& Builder::StartDict() {
+DictContext& Builder::StartDict() {
     if (!root_.IsNull() || !CouldAddNode())
         throw std::logic_error("Incorrect attempt to start Dict()");
 

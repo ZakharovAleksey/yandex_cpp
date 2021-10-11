@@ -8,15 +8,68 @@
 
 namespace json_11 {
 
-class Builder {
+class Builder;
+class DictContext;
+class ArrayContext;
+
+// StartContainersContext
+
+class BaseContext {
+public:
+    explicit BaseContext(Builder& builder);
+
+protected:
+    Builder& builder_;
+};
+
+// class StartContainersContext : public BaseContext {
+// public:
+//     explicit StartContainersContext(Builder& builder);
+//
+// public:
+//     ArrayContext StartArray();
+//     DictContext StartDict();
+// };
+
+class KeyContext {
+    // Value | StartDict, StartArray
+};
+
+class DictKeyItemContext {};
+
+class DictContext : public BaseContext {
+    /* Methods: Key, EndDict */
+public:
+    DictContext(Builder& builder);
+
+public:
+    Builder& Key(std::string key);
+    Builder& EndDict();
+};
+
+// class ArrayContext : public StartContainersContext {
+//     // Value, EndArray | StartDict, StartArray
+// public:
+//     explicit ArrayContext(Builder& builder);
+//
+// public:
+//     Builder& Value(Node::Value value);
+//     Builder& EndArray();
+// };
+
+class Builder final :  // virtual public KeyContext,
+                       // virtual public DictKeyItemContext,
+                       virtual public DictContext
+// virtual public ArrayContext
+{
 public:  // Constructor
-    Builder() = default;
+    Builder();
 
 public:  // Methods
     Builder& Key(std::string key);
-    Builder& Value(Node::Value v);
+    Builder& Value(Node::Value value);
 
-    Builder& StartDict();
+    DictContext& StartDict();
     Builder& EndDict();
 
     Builder& StartArray();

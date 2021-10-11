@@ -284,29 +284,43 @@ string GetFileContents(string file) {
 using namespace std;
 
 int main() {
-    //    json_11::Print(json_11::Document{json_11::Builder{}
-    //                                         .StartDict()
-    //                                         .Key("key1"s)
-    //                                         .Value(123)
-    //                                         .Key("key2"s)
-    //                                         .Value("value2"s)
-    //                                         .Key("key3"s)
-    //                                         .StartArray()
-    //                                         .Value(456)
-    //                                         .StartDict()
-    //                                         .EndDict()
-    //                                         .StartDict()
-    //                                         .Key(""s)
-    //                                         .Value(nullptr)
-    //                                         .EndDict()
-    //                                         .Value(""s)
-    //                                         .EndArray()
-    //                                         .EndDict()
-    //                                         .Build()},
-    //                   cout);
-    //    cout << endl;
+    //    json_11::Builder{}.StartDict().Build();                       // правило 3
+//    json_11::Builder{}.StartDict().Key("1"s).Value(1).Value(1);   // правило 2
+//    json_11::Builder{}.StartDict().Key("1"s).Key(""s);            // правило 1
+//    json_11::Builder{}.StartArray().Key("1"s);                    // правило 4
+//    json_11::Builder{}.StartArray().EndDict();                    // правило 4
+//    json_11::Builder{}.StartArray().Value(1).Value(2).EndDict();  // правило 5
 
-    json_11::Print(json_11::Document{json_11::Builder{}.StartDict().EndDict().Build()}, cout);
+    json_11::Print(json_11::Document{json_11::Builder{}
+                                         .StartDict()
+                                         .Key("key1"s)
+                                         .Value(123)
+                                         .Key("key2"s)
+                                         .Value("value2"s)
+                                         .Key("key3"s)
+                                         .StartArray()
+                                         .Value(456)
+                                         .StartDict()
+                                         .EndDict()
+                                         .StartDict()
+                                         .Key(""s)
+                                         .Value(nullptr)
+                                         .EndDict()
+                                         .Value(""s)
+                                         .EndArray()
+                                         .EndDict()
+                                         .Build()},
+                   cout);
+    cout << endl;
+
+    //    json_11::Builder{}.StartDict().Build();  // правило 3
+    //    json_11::Builder{}.StartDict().Key("1"s).Value(1).Value(1);  // правило 2
+    //    json_11::Builder{}.StartDict().Key("1"s).Key(""s);  // правило 1
+    //    json_11::Builder{}.StartArray().Key("1"s);  // правило 4
+    //    json_11::Builder{}.StartArray().EndDict();  // правило 4
+    //    json_11::Builder{}.StartArray().Value(1).Value(2).EndDict();  // правило 5
+    //
+    //    json_11::Print(json_11::Document{json_11::Builder{}.StartDict().EndDict().Build()}, cout);
     //    json_11::Print(
     //        json_11::Document{json_11::Builder{}.StartDict().Key("lol"s).Value("just a string"s).EndDict().Build()},
     //        cout);
