@@ -306,40 +306,46 @@ int main() {
     //                   cout);
     //    cout << endl;
 
-    // json_11::Print(json_11::Document{json_11::Builder{}.Value("just a string"s).Build()}, cout);
+    json_11::Print(json_11::Document{json_11::Builder{}.StartDict().EndDict().Build()}, cout);
+    //    json_11::Print(
+    //        json_11::Document{json_11::Builder{}.StartDict().Key("lol"s).Value("just a string"s).EndDict().Build()},
+    //        cout);
+    //    json_11::Print(json_11::Document{json_11::Builder{}.StartArray().Value("just a string"s).EndArray().Build()},
+    //    cout);
+    //
+    //        json_11::Print(json_11::Document{json_11::Builder{}
+    //                                             .StartArray()
+    //                                             .Value("just a string"s)
+    //                                             .StartArray()
+    //                                             .Value(123)
+    //                                             .Value(123.4)
+    //                                             .StartArray()
+    //                                             .Value("lol"s)
+    //                                             .StartArray()
+    //                                             .Value("kek"s)
+    //                                             .Value("azaza"s)
+    //                                             .EndArray()
+    //                                             .EndArray()
+    //                                             .EndArray()
+    //                                             .EndArray()
+    //                                             .Build()},
+    //                       cout);
+    //
 
-    //    json_11::Print(json_11::Document{json_11::Builder{}
-    //                                         .StartArray()
-    //                                         .Value("just a string"s)
-    //                                         .StartArray()
-    //                                         .Value(123)
-    //                                         .Value(123.4)
-    //                                         .StartArray()
-    //                                         .Value("lol"s)
-    //                                         .StartArray()
-    //                                         .Value("kek"s)
-    //                                         .Value("azaza"s)
-    //                                         .EndArray()
-    //                                         .EndArray()
-    //                                         .EndArray()
-    //                                         .EndArray()
-    //                                         .Build()},
-    //                   cout);
-
-    //    json_11::Print(json_11::Document{json_11::Builder{}
-    //                                         .StartDict()
-    //                                         .Key("just a string"s)
-    //                                         .Value(123)
-    //                                         .Key("dict"s)
-    //                                         .StartDict()
-    //                                         .Key("int"s)
-    //                                         .Value(123)
-    //                                         .Key("double"s)
-    //                                         .Value(123.4)
-    //                                         .EndDict()
-    //                                         .EndDict()
-    //                                         .Build()},
-    //                   cout);
+    //        json_11::Print(json_11::Document{json_11::Builder{}
+    //                                             .StartDict()
+    //                                             .Key("just a string"s)
+    //                                             .Value(123)
+    //                                             .Key("dict"s)
+    //                                             .StartDict()
+    //                                             .Key("int"s)
+    //                                             .Value(123)
+    //                                             .Key("double"s)
+    //                                             .Value(123.4)
+    //                                             .EndDict()
+    //                                             .EndDict()
+    //                                             .Build()},
+    //                       cout);
 
     //    json_11::Print(json_11::Document{json_11::Builder{}
     //                                         .StartArray()
@@ -358,11 +364,4 @@ int main() {
     //                   cout);
 
     cout << endl;
-
-    try {
-        json_11::Builder{}.Value("test"s).StartDict().EndDict().Build();
-
-    } catch (std::logic_error& e) {
-        std::cout << "exception: " << e.what() << std::endl;
-    }
 }

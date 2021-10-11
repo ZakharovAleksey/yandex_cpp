@@ -1,18 +1,20 @@
 #pragma once
 
+#include <memory>
 #include <optional>
 #include <queue>
 
 #include "json.h"
 
 namespace json_11 {
+
 class Builder {
 public:  // Constructor
-    Builder();
+    Builder() = default;
 
 public:  // Methods
     Builder& Key(std::string key);
-    Builder& Value(Node::Value value);
+    Builder& Value(Node::Value v);
 
     Builder& StartDict();
     Builder& EndDict();
@@ -22,12 +24,13 @@ public:  // Methods
 
     const Node& Build() const;
 
+private:  // Methods
+    [[nodiscard]] bool CouldAddNode() const;
+
+    void AddNode(Node top_node);
+
 private:  // Fields
-    mutable bool is_ready_{false};
-    std::queue<bool> array_checker;
-    std::queue<bool> dict_checker;
-    std::optional<std::string> temporary_key{std::nullopt};
     Node root_{nullptr};
-    std::vector<Node*> nodes_stack_;
+    std::vector<std::unique_ptr<Node>> nodes_stack_;
 };
 }  // namespace json_11
