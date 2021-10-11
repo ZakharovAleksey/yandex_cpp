@@ -2,7 +2,7 @@
 
 #include <iterator>
 
-namespace json_11 {
+namespace json {
 
 namespace {
 using namespace std::literals;
@@ -331,7 +331,11 @@ void PrintValue<Dict>(const Dict& nodes, const PrintContext& ctx) {
 }
 
 void PrintNode(const Node& node, const PrintContext& ctx) {
-    std::visit([&ctx](const auto& value) { PrintValue(value, ctx); }, node.GetValue());
+    std::visit(
+        [&ctx](const auto& value) {
+            PrintValue(value, ctx);
+        },
+        node.GetValue());
 }
 
 }  // namespace

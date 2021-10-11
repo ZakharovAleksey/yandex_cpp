@@ -1,12 +1,17 @@
 #pragma once
 
+/*
+ * Description: provide an interface for correct JSON file creation
+ * TODO: Main changes of sprint-11. For review
+ */
+
 #include <memory>
 #include <optional>
 #include <queue>
 
 #include "json.h"
 
-namespace json_11 {
+namespace json {
 
 class Builder;
 class DictContext;
@@ -15,19 +20,26 @@ class ValueContext;
 
 /* BASE CONTEXT */
 
+/*
+ * Contexts below provides interfaces for the correct JSON creation.
+ * For example, they do not allow the creation of JSON: {"name", [ } and many others.
+ * Idea: create context + add only necessary methods to it, so that when user call for wrong method, he will get a
+ * compilation error.
+ */
+
 class BaseContext {
-public:
+public:  // Constructor
     explicit BaseContext(Builder& builder);
 
-protected:
+protected:  // Fields
     Builder& builder_;
 };
 
 class StartContainersContext : public BaseContext {
-public:
+public:  // Constructor
     explicit StartContainersContext(Builder& builder);
 
-public:
+public:  // Fields
     ArrayContext& StartArray();
     DictContext& StartDict();
 };
@@ -36,45 +48,47 @@ public:
 
 class KeyContext : public StartContainersContext {
     /* Methods: Value | StartDict, StartArray */
-public:
+public:  // Constructor
     explicit KeyContext(Builder& builder);
 
-public:
+public:  // Methods
     ValueContext Value(Node::Value value);
 };
 
 class ValueContext : public BaseContext {
     /* Methods: Key, EndDict : dict value call*/
-public:
+public:  // Constructor
     explicit ValueContext(Builder& builder);
 
-public:
+public:  // Methods
     KeyContext& Key(std::string key);
     Builder& EndDict();
 };
 
 class DictContext : public BaseContext {
     /* Methods: Key, EndDict */
-public:
+public:  // Constructor
     explicit DictContext(Builder& builder);
 
-public:
+public:  // Methods
     KeyContext& Key(std::string key);
     Builder& EndDict();
 };
 
 class ArrayContext : public StartContainersContext {
     /* Methods: Value, EndArray | StartDict, StartArray */
-public:
+public:  // Constructor
     explicit ArrayContext(Builder& builder);
 
-public:
+public:  // Methods
     ArrayContext& Value(Node::Value value);
     Builder& EndArray();
 };
 
 /* BUILDER */
 
+/// Provides the interface for the correct JSON creation.
+/// @throws std::logical_error in case of incorrect attempt of JSON creation
 class Builder final : virtual public KeyContext,
                       virtual public ValueContext,
                       virtual public DictContext,
@@ -103,4 +117,4 @@ private:  // Fields
     Node root_{nullptr};
     std::vector<std::unique_ptr<Node>> nodes_stack_;
 };
-}  // namespace json_11
+}  // namespace json

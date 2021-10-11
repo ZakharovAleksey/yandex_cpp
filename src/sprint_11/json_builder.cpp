@@ -1,6 +1,6 @@
 #include "json_builder.h"
 
-namespace json_11 {
+namespace json {
 
 /* BASE CONTEXT */
 
@@ -130,6 +130,7 @@ void Builder::AddNode(Node top_node) {
         nodes_stack_.pop_back();
         std::get<Dict>(nodes_stack_.back()->GetValue()).emplace(std::move(key), std::move(top_node));
     } else {
+        // In case we are trying to create an empty containers
         if (top_node.IsDict()) {
             nodes_stack_.back()->GetValue() = Dict();
         } else if (top_node.IsArray()) {
@@ -138,4 +139,4 @@ void Builder::AddNode(Node top_node) {
     }
 }
 
-}  // namespace json_11
+}  // namespace json

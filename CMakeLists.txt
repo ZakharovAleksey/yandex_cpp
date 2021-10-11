@@ -83,20 +83,23 @@ add_executable(yp_cpp1
         src/sprint_9/stat_reader.h
         src/sprint_9/transport_catalogue.cpp
         src/sprint_9/transport_catalogue.h
-        src/sprint_10/canvas.h
-        src/sprint_10/svg.h
-        src/sprint_10/svg.cpp
-        src/sprint_10/json.cpp
-        src/sprint_10/json.h
-        src/sprint_10/domain.cpp
-        src/sprint_10/domain.h
-        src/sprint_10/geo.cpp
-        src/sprint_10/geo.h
-        src/sprint_10/json_reader.cpp
-        src/sprint_10/json_reader.h
-        src/sprint_10/map_renderer.cpp
-        src/sprint_10/map_renderer.h
-        src/sprint_10/request_handler.cpp
-        src/sprint_10/request_handler.h
-        src/sprint_10/transport_catalogue.cpp
-        src/sprint_10/transport_catalogue.h)
+        src/sprint_11/canvas.h
+        src/sprint_11/svg.h
+        src/sprint_11/svg.cpp
+        src/sprint_11/json.cpp
+        src/sprint_11/json.h
+        src/sprint_11/domain.cpp
+        src/sprint_11/domain.h
+        src/sprint_11/geo.cpp
+        src/sprint_11/geo.h
+        src/sprint_11/json_reader.cpp
+        src/sprint_11/json_reader.h
+        src/sprint_11/map_renderer.cpp
+        src/sprint_11/map_renderer.h
+        src/sprint_11/request_handler.cpp
+        src/sprint_11/request_handler.h
+        src/sprint_11/transport_catalogue.cpp
+        src/sprint_11/transport_catalogue.h
+        src/sprint_11/json_builder.cpp
+        src/sprint_11/json_builder.h
+        src/intermediate_tasks/sprint_11_tasks.cpp src/intermediate_tasks/sprint_11_tasks.h)

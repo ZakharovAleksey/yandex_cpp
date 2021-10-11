@@ -6,7 +6,7 @@
 #include <variant>
 #include <vector>
 
-namespace json_11 {
+namespace json {
 
 class Node;
 using Dict = std::map<std::string, Node>;
@@ -17,7 +17,8 @@ public:
     using runtime_error::runtime_error;
 };
 
-class Node final : private std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string> {
+class Node final
+    : private std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string> {
 public:
     using variant::variant;
     using Value = variant;
@@ -118,7 +119,9 @@ inline bool operator!=(const Node& lhs, const Node& rhs) {
 
 class Document {
 public:
-    explicit Document(Node root) : root_(std::move(root)) {}
+    explicit Document(Node root)
+        : root_(std::move(root)) {
+    }
 
     const Node& GetRoot() const {
         return root_;
@@ -140,4 +143,4 @@ Document Load(std::istream& input);
 
 void Print(const Document& doc, std::ostream& output);
 
-}  // namespace json_11
+}  // namespace json
