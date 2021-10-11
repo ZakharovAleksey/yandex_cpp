@@ -13,7 +13,7 @@ class DictContext;
 class ArrayContext;
 class ValueContext;
 
-// StartContainersContext
+/* BASE CONTEXT */
 
 class BaseContext {
 public:
@@ -32,8 +32,10 @@ public:
     DictContext& StartDict();
 };
 
+/* JSON CONTEXTS */
+
 class KeyContext : public StartContainersContext {
-    // Value | StartDict, StartArray
+    /* Methods: Value | StartDict, StartArray */
 public:
     explicit KeyContext(Builder& builder);
 
@@ -67,9 +69,11 @@ public:
     explicit ArrayContext(Builder& builder);
 
 public:
-    Builder& Value(Node::Value value);
+    ArrayContext& Value(Node::Value value);
     Builder& EndArray();
 };
+
+/* BUILDER */
 
 class Builder final : virtual public KeyContext,
                       virtual public ValueContext,

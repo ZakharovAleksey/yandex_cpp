@@ -2,7 +2,7 @@
 
 namespace json_11 {
 
-/* CONTEXT */
+/* BASE CONTEXT */
 
 BaseContext::BaseContext(Builder& builder) : builder_(builder) {}
 
@@ -15,6 +15,8 @@ ArrayContext& StartContainersContext::StartArray() {
 DictContext& StartContainersContext::StartDict() {
     return builder_.StartDict();
 }
+
+/* JSON CONTEXTS */
 
 KeyContext::KeyContext(Builder& builder) : StartContainersContext(builder) {}
 
@@ -44,7 +46,7 @@ Builder& DictContext::EndDict() {
 
 ArrayContext::ArrayContext(Builder& builder) : StartContainersContext(builder) {}
 
-Builder& ArrayContext::Value(Node::Value value) {
+ArrayContext& ArrayContext::Value(Node::Value value) {
     return builder_.Value(std::move(value));
 }
 
@@ -52,7 +54,7 @@ Builder& ArrayContext::EndArray() {
     return builder_.EndArray();
 }
 
-/* JSON BUILDER */
+/* BUILDER */
 
 Builder::Builder() : KeyContext(*this), ValueContext(*this), DictContext(*this), ArrayContext(*this) {}
 
