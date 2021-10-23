@@ -107,7 +107,7 @@ Builder& Builder::EndArray() {
     return *this;
 }
 
-const Node& Builder::Build() const {
+Node& Builder::Build() {
     if (root_.IsNull() || !nodes_stack_.empty())
         throw std::logic_error("Could not build JSON");
 

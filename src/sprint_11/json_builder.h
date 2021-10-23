@@ -106,7 +106,7 @@ public:  // Methods
     ArrayContext& StartArray();
     Builder& EndArray();
 
-    const Node& Build() const;
+    Node& Build();
 
 private:  // Methods
     [[nodiscard]] bool CouldAddNode() const;
