@@ -10,6 +10,7 @@
 #include <unordered_map>
 
 #include "domain.h"
+#include "transport_router.h"
 
 namespace catalogue {
 

@@ -200,7 +200,8 @@ render::Visualization ParseVisualizationSettings(const json::Dict& settings) {
 }
 
 json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Array& requests,
-                            const render::Visualization& settings) {
+                            const render::Visualization& visualization_settings,
+                            const routing::Settings& routing_settings) {
     auto response = json::Builder();
     response.StartArray();
 
@@ -227,13 +228,26 @@ json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Arr
                 MakeErrorResponse(request_id, response);
             }
         } else if (type == "Map"s) {
-            std::string image = RenderTransportMap(catalogue, settings);
+            std::string image = RenderTransportMap(catalogue, visualization_settings);
             MakeMapImageResponse(request_id, image, response);
         }
     }
 
     response.EndArray();
     return std::move(response.Build());
+}
+
+routing::Settings ParseRoutingSettings(const json::Dict& requests) {
+    using namespace routing;
+
+    // clang-format off
+    Settings settings{
+        .bus_velocity_ = requests.at("bus_velocity"s).AsInt(),
+        .bus_wait_time_ = requests.at("bus_wait_time"s).AsInt()
+    };
+    // clang-format on
+
+    return settings;
 }
 
 }  // namespace request
