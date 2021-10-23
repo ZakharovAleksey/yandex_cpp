@@ -162,6 +162,14 @@ StopsStorage TransportCatalogue::GetAllStopsFromRoutes() const {
     return {stops.begin(), stops.end()};
 }
 
+routing::RouteResponse TransportCatalogue::BuildRoute(std::string_view stop_from, std::string_view stop_to) const {
+    return router_.BuildRoute(stop_from, stop_to);
+}
+
+void TransportCatalogue::SetRouteSettings(routing::Settings settings) {
+    router_.SetSettings(settings);
+}
+
 std::unique_ptr<std::set<std::string_view>> TransportCatalogue::GetBusesPassingThroughTheStop(
     std::string_view stop_name) const {
     if (const auto position = buses_through_stop_.find(stop_name); position != buses_through_stop_.end())

@@ -9,8 +9,8 @@ using namespace catalogue;
 
 int main() {
     //    TODO: почитать аро устройство проекта - как расположить
-    std::ifstream in{"D:\\education\\cpp\\yandex_cpp\\data\\local\\input.json"};
-    std::ofstream out{"D:\\education\\cpp\\yandex_cpp\\data\\local\\output.json"};
+    std::ifstream in{"D:\\education\\cpp\\yandex_cpp\\data\\local\\input_route.json"};
+    std::ofstream out{"D:\\education\\cpp\\yandex_cpp\\data\\local\\output_route.json"};
 
     try {
         auto start = std::chrono::system_clock::now();

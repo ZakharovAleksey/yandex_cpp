@@ -18,7 +18,6 @@ render::Visualization ParseVisualizationSettings(const json::Dict& settings);
 routing::Settings ParseRoutingSettings(const json::Dict& requests);
 
 json::Node MakeStatResponse(const catalogue::TransportCatalogue& catalogue, const json::Array& requests,
-                            const render::Visualization& visualization_settings, const routing::Settings& routing_settings);
-
+                            const render::Visualization& visualization_settings);
 
 }  // namespace request

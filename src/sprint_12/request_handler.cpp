@@ -23,9 +23,11 @@ void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
     const auto& routing_object = input_json.AsDict().at("routing_settings"s).AsDict();
     const auto& routing_settings = ParseRoutingSettings(routing_object);
 
+    catalogue.SetRouteSettings(routing_settings);
+
     // Step 4. Form response
     const auto& stat_requests = input_json.AsDict().at("stat_requests"s).AsArray();
-    auto response = MakeStatResponse(transport_catalogue, stat_requests, visualization_settings, routing_settings);
+    auto response = MakeStatResponse(transport_catalogue, stat_requests, visualization_settings);
 
     json::Print(json::Document{std::move(response)}, output);
 }

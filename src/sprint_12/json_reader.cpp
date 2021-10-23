@@ -66,6 +66,34 @@ void MakeStopResponse(int request_id, const std::set<std::string_view>& buses, j
     response.EndDict();
 }
 
+void MakeRouteResponse(int request_id, const routing::RouteResponse& route_info, json::Builder& response) {
+    response.StartDict();
+
+    response.Key("request_id"s).Value(request_id);
+    response.Key("total_time"s).Value(route_info.total_time_);
+
+    response.Key("items"s).StartArray();
+
+    for (const auto& item : route_info.items_) {
+        response.StartDict();
+        response.Key("type"s).Value(item.type_);
+
+        if (item.type_ == "Wait"s) {
+            response.Key("stop_name"s).Value(*item.stop_name_);
+        } else if (item.type_ == "Bus"s) {
+            response.Key("bus").Value(*item.bus_);
+            response.Key("span_count"s).Value(*item.span_count_);
+        }
+
+        response.Key("time"s).Value(item.time_);
+        response.EndDict();
+    }
+
+    response.EndArray();
+
+    response.EndDict();
+}
+
 void MakeErrorResponse(int request_id, json::Builder& response) {
     response.StartDict();
     response.Key("request_id"s).Value(request_id);
@@ -200,8 +228,7 @@ render::Visualization ParseVisualizationSettings(const json::Dict& settings) {
 }
 
 json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Array& requests,
-                            const render::Visualization& visualization_settings,
-                            const routing::Settings& routing_settings) {
+                            const render::Visualization& visualization_settings) {
     auto response = json::Builder();
     response.StartArray();
 
@@ -230,6 +257,15 @@ json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Arr
         } else if (type == "Map"s) {
             std::string image = RenderTransportMap(catalogue, visualization_settings);
             MakeMapImageResponse(request_id, image, response);
+        } else if (type == "Route"s) {
+            std::string stop_name_from = request_dict_view.at("from"s).AsString();
+            std::string stop_name_to = request_dict_view.at("to"s).AsString();
+
+            if (auto route_info = catalogue.BuildRoute(stop_name_from, stop_name_to); !route_info.items_.empty()) {
+                MakeRouteResponse(request_id, route_info, response);
+            } else {
+                MakeErrorResponse(request_id, response);
+            }
         }
     }
 

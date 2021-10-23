@@ -39,6 +39,11 @@ public:  // Methods
     [[nodiscard]] BusStopsStorage GetRouteInfo(std::string_view bus_name, bool include_backward_way = true) const;
     [[nodiscard]] StopsStorage GetAllStopsFromRoutes() const;
 
+    /* METHODS TO BUILD ROUTES */
+
+    [[nodiscard]] routing::RouteResponse BuildRoute(std::string_view stop_from, std::string_view stop_to) const;
+    void SetRouteSettings(routing::Settings settings);
+
 private:  // Types
     struct StopPointersPairHash {
         size_t operator()(const StopPointersPair& pair) const {
@@ -72,6 +77,8 @@ private:  // Fields
     // We use unordered containers for faster search in queries.
     // Ordered list in necessary for image rendering only
     std::set<std::string_view> ordered_bus_list_;
+
+    routing::TransportRouter router_;
 };
 
 }  // namespace catalogue
