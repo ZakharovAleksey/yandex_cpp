@@ -6,10 +6,10 @@
 
 namespace request {
 
+using namespace std::literals;
 using namespace catalogue;
 using namespace request;
-
-using namespace std::literals;
+using namespace routing;
 
 namespace {
 
@@ -66,7 +66,7 @@ void MakeStopResponse(int request_id, const std::set<std::string_view>& buses, j
     response.EndDict();
 }
 
-void MakeRouteResponse(int request_id, const routing::RouteResponse& route_info, json::Builder& response) {
+void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, json::Builder& response) {
     response.StartDict();
 
     response.Key("request_id"s).Value(request_id);
@@ -158,6 +158,16 @@ render::UnderLayer ParseLayer(const json::Dict& settings) {
     return layer;
 }
 
+TransportRouter MakeTransportRouter(const TransportCatalogue& catalogue, routing::Settings settings) {
+    // clang-format off
+    return TransportRouter(settings, TransportRouterInputData{
+                                         .stops_ = catalogue.GetUniqueStops(),
+                                         .buses_ = catalogue.GetBuses(),
+                                         .distances_ = catalogue.GetInterStopsDistances()
+                                     });
+    // clang-format on
+}
+
 }  // namespace
 
 TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
@@ -227,8 +237,8 @@ render::Visualization ParseVisualizationSettings(const json::Dict& settings) {
     return final_settings;
 }
 
-json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Array& requests,
-                            const render::Visualization& visualization_settings) {
+json::Node MakeStatResponse(const TransportCatalogue& catalogue, TransportRouterOpt& router,
+                            const json::Array& requests, const ResponseSettings& settings) {
     auto response = json::Builder();
     response.StartArray();
 
@@ -255,14 +265,18 @@ json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Arr
                 MakeErrorResponse(request_id, response);
             }
         } else if (type == "Map"s) {
-            std::string image = RenderTransportMap(catalogue, visualization_settings);
+            std::string image = RenderTransportMap(catalogue, settings.visualization);
             MakeMapImageResponse(request_id, image, response);
         } else if (type == "Route"s) {
+            // Create router if it is still empty - crete only once
+            if (!router.has_value())
+                router.emplace(MakeTransportRouter(catalogue, settings.routing));
+
             std::string stop_name_from = request_dict_view.at("from"s).AsString();
             std::string stop_name_to = request_dict_view.at("to"s).AsString();
 
-            if (auto route_info = catalogue.BuildRoute(stop_name_from, stop_name_to); !route_info.items_.empty()) {
-                MakeRouteResponse(request_id, route_info, response);
+            if (auto route_info = router->BuildRoute(stop_name_from, stop_name_to)) {
+                MakeRouteResponse(request_id, *route_info, response);
             } else {
                 MakeErrorResponse(request_id, response);
             }

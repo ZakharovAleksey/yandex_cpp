@@ -9,6 +9,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 #include "geo.h"
@@ -40,6 +41,18 @@ private:  // Fields
 };
 
 using StopPointersPair = std::pair<std::shared_ptr<Stop>, std::shared_ptr<Stop>>;
+
+struct StopPointersPairHash {
+    size_t operator()(const StopPointersPair& pair) const {
+        return pair.first->Hash() + prime_number * pair.second->Hash();
+    }
+
+private:
+    static const size_t prime_number{31};
+};
+
+template <class Type>
+using InterStopsStorage = std::unordered_map<StopPointersPair, Type, StopPointersPairHash>;
 
 struct BusStatistics {
     std::string_view number;

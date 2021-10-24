@@ -10,7 +10,6 @@
 #include <unordered_map>
 
 #include "domain.h"
-#include "transport_router.h"
 
 namespace catalogue {
 
@@ -27,32 +26,26 @@ public:  // Methods
     void AddDistance(std::string_view stop_from, std::string_view stop_to, int distance);
 
     [[nodiscard]] std::optional<BusStatistics> GetBusStatistics(std::string_view bus_number) const;
-    [[nodiscard]] std::unique_ptr<std::set<std::string_view>> GetBusesPassingThroughTheStop(std::string_view stop_name) const;
+    [[nodiscard]] std::unique_ptr<std::set<std::string_view>> GetBusesPassingThroughTheStop(
+        std::string_view stop_name) const;
 
     /* METHODS FOR MAP IMAGE RENDERING */
 
     [[nodiscard]] const geo::Coordinates& GetMinStopCoordinates() const;
     [[nodiscard]] const geo::Coordinates& GetMaxStopCoordinates() const;
 
+    /* METHODS FOR REQUESTS RESPONSE */
+
     [[nodiscard]] const std::set<std::string_view>& GetOrderedBusList() const;
     [[nodiscard]] BusStopsStorage GetFinalStops(std::string_view bus_name) const;
     [[nodiscard]] BusStopsStorage GetRouteInfo(std::string_view bus_name, bool include_backward_way = true) const;
     [[nodiscard]] StopsStorage GetAllStopsFromRoutes() const;
 
-    /* METHODS TO BUILD ROUTES */
+    /* METHODS FOR TRANSPORT ROUTING */
+    [[nodiscard]] std::set<std::string_view> GetUniqueStops() const;
+    [[nodiscard]] const std::deque<Bus>& GetBuses() const;
+    [[nodiscard]] const InterStopsStorage<int>& GetInterStopsDistances() const;
 
-    [[nodiscard]] routing::RouteResponse BuildRoute(std::string_view stop_from, std::string_view stop_to) const;
-    void SetRouteSettings(routing::Settings settings);
-
-private:  // Types
-    struct StopPointersPairHash {
-        size_t operator()(const StopPointersPair& pair) const {
-            return pair.first->Hash() + prime_number * pair.second->Hash();
-        }
-
-    private:
-        static const size_t prime_number{31};
-    };
 
 private:  // Methods
     [[nodiscard]] int CalculateRouteLength(const std::shared_ptr<Bus>& bus_info) const;
@@ -68,7 +61,7 @@ private:  // Fields
     std::unordered_map<std::string_view, std::shared_ptr<Bus>> buses_;
 
     std::unordered_map<std::string_view, std::set<std::string_view>> buses_through_stop_;
-    std::unordered_map<StopPointersPair, int, StopPointersPairHash> distances_between_stops_;
+    InterStopsStorage<int> distances_between_stops_;
 
     // Fields required for map image rendering
     geo::Coordinates coordinates_min_{std::numeric_limits<double>::max(), std::numeric_limits<double>::max()};
@@ -77,8 +70,6 @@ private:  // Fields
     // We use unordered containers for faster search in queries.
     // Ordered list in necessary for image rendering only
     std::set<std::string_view> ordered_bus_list_;
-
-    routing::TransportRouter router_;
 };
 
 }  // namespace catalogue

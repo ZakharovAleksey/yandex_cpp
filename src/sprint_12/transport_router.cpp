@@ -2,10 +2,6 @@
 
 namespace routing {
 
-void TransportRouter::SetSettings(Settings settings) {
-    settings_ = settings;
-}
-
 RouteItems TransportRouter::FindRoute(std::string_view from, std::string_view to) const {
     RouteItems route;
 
@@ -18,14 +14,13 @@ double TransportRouter::MeasureTimeOnTheRoute(const RouteItems& route) const {
     return total_time;
 }
 
-RouteResponse TransportRouter::BuildRoute(std::string_view from, std::string_view to) const {
-    RouteItems route = FindRoute(from, to);
+ResponseDataOpt TransportRouter::BuildRoute(std::string_view from, std::string_view to) const {
+    ResponseData response;
 
-    // clang-format off
-    return RouteResponse {
-        .total_time_ = MeasureTimeOnTheRoute(route),
-        .items_ = std::move(route)
-    };
-    // clang-format on
+    response.items_ = FindRoute(from, to);
+    response.total_time_ = MeasureTimeOnTheRoute(response.items_);
+
+    return !response.items_.empty() ? std::make_optional<ResponseData>(response) : std::nullopt;
 }
+
 }  // namespace routing
