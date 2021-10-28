@@ -38,11 +38,21 @@ void TransportRouter::AddCircleBusRoute(const catalogue::Bus& bus) {
             to = stop_to_vertex_[stops[id_to]].start_;
 
             // clang-format off
-            routes_->AddEdge(graph::Edge<Weight>{
+            auto edge =graph::Edge<Weight>{
                 .from = from,
                 .to = to,
                 .weight = distances.at({stops[id_from], stops[id_to]}) / settings_.bus_velocity_
-            });
+            };
+            // clang-format on
+
+            routes_->AddEdge(edge);
+
+            // clang-format off
+            edge_response_.emplace(edge, BusResponse{
+                                             .time = distances.at({stops[id_from], stops[id_to]}) / settings_.bus_velocity_,
+                                             .bus = bus.number,
+                                             .span_count = std::abs(id_to - id_from)
+                                         });
             // clang-format on
         }
     }
@@ -65,14 +75,22 @@ void TransportRouter::AddTwoDirectionalBusRoute(const catalogue::Bus& bus) {
             to = stop_to_vertex_[stops[id_to]].start_;
 
             // clang-format off
-            routes_->AddEdge(graph::Edge<Weight>{
+            auto edge =graph::Edge<Weight>{
                 .from = from,
                 .to = to,
                 .weight = distances.at({stops[id_from], stops[id_to]}) / settings_.bus_velocity_
-            });
-            // clang-for\mat on
+            };
+            // clang-format on
 
-            // TODO: update inter_stops_moves_
+            routes_->AddEdge(edge);
+
+            // clang-format off
+            edge_response_.emplace(edge, BusResponse{
+                                             .time = distances.at({stops[id_from], stops[id_to]}) / settings_.bus_velocity_,
+                                             .bus = bus.number,
+                                             .span_count = std::abs(id_to - id_from)
+                                         });
+            // clang-format on
         }
     }
 }
@@ -81,14 +99,22 @@ void TransportRouter::BuildRoutesGraph(const std::deque<catalogue::Bus>& buses) 
     routes_ = std::make_unique<Graph>(vertex_to_stop_.size() + 1);
 
     // Step 1. Create "wait"-type edges for each stop
-    // clang-format off
-    for (const auto& [_, stop_vertexes] : stop_to_vertex_)
-        routes_->AddEdge(graph::Edge<double>{
+
+    for (auto [stop_name, stop_vertexes] : stop_to_vertex_) {
+        // clang-format off
+        auto edge = graph::Edge<Weight>{
             .from = stop_vertexes.start_,
-            .to = stop_vertexes.end_,
+            .to = stop_vertexes.end_, // TODO: mb remove all static_casts for time
             .weight = static_cast<double>(settings_.bus_wait_time_)
-        });
-    // clang-format on
+        };
+        // clang-format on
+
+        routes_->AddEdge(edge);
+        edge_response_.emplace(edge, WaitResponse{
+                                         .time = static_cast<double>(settings_.bus_wait_time_),
+                                         .stop_name = std::string(stop_name),
+                                     });
+    }
 
     // Step 2. Add "bus"-type edges for each stop in bus route
     for (const auto& bus : buses) {
@@ -113,23 +139,24 @@ ResponseDataOpt TransportRouter::BuildRoute(std::string_view from, std::string_v
         for (auto edge_id : path->edges) {
             graph::Edge<Weight> edge = routes_->GetEdge(edge_id);
 
-            // This is "wait"
-            if (edge.from % 2 == 1 && edge.to % 2 == 0) {
-                // clang-format off
-                response->items_.emplace_back(WaitResponse{
-                    .time = edge.weight,
-                    .stop_name = std::string(vertex_to_stop_.at(edge.from))
-                });
-                // clang-format on
-            } else {
-                // clang-format off
-                response->items_.emplace_back(BusResponse{
-                    .time = edge.weight,
-                    .bus = "Some BUS",
-                    .span_count = 2
-                });
-                // clang-format on
-            }
+            response->items_.emplace_back(edge_response_.at(edge));
+            //            // This is "wait"
+            //            if (edge.from % 2 == 1 && edge.to % 2 == 0) {
+            //                // clang-format off
+            //                response->items_.emplace_back(WaitResponse{
+            //                    .time = edge.weight,
+            //                    .stop_name = std::string(vertex_to_stop_.at(edge.from))
+            //                });
+            //                // clang-format on
+            //            } else {
+            //                // clang-format off
+            //                response->items_.emplace_back(BusResponse{
+            //                    .time = edge.weight,
+            //                    .bus = "Some BUS",
+            //                    .span_count = 2
+            //                });
+            //                // clang-format on
+            //            }
         }
     }
 

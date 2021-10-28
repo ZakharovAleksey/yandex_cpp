@@ -83,13 +83,17 @@ private:
         graph::VertexId to_{0};
     };
 
-    struct WayRepresentationHash {
-        size_t operator()(const WayRepresentation& way) const {
-            return even_ * std::hash<size_t>{}(way.from_) + even_ * even_ * std::hash<size_t>{}(way.to_);
+    struct EdgeHash {
+        inline size_t operator()(const graph::Edge<Weight>& edge) const {
+            // clang-format off
+            return even * std::hash<size_t>{}(edge.from) +
+                   even * even * std::hash<size_t>{}(edge.to) +
+                   even * even * even * std::hash<Weight>{}(edge.weight);
+            // clang-format on
         }
 
     private:
-        static constexpr size_t even_{41};
+        static constexpr size_t even{41};
     };
 
 private:  // Fields
@@ -100,7 +104,7 @@ private:  // Fields
     std::unordered_map<graph::VertexId, std::string_view> vertex_to_stop_;
 
     // TODO: use it during the graph creation
-    std::unordered_map<WayRepresentation, PossibleWaysToMove, WayRepresentationHash> inter_stops_moves_;
+    std::unordered_map<graph::Edge<Weight>, ResponseItem, EdgeHash> edge_response_;
 
     std::unique_ptr<Graph> routes_{nullptr};
     std::unique_ptr<Router> router_{nullptr};

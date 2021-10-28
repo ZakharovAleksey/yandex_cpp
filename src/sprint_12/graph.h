@@ -17,6 +17,11 @@ struct Edge {
     Weight weight;
 };
 
+template <class Weight>
+bool operator==(const Edge<Weight>& left, const Edge<Weight>& right) {
+    return std::make_tuple(left.from, left.to, left.weight) == std::make_tuple(right.from, right.to, right.weight);
+}
+
 template <typename Weight>
 class DirectedWeightedGraph {
 private:
