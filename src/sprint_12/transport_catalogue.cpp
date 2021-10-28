@@ -175,8 +175,15 @@ std::set<std::string_view> TransportCatalogue::GetUniqueStops() const {
     return buses_storage_;
 }
 
-[[nodiscard]] const InterStopsStorage<int>& TransportCatalogue::GetInterStopsDistances() const {
-    return distances_between_stops_;
+[[nodiscard]] StringViewPairStorage<double> TransportCatalogue::GetInterStopsDistances() const {
+    StringViewPairStorage<double> result;
+
+    for (const auto& [direction, distance] : distances_between_stops_) {
+        StringViewPair key = {direction.first->name, direction.second->name};
+        result.emplace(std::move(key), static_cast<double>(distance));
+    }
+
+    return result;
 }
 
 std::unique_ptr<std::set<std::string_view>> TransportCatalogue::GetBusesPassingThroughTheStop(

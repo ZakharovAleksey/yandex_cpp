@@ -40,20 +40,6 @@ private:  // Fields
     static const size_t even_value{37};
 };
 
-using StopPointersPair = std::pair<std::shared_ptr<Stop>, std::shared_ptr<Stop>>;
-
-struct StopPointersPairHash {
-    size_t operator()(const StopPointersPair& pair) const {
-        return pair.first->Hash() + prime_number * pair.second->Hash();
-    }
-
-private:
-    static const size_t prime_number{31};
-};
-
-template <class Type>
-using InterStopsStorage = std::unordered_map<StopPointersPair, Type, StopPointersPairHash>;
-
 struct BusStatistics {
     std::string_view number;
     size_t stops_count{0u};
@@ -63,4 +49,22 @@ struct BusStatistics {
 };
 
 std::ostream& operator<<(std::ostream& os, const BusStatistics& statistics);
+
+using StringViewPair = std::pair<std::string_view, std::string_view>;
+
+struct StringViewPairHash{
+    size_t operator()(const StringViewPair& pair) const {
+        //clang-format off
+        return even_ * std::hash<std::string_view>{}(pair.first) +
+               even_ * even_ * std::hash<std::string_view>{}(pair.second);
+        //clang-format on
+    }
+
+private:
+    static constexpr size_t even_{37};
+};
+
+template <class Type>
+using StringViewPairStorage = std::unordered_map<StringViewPair, Type, StringViewPairHash>;
+
 }  // namespace catalogue
