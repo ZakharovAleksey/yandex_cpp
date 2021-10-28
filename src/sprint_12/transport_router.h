@@ -14,7 +14,7 @@ namespace routing {
 
 struct Settings {
     /// Velocity in km per hour
-    int bus_velocity_{0};
+    double bus_velocity_{0};
     /// Wait time in minutes
     int bus_wait_time_{0};
 };
@@ -40,26 +40,19 @@ struct ResponseData {
 
 using ResponseDataOpt = std::optional<ResponseData>;
 
-/// @brief Stories all information, necessary to build the Transport Router
-struct TransportRouterInputData {
-    std::set<std::string_view> stops_;
-    std::deque<catalogue::Bus> buses_;
-    catalogue::StringViewPairStorage<double> distances_;
-};
-
 class TransportRouter {
+public:
+    using Weight = double;
+    using Graph = graph::DirectedWeightedGraph<Weight>;
+    using Router = graph::Router<Weight>;
+
 public:  // Constructor
-    TransportRouter(Settings settings, const TransportRouterInputData& data);
+    TransportRouter(const catalogue::TransportCatalogue& catalogue, Settings settings);
 
 public:  // Methods
     [[nodiscard]] ResponseDataOpt BuildRoute(std::string_view from, std::string_view to) const;
 
 private:  // Methods
-    [[nodiscard]] RouteItems FindRoute(std::string_view from, std::string_view to) const;
-    [[nodiscard]] double MeasureTimeOnTheRoute(const RouteItems& route) const;
-
-    [[nodiscard]] inline double CalculateWeight(std::string_view from, std::string_view to) const;
-
     void MakeStopToVertexCorrespondence(const std::set<std::string_view>& stops);
     void AddCircleBusRoute(const catalogue::Bus& bus);
     void AddTwoDirectionalBusRoute(const catalogue::Bus& bus);
@@ -94,6 +87,7 @@ private:
     };
 
 private:  // Fields
+    const catalogue::TransportCatalogue& catalogue_;
     Settings settings_;
 
     std::unordered_map<std::string_view, StopRepresentation> stop_to_vertex_;
@@ -101,9 +95,9 @@ private:  // Fields
 
     // TODO: use it during the graph creation
     std::unordered_map<WayRepresentation, PossibleWaysToMove, WayRepresentationHash> inter_stops_moves_;
-    catalogue::StringViewPairStorage<double> distances_;
 
-    graph::DirectedWeightedGraph<double> routes_;
+    std::unique_ptr<Graph> routes_{nullptr};
+    std::unique_ptr<Router> router_{nullptr};
 };
 
 using TransportRouterOpt = std::optional<TransportRouter>;

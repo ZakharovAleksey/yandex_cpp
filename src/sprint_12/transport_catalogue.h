@@ -44,7 +44,7 @@ public:  // Methods
     /* METHODS FOR TRANSPORT ROUTING */
     [[nodiscard]] std::set<std::string_view> GetUniqueStops() const;
     [[nodiscard]] const std::deque<Bus>& GetBuses() const;
-    [[nodiscard]] StringViewPairStorage<double> GetInterStopsDistances() const;
+    [[nodiscard]] StringViewPairStorage<double> GetAllDistancesOnTheRoute(std::string_view bus_number) const;
 
 private:  // Methods
     [[nodiscard]] int CalculateRouteLength(const std::shared_ptr<Bus>& bus_info) const;
@@ -52,7 +52,7 @@ private:  // Methods
 
     void UpdateMinMaxStopCoordinates(const geo::Coordinates& coordinates);
 
-private: // Types
+private:  // Types
     using StopPointersPair = std::pair<std::shared_ptr<Stop>, std::shared_ptr<Stop>>;
 
     struct StopPointersPairHash {

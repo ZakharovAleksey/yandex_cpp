@@ -158,16 +158,6 @@ render::UnderLayer ParseLayer(const json::Dict& settings) {
     return layer;
 }
 
-TransportRouter MakeTransportRouter(const TransportCatalogue& catalogue, routing::Settings settings) {
-    // clang-format off
-    return TransportRouter(settings, TransportRouterInputData{
-                                         .stops_ = catalogue.GetUniqueStops(),
-                                         .buses_ = catalogue.GetBuses(),
-                                         .distances_ = catalogue.GetInterStopsDistances()
-                                     });
-    // clang-format on
-}
-
 }  // namespace
 
 TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
@@ -270,7 +260,7 @@ json::Node MakeStatResponse(const TransportCatalogue& catalogue, TransportRouter
         } else if (type == "Route"s) {
             // Create router if it is still empty - crete only once
             if (!router.has_value())
-                router.emplace(MakeTransportRouter(catalogue, settings.routing));
+                router.emplace(TransportRouter(catalogue, settings.routing));
 
             std::string stop_name_from = request_dict_view.at("from"s).AsString();
             std::string stop_name_to = request_dict_view.at("to"s).AsString();
@@ -290,9 +280,11 @@ json::Node MakeStatResponse(const TransportCatalogue& catalogue, TransportRouter
 routing::Settings ParseRoutingSettings(const json::Dict& requests) {
     using namespace routing;
 
+    auto meter_per_min = [](double km_per_hour) { return 1'000. * km_per_hour / 60.; };
+
     // clang-format off
     Settings settings{
-        .bus_velocity_ = requests.at("bus_velocity"s).AsInt(),
+        .bus_velocity_ = meter_per_min(requests.at("bus_velocity"s).AsDouble()),
         .bus_wait_time_ = requests.at("bus_wait_time"s).AsInt()
     };
     // clang-format on
