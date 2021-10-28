@@ -3,6 +3,7 @@
 #include <deque>
 #include <optional>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include "domain.h"
@@ -19,17 +20,22 @@ struct Settings {
     int bus_wait_time_{0};
 };
 
-struct ResponseItem {
-    std::string type_;
-    double time_;
+struct WaitResponse {
+    double time{0.};
+    std::string type{"Wait"};
 
-    /* For the "wait" response */
-    std::optional<std::string> stop_name_{std::nullopt};
-
-    /* For the "bus" response */
-    std::optional<std::string> bus_{std::nullopt};
-    std::optional<int> span_count_{std::nullopt};
+    std::string stop_name;
 };
+
+struct BusResponse {
+    double time{0.};
+    std::string type{"Bus"};
+
+    std::string bus;
+    int span_count{0};
+};
+
+using ResponseItem = std::variant<WaitResponse, BusResponse>;
 
 using RouteItems = std::vector<ResponseItem>;
 

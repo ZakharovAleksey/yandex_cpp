@@ -116,19 +116,17 @@ ResponseDataOpt TransportRouter::BuildRoute(std::string_view from, std::string_v
             // This is "wait"
             if (edge.from % 2 == 1 && edge.to % 2 == 0) {
                 // clang-format off
-                response->items_.emplace_back(ResponseItem{
-                    .type_ = "Wait",
-                    .time_ = edge.weight,
-                    .stop_name_ = std::make_optional<std::string>(vertex_to_stop_.at(edge.from))
+                response->items_.emplace_back(WaitResponse{
+                    .time = edge.weight,
+                    .stop_name = std::string(vertex_to_stop_.at(edge.from))
                 });
                 // clang-format on
             } else {
                 // clang-format off
-                response->items_.emplace_back(ResponseItem{
-                    .type_ = "Bus",
-                    .time_ = edge.weight,
-                    .bus_ = "Some BUS",
-                    .span_count_ = 2
+                response->items_.emplace_back(BusResponse{
+                    .time = edge.weight,
+                    .bus = "Some BUS",
+                    .span_count = 2
                 });
                 // clang-format on
             }

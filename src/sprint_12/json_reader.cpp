@@ -66,6 +66,23 @@ void MakeStopResponse(int request_id, const std::set<std::string_view>& buses, j
     response.EndDict();
 }
 
+struct RouteItemVisitor {
+    json::Builder& json;
+
+    void operator()(const WaitResponse& response) const {
+        json.Key("type"s).Value(response.type);
+        json.Key("stop_name"s).Value(response.stop_name);
+        json.Key("time"s).Value(response.time);
+    }
+
+    void operator()(const BusResponse& response) const {
+        json.Key("type"s).Value(response.type);
+        json.Key("bus").Value(response.bus);
+        json.Key("span_count"s).Value(response.span_count);
+        json.Key("time"s).Value(response.time);
+    }
+};
+
 void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, json::Builder& response) {
     response.StartDict();
 
@@ -76,16 +93,7 @@ void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, 
 
     for (const auto& item : route_info.items_) {
         response.StartDict();
-        response.Key("type"s).Value(item.type_);
-
-        if (item.type_ == "Wait"s) {
-            response.Key("stop_name"s).Value(*item.stop_name_);
-        } else if (item.type_ == "Bus"s) {
-            response.Key("bus").Value(*item.bus_);
-            response.Key("span_count"s).Value(*item.span_count_);
-        }
-
-        response.Key("time"s).Value(item.time_);
+        std::visit(RouteItemVisitor{response}, item);
         response.EndDict();
     }
 
