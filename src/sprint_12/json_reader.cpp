@@ -87,11 +87,11 @@ void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, 
     response.StartDict();
 
     response.Key("request_id"s).Value(request_id);
-    response.Key("total_time"s).Value(route_info.total_time_);
+    response.Key("total_time"s).Value(route_info.total_time);
 
     response.Key("items"s).StartArray();
 
-    for (const auto& item : route_info.items_) {
+    for (const auto& item : route_info.items) {
         response.StartDict();
         std::visit(RouteItemVisitor{response}, item);
         response.EndDict();

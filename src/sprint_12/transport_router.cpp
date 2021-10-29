@@ -18,7 +18,7 @@ void TransportRouter::MakeStopToVertexCorrespondence(const std::set<std::string_
         start = end + 1;
         end = start + 1;
 
-        stop_to_vertex_.emplace(stop, StopRepresentation{start, end});
+        stop_to_vertex_.emplace(stop, StopVertexes{start, end});
         vertex_to_stop_.emplace(start, stop);
         vertex_to_stop_.emplace(end, stop);
     }
@@ -31,8 +31,8 @@ void TransportRouter::AddCircleBusRoute(const catalogue::Bus& bus) {
     graph::VertexId to{0};
 
     for (const auto& [route, info] : distances) {
-        from = stop_to_vertex_[route.first].end_;
-        to = stop_to_vertex_[route.second].start_;
+        from = stop_to_vertex_[route.first].end;
+        to = stop_to_vertex_[route.second].start;
 
         auto edge = graph::Edge<Weight>{from, to, info.time};
         routes_->AddEdge(edge);
@@ -48,8 +48,8 @@ void TransportRouter::AddTwoDirectionalBusRoute(const catalogue::Bus& bus) {
     graph::VertexId to{0};
 
     for (const auto& [route, info] : distances) {
-        from = stop_to_vertex_[route.first].end_;
-        to = stop_to_vertex_[route.second].start_;
+        from = stop_to_vertex_[route.first].end;
+        to = stop_to_vertex_[route.second].start;
 
         auto edge = graph::Edge<Weight>{from, to, info.time};
         routes_->AddEdge(edge);
@@ -66,8 +66,8 @@ void TransportRouter::BuildRoutesGraph(const std::deque<catalogue::Bus>& buses) 
     for (auto [stop_name, stop_vertexes] : stop_to_vertex_) {
         // clang-format off
         auto edge = graph::Edge<Weight>{
-            stop_vertexes.start_,
-            stop_vertexes.end_, // TODO: mb remove all static_casts for time
+            stop_vertexes.start,
+            stop_vertexes.end, // TODO: mb remove all static_casts for time
             static_cast<double>(settings_.bus_wait_time_)
         };
         // clang-format on
@@ -93,17 +93,17 @@ void TransportRouter::BuildRoutesGraph(const std::deque<catalogue::Bus>& buses) 
 ResponseDataOpt TransportRouter::BuildRoute(std::string_view from, std::string_view to) const {
     ResponseDataOpt response{std::nullopt};
 
-    graph::VertexId id_from = stop_to_vertex_.at(from).start_;
-    graph::VertexId id_to = stop_to_vertex_.at(to).start_;
+    graph::VertexId id_from = stop_to_vertex_.at(from).start;
+    graph::VertexId id_to = stop_to_vertex_.at(to).start;
 
     if (auto path = router_->BuildRoute(id_from, id_to)) {
         response.emplace(ResponseData{});
-        response->total_time_ = path->weight;
+        response->total_time = path->weight;
 
         for (auto edge_id : path->edges) {
             graph::Edge<Weight> edge = routes_->GetEdge(edge_id);
 
-            response->items_.emplace_back(edge_response_.at(edge));
+            response->items.emplace_back(edge_response_.at(edge));
         }
     }
 

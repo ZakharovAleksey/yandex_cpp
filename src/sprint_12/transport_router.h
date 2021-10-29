@@ -14,12 +14,13 @@
 namespace routing {
 
 struct Settings {
-    /// Velocity in km per hour
-    double bus_velocity_{0};
-    /// Wait time in minutes
-    int bus_wait_time_{0};
+    double bus_velocity_{0};  // velocity in meters to minutes
+    int bus_wait_time_{0};    // time in minutes
 };
 
+/* TRANSPORT ROUTER RESPONSE FORMAT */
+
+/// @brief Response in the route corresponding to the stop
 struct WaitResponse {
     double time{0.};
     std::string type{"Wait"};
@@ -27,6 +28,7 @@ struct WaitResponse {
     std::string stop_name;
 };
 
+/// @brief Response in the route corresponding to the bus
 struct BusResponse {
     double time{0.};
     std::string type{"Bus"};
@@ -37,14 +39,14 @@ struct BusResponse {
 
 using ResponseItem = std::variant<WaitResponse, BusResponse>;
 
-using RouteItems = std::vector<ResponseItem>;
-
 struct ResponseData {
-    double total_time_{0.};
-    RouteItems items_;
+    double total_time{0.};
+    std::vector<ResponseItem> items;
 };
 
 using ResponseDataOpt = std::optional<ResponseData>;
+
+/* TRANSPORT ROUTER CLASS */
 
 class TransportRouter {
 public:
@@ -66,21 +68,9 @@ private:  // Methods
     void BuildRoutesGraph(const std::deque<catalogue::Bus>& buses);
 
 private:
-    struct WayToMove {
-        std::string_view bus_;
-        int stops_count_{0};
-    };
-
-    using PossibleWaysToMove = std::vector<WayToMove>;
-
-    struct StopRepresentation {
-        graph::VertexId start_{0};
-        graph::VertexId end_{0};
-    };
-
-    struct WayRepresentation {
-        graph::VertexId from_{0};
-        graph::VertexId to_{0};
+    struct StopVertexes {
+        graph::VertexId start{0};
+        graph::VertexId end{0};
     };
 
     struct EdgeHash {
@@ -100,10 +90,9 @@ private:  // Fields
     const catalogue::TransportCatalogue& catalogue_;
     Settings settings_;
 
-    std::unordered_map<std::string_view, StopRepresentation> stop_to_vertex_;
+    std::unordered_map<std::string_view, StopVertexes> stop_to_vertex_;
     std::unordered_map<graph::VertexId, std::string_view> vertex_to_stop_;
 
-    // TODO: use it during the graph creation
     std::unordered_map<graph::Edge<Weight>, ResponseItem, EdgeHash> edge_response_;
 
     std::unique_ptr<Graph> routes_{nullptr};
