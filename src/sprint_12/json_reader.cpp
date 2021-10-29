@@ -292,8 +292,8 @@ routing::Settings ParseRoutingSettings(const json::Dict& requests) {
 
     // clang-format off
     Settings settings{
-        .bus_velocity_ = meter_per_min(requests.at("bus_velocity"s).AsDouble()),
-        .bus_wait_time_ = requests.at("bus_wait_time"s).AsInt()
+        meter_per_min(requests.at("bus_velocity"s).AsDouble()),
+        requests.at("bus_wait_time"s).AsInt()
     };
     // clang-format on
 

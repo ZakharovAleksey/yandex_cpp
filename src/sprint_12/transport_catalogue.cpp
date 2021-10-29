@@ -200,7 +200,7 @@ StringViewPairStorage<Info> TransportCatalogue::GetAllDistancesOnTheRoute(std::s
 
             for (auto to = std::next(from); to != stops.end(); ++to) {
                 cumulative_time += get_time(*previous, *to);
-                distances.emplace(StringViewPair{*from, *to}, Info{cumulative_time, std::distance(from, to)});
+                distances.emplace(StringViewPair{*from, *to}, Info{cumulative_time, static_cast<int>(std::distance(from, to))});
                 previous = to;
             }
         }
@@ -213,7 +213,7 @@ StringViewPairStorage<Info> TransportCatalogue::GetAllDistancesOnTheRoute(std::s
 
             for (auto to = std::next(from); to != stops.rend(); ++to) {
                 cumulative_time += get_time(*previous1, *to);
-                distances.emplace(StringViewPair{*from, *to}, Info{cumulative_time, std::distance(from, to)});
+                distances.emplace(StringViewPair{*from, *to}, Info{cumulative_time, static_cast<int>(std::distance(from, to))});
                 previous1 = to;
             }
         }

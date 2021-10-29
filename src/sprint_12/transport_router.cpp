@@ -18,7 +18,7 @@ void TransportRouter::MakeStopToVertexCorrespondence(const std::set<std::string_
         start = end + 1;
         end = start + 1;
 
-        stop_to_vertex_.emplace(stop, StopRepresentation{.start_ = start, .end_ = end});
+        stop_to_vertex_.emplace(stop, StopRepresentation{start, end});
         vertex_to_stop_.emplace(start, stop);
         vertex_to_stop_.emplace(end, stop);
     }
@@ -26,7 +26,6 @@ void TransportRouter::MakeStopToVertexCorrespondence(const std::set<std::string_
 
 void TransportRouter::AddCircleBusRoute(const catalogue::Bus& bus) {
     const auto& distances = catalogue_.GetAllDistancesOnTheRoute(bus.number, settings_.bus_velocity_);
-    const auto& stops = bus.stop_names;
 
     graph::VertexId from{0};
     graph::VertexId to{0};
@@ -35,42 +34,15 @@ void TransportRouter::AddCircleBusRoute(const catalogue::Bus& bus) {
         from = stop_to_vertex_[route.first].end_;
         to = stop_to_vertex_[route.second].start_;
 
-        auto edge = graph::Edge<Weight>{.from = from, .to = to, .weight = info.time};
+        auto edge = graph::Edge<Weight>{from, to, info.time};
         routes_->AddEdge(edge);
 
-        edge_response_.emplace(edge, BusResponse{.time = info.time, .bus = bus.number, .span_count = info.stops_count});
+        edge_response_.emplace(edge, BusResponse{info.time, "Bus", bus.number, info.stops_count});
     }
-
-    //    for (int id_from = 0; id_from != stops.size(); ++id_from) {
-    //        from = stop_to_vertex_[stops[id_from]].end_;
-    //
-    //        for (int id_to = id_from + 1; id_to != stops.size(); ++id_to) {
-    //            to = stop_to_vertex_[stops[id_to]].start_;
-    //
-    //            // clang-format off
-    //            auto edge =graph::Edge<Weight>{
-    //                .from = from,
-    //                .to = to,
-    //                .weight = distances.at({stops[id_from], stops[id_to]}) / settings_.bus_velocity_
-    //            };
-    //            // clang-format on
-    //
-    //            routes_->AddEdge(edge);
-    //
-    //            // clang-format off
-    //            edge_response_.emplace(edge, BusResponse{
-    //                                             .time = distances.at({stops[id_from], stops[id_to]}) /
-    //                                             settings_.bus_velocity_, .bus = bus.number, .span_count =
-    //                                             std::abs(id_to - id_from)
-    //                                         });
-    //            // clang-format on
-    //        }
-    //    }
 }
 
 void TransportRouter::AddTwoDirectionalBusRoute(const catalogue::Bus& bus) {
     const auto& distances = catalogue_.GetAllDistancesOnTheRoute(bus.number, settings_.bus_velocity_);
-    const auto& stops = bus.stop_names;
 
     graph::VertexId from{0};
     graph::VertexId to{0};
@@ -79,44 +51,11 @@ void TransportRouter::AddTwoDirectionalBusRoute(const catalogue::Bus& bus) {
         from = stop_to_vertex_[route.first].end_;
         to = stop_to_vertex_[route.second].start_;
 
-        auto edge = graph::Edge<Weight>{.from = from, .to = to, .weight = info.time};
+        auto edge = graph::Edge<Weight>{from, to, info.time};
         routes_->AddEdge(edge);
 
-        edge_response_.emplace(edge, BusResponse{.time = info.time, .bus = bus.number, .span_count = info.stops_count});
+        edge_response_.emplace(edge, BusResponse{info.time, "Bus", bus.number, info.stops_count});
     }
-//    const auto& distances = catalogue_.GetAllDistancesOnTheRoute(bus.number);
-//    const auto& stops = bus.stop_names;
-//
-//    graph::VertexId from{0};
-//    graph::VertexId to{0};
-//
-//    for (int id_from = 0; id_from != stops.size(); ++id_from) {
-//        from = stop_to_vertex_[stops[id_from]].end_;
-//
-//        for (int id_to = 0; id_to != stops.size(); ++id_to) {
-//            if (id_from == id_to)
-//                continue;
-//
-//            to = stop_to_vertex_[stops[id_to]].start_;
-//            // clang-format off
-//            auto edge =graph::Edge<Weight>{
-//                .from = from,
-//                .to = to,
-//                .weight = distances.at({stops[id_from], stops[id_to]}) / settings_.bus_velocity_
-//            };
-//            // clang-format on
-//
-//            routes_->AddEdge(edge);
-//
-//            // clang-format off
-//            edge_response_.emplace(edge, BusResponse{
-//                                             .time = distances.at({stops[id_from], stops[id_to]}) / settings_.bus_velocity_,
-//                                             .bus = bus.number,
-//                                             .span_count = std::abs(id_to - id_from)
-//                                         });
-//            // clang-format on
-//        }
-//    }
 }
 
 void TransportRouter::BuildRoutesGraph(const std::deque<catalogue::Bus>& buses) {
@@ -127,16 +66,17 @@ void TransportRouter::BuildRoutesGraph(const std::deque<catalogue::Bus>& buses) 
     for (auto [stop_name, stop_vertexes] : stop_to_vertex_) {
         // clang-format off
         auto edge = graph::Edge<Weight>{
-            .from = stop_vertexes.start_,
-            .to = stop_vertexes.end_, // TODO: mb remove all static_casts for time
-            .weight = static_cast<double>(settings_.bus_wait_time_)
+            stop_vertexes.start_,
+            stop_vertexes.end_, // TODO: mb remove all static_casts for time
+            static_cast<double>(settings_.bus_wait_time_)
         };
         // clang-format on
 
         routes_->AddEdge(edge);
         edge_response_.emplace(edge, WaitResponse{
-                                         .time = static_cast<double>(settings_.bus_wait_time_),
-                                         .stop_name = std::string(stop_name),
+                                         static_cast<double>(settings_.bus_wait_time_),
+                                         "Wait",
+                                         std::string(stop_name),
                                      });
     }
 
