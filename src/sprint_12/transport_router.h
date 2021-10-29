@@ -89,8 +89,12 @@ private:  // Fields
     Settings settings_;
 
     std::unordered_map<std::string_view, StopVertexes> stop_to_vertex_;
-    std::unordered_map<graph::Edge<Weight>, ResponseItem, EdgeHash> edge_response_;
+    std::unordered_map<graph::Edge<Weight>, ResponseItem, EdgeHash> edge_to_response_;
 
+    /// @brief Graph, which stores all possible routes for the given TransportCatalogue
+    /// @details Each stop in graph consists from the two vertexes: {start, end} to take into account passenger wait for
+    /// the bus on the stop.
+    /// @example Passenger arrives to stop A and moves to the stop B: A_start -> wait for the bus -> A_end -> B_start
     std::unique_ptr<Graph> routes_{nullptr};
     std::unique_ptr<Router> router_{nullptr};
 };

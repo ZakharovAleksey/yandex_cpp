@@ -38,7 +38,7 @@ void TransportRouter::AddBusRouteEdges(const catalogue::Bus& bus) {
         auto edge = graph::Edge<Weight>{from, to, info.time};
 
         routes_->AddEdge(edge);
-        edge_response_.emplace(edge, BusResponse(info.time, bus.number, info.stops_count));
+        edge_to_response_.emplace(edge, BusResponse(info.time, bus.number, info.stops_count));
     }
 }
 
@@ -53,7 +53,7 @@ void TransportRouter::BuildRoutesGraph(const std::deque<catalogue::Bus>& buses) 
         stop_edge = graph::Edge<Weight>{stop_vertexes.start, stop_vertexes.end, wait_time};
 
         routes_->AddEdge(stop_edge);
-        edge_response_.emplace(stop_edge, WaitResponse(wait_time, stop_name));
+        edge_to_response_.emplace(stop_edge, WaitResponse(wait_time, stop_name));
     }
 
     // Step 2. Add "bus"-type edges for each stop in bus route
@@ -74,7 +74,7 @@ ResponseDataOpt TransportRouter::BuildRoute(std::string_view from, std::string_v
         for (auto edge_id : route->edges) {
             graph::Edge<Weight> edge = routes_->GetEdge(edge_id);
 
-            response->items.emplace_back(edge_response_.at(edge));
+            response->items.emplace_back(edge_to_response_.at(edge));
         }
     }
 
