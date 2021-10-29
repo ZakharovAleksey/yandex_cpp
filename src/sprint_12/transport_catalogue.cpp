@@ -165,8 +165,8 @@ StopsStorage TransportCatalogue::GetAllStopsFromRoutes() const {
 std::set<std::string_view> TransportCatalogue::GetUniqueStops() const {
     std::set<std::string_view> stops;
 
-    for (const auto& stop : stops_storage_)
-        stops.emplace(stop.name);
+    for (auto [stop_name, _] : stops_)
+        stops.emplace(stop_name);
 
     return stops;
 }
@@ -187,10 +187,11 @@ StringViewPairStorage<Info> TransportCatalogue::GetAllDistancesOnTheRoute(std::s
                    : distances_between_stops_.at({stops_.at(to), stops_.at(from)}) / bus_velocity;
     };
 
-    const auto bus = buses_.at(bus_number);
+    const auto& bus = buses_.at(bus_number);
     if (bus->type == RouteType::TWO_DIRECTIONAL) {
         const auto& stops = bus->stop_names;
         double cumulative_time{0.};
+        StringViewPair key;
 
         // Forward way
         auto previous{stops.begin()};
@@ -200,54 +201,74 @@ StringViewPairStorage<Info> TransportCatalogue::GetAllDistancesOnTheRoute(std::s
 
             for (auto to = std::next(from); to != stops.end(); ++to) {
                 cumulative_time += get_time(*previous, *to);
-                distances.emplace(StringViewPair{*from, *to}, Info{cumulative_time, static_cast<int>(std::distance(from, to))});
-                previous = to;
-            }
-        }
-
-        // Backward way
-        auto previous1{stops.rbegin()};
-        for (auto from = stops.rbegin(); from != stops.rend(); ++from) {
-            cumulative_time = 0.;
-            previous1 = from;
-
-            for (auto to = std::next(from); to != stops.rend(); ++to) {
-                cumulative_time += get_time(*previous1, *to);
-                distances.emplace(StringViewPair{*from, *to}, Info{cumulative_time, static_cast<int>(std::distance(from, to))});
-                previous1 = to;
-            }
-        }
-    } else if (bus->type == RouteType::CIRCLE) {
-        const auto& stops = bus->stop_names;
-        StringViewPair key;
-        double cumulative_time{0.};
-
-        auto previous{0};
-        for (int from = 0; from != stops.size(); ++from) {
-            cumulative_time = 0.;
-            previous = from;
-
-            for (auto to = from + 1; to != stops.size(); ++to) {
-                cumulative_time += get_time(stops[previous], stops[to]);
-                key = StringViewPair{stops[from], stops[to]};
+                key = StringViewPair{*from, *to};
                 if (distances.count(key) > 0) {
-                    distances[key] = distances[key].time < cumulative_time ? distances[key]
-                                                                           : Info{cumulative_time, std::abs(to - from)};
+                    distances[key] = distances[key].time < cumulative_time
+                                         ? distances[key]
+                                         : Info{cumulative_time, static_cast<int>(std::distance(from, to))};
                 } else {
-                    distances.emplace(key, Info{cumulative_time, std::abs(to - from)});
+                    distances.emplace(key, Info{cumulative_time, static_cast<int>(std::distance(from, to))});
                 }
+//                distances.emplace(StringViewPair{*from, *to},
+//                                  Info{cumulative_time, static_cast<int>(std::distance(from, to))});
                 previous = to;
+                }
             }
+
+            // Backward way
+            auto previous1{stops.rbegin()};
+            for (auto from = stops.rbegin(); from != stops.rend(); ++from) {
+                cumulative_time = 0.;
+                previous1 = from;
+
+                for (auto to = std::next(from); to != stops.rend(); ++to) {
+                    cumulative_time += get_time(*previous1, *to);
+                    key = StringViewPair{*from, *to};
+                    if (distances.count(key) > 0) {
+                        distances[key] = distances[key].time < cumulative_time
+                                             ? distances[key]
+                                             : Info{cumulative_time, static_cast<int>(std::distance(from, to))};
+                    } else {
+                    distances.emplace(key, Info{cumulative_time, static_cast<int>(std::distance(from, to))});
+                }
+//                distances.emplace(StringViewPair{*from, *to},
+//                                  Info{cumulative_time, static_cast<int>(std::distance(from, to))});
+                previous1 = to;
+                    }
+                }
+            }
+            else if (bus->type == RouteType::CIRCLE) {
+                const auto& stops = bus->stop_names;
+                StringViewPair key;
+                double cumulative_time{0.};
+
+                auto previous{0};
+                for (int from = 0; from != stops.size(); ++from) {
+                    cumulative_time = 0.;
+                    previous = from;
+
+                    for (auto to = from + 1; to != stops.size(); ++to) {
+                        cumulative_time += get_time(stops[previous], stops[to]);
+                        key = StringViewPair{stops[from], stops[to]};
+                        if (distances.count(key) > 0) {
+                            distances[key] = distances[key].time < cumulative_time
+                                                 ? distances[key]
+                                                 : Info{cumulative_time, std::abs(to - from)};
+                        } else {
+                            distances.emplace(key, Info{cumulative_time, std::abs(to - from)});
+                        }
+                        previous = to;
+                    }
+                }
+            }
+            return distances;
         }
-    }
-    return distances;
-}
 
-std::unique_ptr<std::set<std::string_view>> TransportCatalogue::GetBusesPassingThroughTheStop(
-    std::string_view stop_name) const {
-    if (const auto position = buses_through_stop_.find(stop_name); position != buses_through_stop_.end())
-        return std::make_unique<std::set<std::string_view>>(position->second);
-    return nullptr;
-}
+        std::unique_ptr<std::set<std::string_view>> TransportCatalogue::GetBusesPassingThroughTheStop(
+            std::string_view stop_name) const {
+            if (const auto position = buses_through_stop_.find(stop_name); position != buses_through_stop_.end())
+                return std::make_unique<std::set<std::string_view>>(position->second);
+            return nullptr;
+        }
 
-}  // namespace catalogue
+    }  // namespace catalogue
