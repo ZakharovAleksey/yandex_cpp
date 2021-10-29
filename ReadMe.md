@@ -1,6 +1,6 @@
 # Yandex Practicum C++
 
-:boom: **Sprint #11 description added [here](#Sprint-11)** 
+:boom: **Sprint #11 description added [here](#Sprint-12)** 
 
 - [ ] Add `conan` package manager (could not find packages)
 - [ ] Make good `CMAKE` basing on chosen compiler
@@ -151,8 +151,6 @@ Implemented items:
 
 ## Sprint 11
 
-:exclamation: :exclamation: :exclamation:
-
 Code with JSON builder could be found here: [dev/sprint-11](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-11)
 
 Implemented items:
@@ -161,5 +159,28 @@ Implemented items:
    * [json_builder.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-11/src/sprint_11/json_builder.cpp)
 2. Request handler adjustment to creation of JSON response via `Builder` class. 
    * [request_handler.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-11/src/sprint_11/request_handler.cpp)
-   
+
+
+## Sprint 12
+
+:exclamation: :exclamation: :exclamation:
+
+Code with JSON builder could be found here: [dev/sprint-12](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-12)
+
+Implemented items:
+1. Class `TransportRouter`, which builds the fastest route from point `A` to point `B`:
+   * [transport_router.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-12/src/sprint_12/transport_router.h)
+   * [transport_router.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-12/src/sprint_12/transport_router.cpp)
+
+In the graph, used to build the fastest routes, each stop represents as 2 vertexes:
+* `start` - passenger arrives to this vertex on the stop (necessary to take into account bus waiting)
+* `end` - passenger start wide from this vertex
+
+P.S. Implementation notes:
+* Each route starts from the `start` vertex of the first stop, and ends with `start` vertex of the last stop.
+* Each bus ride starts with the `end` vertex stop and ends on the `start` vertex.
+* Bus could go through the same stop several times - only the lowes time is chosen to build the fastest route.
+
+
+
 # Notes
