@@ -227,7 +227,12 @@ StringViewPairStorage<double> TransportCatalogue::GetAllDistancesOnTheRoute(std:
 
             for (auto to = from + 1; to != stops.size(); ++to) {
                 cumulative_distance += get_length(stops[previous], stops[to]);
-                distances.emplace(StringViewPair{stops[from], stops[to]}, cumulative_distance);
+                auto key = StringViewPair{stops[from], stops[to]};
+                if (distances.count(key) > 0) {
+                    distances[key] = std::min(distances[key], cumulative_distance);
+                } else {
+                    distances.emplace(StringViewPair{stops[from], stops[to]}, cumulative_distance);
+                }
                 previous = to;
             }
         }

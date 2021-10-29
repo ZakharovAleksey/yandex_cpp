@@ -73,7 +73,6 @@ void TransportRouter::AddTwoDirectionalBusRoute(const catalogue::Bus& bus) {
                 continue;
 
             to = stop_to_vertex_[stops[id_to]].start_;
-
             // clang-format off
             auto edge =graph::Edge<Weight>{
                 .from = from,
@@ -140,23 +139,6 @@ ResponseDataOpt TransportRouter::BuildRoute(std::string_view from, std::string_v
             graph::Edge<Weight> edge = routes_->GetEdge(edge_id);
 
             response->items_.emplace_back(edge_response_.at(edge));
-            //            // This is "wait"
-            //            if (edge.from % 2 == 1 && edge.to % 2 == 0) {
-            //                // clang-format off
-            //                response->items_.emplace_back(WaitResponse{
-            //                    .time = edge.weight,
-            //                    .stop_name = std::string(vertex_to_stop_.at(edge.from))
-            //                });
-            //                // clang-format on
-            //            } else {
-            //                // clang-format off
-            //                response->items_.emplace_back(BusResponse{
-            //                    .time = edge.weight,
-            //                    .bus = "Some BUS",
-            //                    .span_count = 2
-            //                });
-            //                // clang-format on
-            //            }
         }
     }
 
