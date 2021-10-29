@@ -16,6 +16,11 @@ namespace catalogue {
 using BusStopsStorage = std::pair<std::shared_ptr<Bus>, std::vector<std::shared_ptr<Stop>>>;
 using StopsStorage = std::map<std::string_view, std::shared_ptr<Stop>>;
 
+struct Info {
+    double time{0.};
+    int stops_count{0};
+};
+
 class TransportCatalogue {
 public:  // Constructors
     TransportCatalogue() = default;
@@ -44,7 +49,7 @@ public:  // Methods
     /* METHODS FOR TRANSPORT ROUTING */
     [[nodiscard]] std::set<std::string_view> GetUniqueStops() const;
     [[nodiscard]] const std::deque<Bus>& GetBuses() const;
-    [[nodiscard]] StringViewPairStorage<double> GetAllDistancesOnTheRoute(std::string_view bus_number) const;
+    [[nodiscard]] StringViewPairStorage<Info> GetAllDistancesOnTheRoute(std::string_view bus_number, double bus_velocity) const;
 
 private:  // Methods
     [[nodiscard]] int CalculateRouteLength(const std::shared_ptr<Bus>& bus_info) const;

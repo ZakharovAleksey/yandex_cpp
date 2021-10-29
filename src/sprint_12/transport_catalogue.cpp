@@ -175,31 +175,32 @@ const std::deque<Bus>& TransportCatalogue::GetBuses() const {
     return buses_storage_;
 }
 
-StringViewPairStorage<double> TransportCatalogue::GetAllDistancesOnTheRoute(std::string_view bus_number) const {
-    StringViewPairStorage<double> distances;
+StringViewPairStorage<Info> TransportCatalogue::GetAllDistancesOnTheRoute(std::string_view bus_number,
+                                                                          double bus_velocity) const {
+    StringViewPairStorage<Info> distances;
 
-    auto get_length = [this](std::string_view from, std::string_view to) {
+    auto get_time = [this, &bus_velocity](std::string_view from, std::string_view to) -> double {
         auto key = std::make_pair(stops_.at(from), stops_.at(to));
         // If we not found 'from -> to' than we are looking for 'to -> from'
         return (distances_between_stops_.count(key) > 0)
-                   ? distances_between_stops_.at(key)
-                   : distances_between_stops_.at({stops_.at(to), stops_.at(from)});
+                   ? distances_between_stops_.at(key) / bus_velocity
+                   : distances_between_stops_.at({stops_.at(to), stops_.at(from)}) / bus_velocity;
     };
 
     const auto bus = buses_.at(bus_number);
     if (bus->type == RouteType::TWO_DIRECTIONAL) {
         const auto& stops = bus->stop_names;
-        double cumulative_distance{0.};
+        double cumulative_time{0.};
 
         // Forward way
         auto previous{stops.begin()};
         for (auto from = stops.begin(); from != stops.end(); ++from) {
-            cumulative_distance = 0.;
+            cumulative_time = 0.;
             previous = from;
 
             for (auto to = std::next(from); to != stops.end(); ++to) {
-                cumulative_distance += get_length(*previous, *to);
-                distances.emplace(StringViewPair{*from, *to}, cumulative_distance);
+                cumulative_time += get_time(*previous, *to);
+                distances.emplace(StringViewPair{*from, *to}, Info{cumulative_time, std::distance(from, to)});
                 previous = to;
             }
         }
@@ -207,31 +208,33 @@ StringViewPairStorage<double> TransportCatalogue::GetAllDistancesOnTheRoute(std:
         // Backward way
         auto previous1{stops.rbegin()};
         for (auto from = stops.rbegin(); from != stops.rend(); ++from) {
-            cumulative_distance = 0.;
+            cumulative_time = 0.;
             previous1 = from;
 
             for (auto to = std::next(from); to != stops.rend(); ++to) {
-                cumulative_distance += get_length(*previous1, *to);
-                distances.emplace(StringViewPair{*from, *to}, cumulative_distance);
+                cumulative_time += get_time(*previous1, *to);
+                distances.emplace(StringViewPair{*from, *to}, Info{cumulative_time, std::distance(from, to)});
                 previous1 = to;
             }
         }
     } else if (bus->type == RouteType::CIRCLE) {
         const auto& stops = bus->stop_names;
-        double cumulative_distance{0.};
+        StringViewPair key;
+        double cumulative_time{0.};
 
         auto previous{0};
         for (int from = 0; from != stops.size(); ++from) {
-            cumulative_distance = 0.;
+            cumulative_time = 0.;
             previous = from;
 
             for (auto to = from + 1; to != stops.size(); ++to) {
-                cumulative_distance += get_length(stops[previous], stops[to]);
-                auto key = StringViewPair{stops[from], stops[to]};
+                cumulative_time += get_time(stops[previous], stops[to]);
+                key = StringViewPair{stops[from], stops[to]};
                 if (distances.count(key) > 0) {
-                    distances[key] = std::min(distances[key], cumulative_distance);
+                    distances[key] = distances[key].time < cumulative_time ? distances[key]
+                                                                           : Info{cumulative_time, std::abs(to - from)};
                 } else {
-                    distances.emplace(StringViewPair{stops[from], stops[to]}, cumulative_distance);
+                    distances.emplace(key, Info{cumulative_time, std::abs(to - from)});
                 }
                 previous = to;
             }
