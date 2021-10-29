@@ -1,13 +1,8 @@
 #pragma once
 
-#include <deque>
-#include <optional>
-#include <string_view>
 #include <variant>
-#include <vector>
 
 #include "domain.h"
-#include "graph.h"
 #include "router.h"
 #include "transport_catalogue.h"
 
@@ -26,6 +21,8 @@ struct WaitResponse {
     std::string type{"Wait"};
 
     std::string stop_name;
+
+    WaitResponse(double time, std::string_view stop) : time(time), stop_name(stop) {}
 };
 
 /// @brief Response in the route corresponding to the bus
@@ -35,6 +32,8 @@ struct BusResponse {
 
     std::string bus;
     int span_count{0};
+
+    BusResponse(double time, const std::string& bus, int stops_count) : time(time), bus(bus), span_count(stops_count) {}
 };
 
 using ResponseItem = std::variant<WaitResponse, BusResponse>;
@@ -61,13 +60,12 @@ public:  // Methods
     [[nodiscard]] ResponseDataOpt BuildRoute(std::string_view from, std::string_view to) const;
 
 private:  // Methods
-    void MakeStopToVertexCorrespondence(const std::set<std::string_view>& stops);
-    void AddCircleBusRoute(const catalogue::Bus& bus);
-    void AddTwoDirectionalBusRoute(const catalogue::Bus& bus);
+    void BuildVertexesForStops(const std::set<std::string_view>& stops);
+    void AddBusRouteEdges(const catalogue::Bus& bus);
 
     void BuildRoutesGraph(const std::deque<catalogue::Bus>& buses);
 
-private:
+private:  // Types
     struct StopVertexes {
         graph::VertexId start{0};
         graph::VertexId end{0};
@@ -91,8 +89,6 @@ private:  // Fields
     Settings settings_;
 
     std::unordered_map<std::string_view, StopVertexes> stop_to_vertex_;
-    std::unordered_map<graph::VertexId, std::string_view> vertex_to_stop_;
-
     std::unordered_map<graph::Edge<Weight>, ResponseItem, EdgeHash> edge_response_;
 
     std::unique_ptr<Graph> routes_{nullptr};
