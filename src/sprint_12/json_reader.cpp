@@ -42,28 +42,28 @@ Bus ParseBusRouteInput(const json::Dict& info) {
     return bus;
 }
 
-void MakeBusResponse(int request_id, const BusStatistics& statistics, json::Builder& response) {
+void MakeBusResponse(int request_id, const BusStatistics& statistics, json::Builder& json_builder) {
     // P.S. no need to use std::move() because all types on the right are trivial
 
-    response.StartDict();
-    response.Key("curvature"s).Value(statistics.curvature);
-    response.Key("request_id"s).Value(request_id);
-    response.Key("route_length"s).Value(statistics.rout_length);
-    response.Key("stop_count"s).Value(static_cast<int>(statistics.stops_count));
-    response.Key("unique_stop_count"s).Value(static_cast<int>(statistics.unique_stops_count));
-    response.EndDict();
+    json_builder.StartDict();
+    json_builder.Key("curvature"s).Value(statistics.curvature);
+    json_builder.Key("request_id"s).Value(request_id);
+    json_builder.Key("route_length"s).Value(statistics.rout_length);
+    json_builder.Key("stop_count"s).Value(static_cast<int>(statistics.stops_count));
+    json_builder.Key("unique_stop_count"s).Value(static_cast<int>(statistics.unique_stops_count));
+    json_builder.EndDict();
 }
 
-void MakeStopResponse(int request_id, const std::set<std::string_view>& buses, json::Builder& response) {
-    response.StartDict();
-    response.Key("request_id"s).Value(request_id);
+void MakeStopResponse(int request_id, const std::set<std::string_view>& buses, json::Builder& json_builder) {
+    json_builder.StartDict();
+    json_builder.Key("request_id"s).Value(request_id);
 
-    response.Key("buses"s).StartArray();
+    json_builder.Key("buses"s).StartArray();
     for (std::string_view bus : buses)
-        response.Value(std::string(bus));
-    response.EndArray();
+        json_builder.Value(std::string(bus));
+    json_builder.EndArray();
 
-    response.EndDict();
+    json_builder.EndDict();
 }
 
 struct RouteItemVisitor {
@@ -83,37 +83,37 @@ struct RouteItemVisitor {
     }
 };
 
-void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, json::Builder& response) {
-    response.StartDict();
+void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, json::Builder& json_builder) {
+    json_builder.StartDict();
 
-    response.Key("request_id"s).Value(request_id);
-    response.Key("total_time"s).Value(route_info.total_time);
+    json_builder.Key("request_id"s).Value(request_id);
+    json_builder.Key("total_time"s).Value(route_info.total_time);
 
-    response.Key("items"s).StartArray();
+    json_builder.Key("items"s).StartArray();
 
     for (const auto& item : route_info.items) {
-        response.StartDict();
-        std::visit(RouteItemVisitor{response}, item);
-        response.EndDict();
+        json_builder.StartDict();
+        std::visit(RouteItemVisitor{json_builder}, item);
+        json_builder.EndDict();
     }
 
-    response.EndArray();
+    json_builder.EndArray();
 
-    response.EndDict();
+    json_builder.EndDict();
 }
 
-void MakeErrorResponse(int request_id, json::Builder& response) {
-    response.StartDict();
-    response.Key("request_id"s).Value(request_id);
-    response.Key("error_message"s).Value("not found"s);
-    response.EndDict();
+void MakeErrorResponse(int request_id, json::Builder& json_builder) {
+    json_builder.StartDict();
+    json_builder.Key("request_id"s).Value(request_id);
+    json_builder.Key("error_message"s).Value("not found"s);
+    json_builder.EndDict();
 }
 
-void MakeMapImageResponse(int request_id, const std::string& image, json::Builder& response) {
-    response.StartDict();
-    response.Key("request_id"s).Value(request_id);
-    response.Key("map"s).Value(image);
-    response.EndDict();
+void MakeMapImageResponse(int request_id, const std::string& image, json::Builder& json_builder) {
+    json_builder.StartDict();
+    json_builder.Key("request_id"s).Value(request_id);
+    json_builder.Key("map"s).Value(image);
+    json_builder.EndDict();
 }
 
 /* METHODS FOR MAP IMAGE RENDERING */
