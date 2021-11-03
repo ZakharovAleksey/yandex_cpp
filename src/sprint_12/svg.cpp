@@ -116,7 +116,7 @@ void Circle::RenderObject(const RenderContext& context) const {
 /* ---------------- POLYLINE ---------------- */
 
 Polyline& Polyline::AddPoint(Point point) {
-    vertexes_.emplace_back(point);
+    vertices_.emplace_back(point);
     return *this;
 }
 
@@ -125,7 +125,7 @@ void Polyline::RenderObject(const RenderContext& context) const {
     out << "<polyline points=\"";
 
     int id{0};
-    for (const auto& vertex : vertexes_) {
+    for (const auto& vertex : vertices_) {
         if (id++ != 0)
             out << " ";
         out << vertex.x << ","sv << vertex.y;

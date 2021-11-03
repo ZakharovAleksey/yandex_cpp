@@ -213,7 +213,7 @@ private:  // Methods
     void RenderObject(const RenderContext& context) const override;
 
 private:  // Fields
-    std::vector<Point> vertexes_;
+    std::vector<Point> vertices_;
 };
 
 /*

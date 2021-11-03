@@ -55,13 +55,13 @@ using StringViewPair = std::pair<std::string_view, std::string_view>;
 struct StringViewPairHash{
     size_t operator()(const StringViewPair& pair) const {
         //clang-format off
-        return even_ * std::hash<std::string_view>{}(pair.first) +
-               even_ * even_ * std::hash<std::string_view>{}(pair.second);
+        return kPrimeValue * std::hash<std::string_view>{}(pair.first) +
+               kPrimeValue * kPrimeValue * std::hash<std::string_view>{}(pair.second);
         //clang-format on
     }
 
 private:
-    static constexpr size_t even_{37};
+    static constexpr int kPrimeValue{37};
 };
 
 template <class Type>

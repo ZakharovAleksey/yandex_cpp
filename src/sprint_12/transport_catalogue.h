@@ -62,11 +62,11 @@ private:  // Types
 
     struct StopPointersPairHash {
         size_t operator()(const StopPointersPair& pair) const {
-            return pair.first->Hash() + prime_number * pair.second->Hash();
+            return pair.first->Hash() + kPrimeValue * pair.second->Hash();
         }
 
     private:
-        static const size_t prime_number{31};
+        static const int kPrimeValue{31};
     };
 
     template <class Type>
