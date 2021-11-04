@@ -235,7 +235,7 @@ render::Visualization ParseVisualizationSettings(const json::Dict& settings) {
     return final_settings;
 }
 
-json::Node MakeStatisticsResponse(request::RequestHandler& handler, const json::Array& requests) {
+json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& requests) {
     auto response = json::Builder();
     response.StartArray();
 

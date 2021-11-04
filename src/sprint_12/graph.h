@@ -1,5 +1,9 @@
 #pragma once
 
+/*
+ * Description: representation of weighted graph
+ */
+
 #include <cstdlib>
 #include <vector>
 

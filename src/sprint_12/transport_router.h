@@ -1,5 +1,10 @@
 #pragma once
 
+/*
+ * Description: router, which builds routes graph, basing on the transport catalogue database, and provides the
+ * possibility to build routes between two stops
+ */
+
 #include <variant>
 
 #include "domain.h"

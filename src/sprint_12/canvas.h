@@ -1,11 +1,15 @@
 #pragma once
+
+/*
+ * Description: class, which is used as the base to draw all images
+ */
+
 #include <iostream>
 #include <map>
 #include <string_view>
 
 #include "shapes.h"
 
-// Canvas on which we draw figures
 class Canvas {
 public:  // Using
     using ShapeId = size_t;
@@ -64,9 +68,10 @@ public:  // Methods
         output << '#' << std::string(size_.width, '#') << "#\n"sv;
     }
 
-private:
+private:  // Types
     using Shapes = std::map<ShapeId, std::unique_ptr<Shape>>;
 
+private:  // Methods
     Shapes::iterator GetShapeNodeById(ShapeId id) {
         auto it = shapes_.find(id);
         if (it == shapes_.end()) {
@@ -79,6 +84,7 @@ private:
         return current_id_++;
     }
 
+private:  // Fields
     Size size_ = {};
     ShapeId current_id_ = 0;
     Shapes shapes_;

@@ -16,4 +16,4 @@ size_t Bus::GetStopsCount() const {
     return (type == RouteType::CIRCLE) ? stop_names.size() : 2 * stop_names.size() - 1;
 }
 
-}  // namespace catalog
+}  // namespace catalogue

@@ -1,5 +1,9 @@
 #pragma once
 
+/*
+ * Description: class analog of std::ranges from C++ 20.
+ */
+
 #include <iterator>
 #include <string_view>
 #include <unordered_map>

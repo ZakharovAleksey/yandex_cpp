@@ -1,6 +1,9 @@
 #pragma once
 
-#include "graph.h"
+/*
+ * Description: class, which finds the graph path between two edges which has minimal weight.
+ * Used to build the shortest route between the pair of stops in transport catalogue.
+ */
 
 #include <algorithm>
 #include <cassert>
@@ -11,6 +14,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include "graph.h"
 
 namespace graph {
 
@@ -58,8 +63,7 @@ private:
         auto& route_relaxing = routes_internal_data_[vertex_from][vertex_to];
         const Weight candidate_weight = route_from.weight + route_to.weight;
         if (!route_relaxing || candidate_weight < route_relaxing->weight) {
-            route_relaxing = {candidate_weight,
-                              route_to.prev_edge ? route_to.prev_edge : route_from.prev_edge};
+            route_relaxing = {candidate_weight, route_to.prev_edge ? route_to.prev_edge : route_from.prev_edge};
         }
     }
 
@@ -82,10 +86,9 @@ private:
 
 template <typename Weight>
 Router<Weight>::Router(const Graph& graph)
-    : graph_(graph)
-    , routes_internal_data_(graph.GetVertexCount(),
-                            std::vector<std::optional<RouteInternalData>>(graph.GetVertexCount()))
-{
+    : graph_(graph),
+      routes_internal_data_(graph.GetVertexCount(),
+                            std::vector<std::optional<RouteInternalData>>(graph.GetVertexCount())) {
     InitializeRoutesInternalData(graph);
 
     const size_t vertex_count = graph.GetVertexCount();
@@ -95,18 +98,15 @@ Router<Weight>::Router(const Graph& graph)
 }
 
 template <typename Weight>
-std::optional<typename Router<Weight>::RouteInfo> Router<Weight>::BuildRoute(VertexId from,
-                                                                             VertexId to) const {
+std::optional<typename Router<Weight>::RouteInfo> Router<Weight>::BuildRoute(VertexId from, VertexId to) const {
     const auto& route_internal_data = routes_internal_data_.at(from).at(to);
     if (!route_internal_data) {
         return std::nullopt;
     }
     const Weight weight = route_internal_data->weight;
     std::vector<EdgeId> edges;
-    for (std::optional<EdgeId> edge_id = route_internal_data->prev_edge;
-         edge_id;
-         edge_id = routes_internal_data_[from][graph_.GetEdge(*edge_id).from]->prev_edge)
-    {
+    for (std::optional<EdgeId> edge_id = route_internal_data->prev_edge; edge_id;
+         edge_id = routes_internal_data_[from][graph_.GetEdge(*edge_id).from]->prev_edge) {
         edges.push_back(*edge_id);
     }
     std::reverse(edges.begin(), edges.end());

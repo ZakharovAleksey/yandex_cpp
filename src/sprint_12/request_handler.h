@@ -6,7 +6,6 @@
  */
 
 #include "map_renderer.h"
-#include "transport_catalogue.h"
 #include "transport_router.h"
 
 namespace request {
