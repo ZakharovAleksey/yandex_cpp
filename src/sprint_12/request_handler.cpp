@@ -2,11 +2,37 @@
 
 #include <string>
 
+#include "json_reader.h"
+
 namespace request {
 
 using namespace std::literals;
 using namespace catalogue;
 using namespace routing;
+
+RequestHandler::RequestHandler(const catalogue::TransportCatalogue& db, request::ResponseSettings settings)
+    : db_(db), settings_(std::move(settings)) {}
+
+std::optional<catalogue::BusStatistics> RequestHandler::GetBusStat(const std::string_view& bus_name) const {
+    return db_.GetBusStatistics(bus_name);
+}
+
+std::unique_ptr<std::set<std::string_view>> RequestHandler::GetBusesThroughTheStop(
+    const std::string_view& stop_name) const {
+    return db_.GetBusesPassingThroughTheStop(stop_name);
+}
+
+std::string RequestHandler::RenderMap() const {
+    return render::RenderTransportMap(db_, settings_.visualization);
+}
+
+routing::ResponseDataOpt RequestHandler::BuildRoute(std::string_view from, std::string_view to) const {
+    // Create router if it is still empty - crete only once
+    if (!router_.has_value())
+        router_.emplace(routing::TransportRouter(db_, settings_.routing));
+
+    return router_->BuildRoute(from, to);
+}
 
 void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
     TransportCatalogue catalogue;
@@ -29,7 +55,9 @@ void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
 
     // Step 4. Form response
     const auto& stat_requests = input_json.AsDict().at("stat_requests"s).AsArray();
-    auto response = MakeStatResponse(transport_catalogue, router, stat_requests, settings);
+
+    RequestHandler handler_(transport_catalogue, settings);
+    auto response = MakeStatisticsResponse(handler_, stat_requests);
 
     json::Print(json::Document{std::move(response)}, output);
 }

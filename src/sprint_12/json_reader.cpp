@@ -235,8 +235,7 @@ render::Visualization ParseVisualizationSettings(const json::Dict& settings) {
     return final_settings;
 }
 
-json::Node MakeStatResponse(const TransportCatalogue& catalogue, TransportRouterOpt& router,
-                            const json::Array& requests, const ResponseSettings& settings) {
+json::Node MakeStatisticsResponse(request::RequestHandler& handler, const json::Array& requests) {
     auto response = json::Builder();
     response.StartArray();
 
@@ -250,30 +249,25 @@ json::Node MakeStatResponse(const TransportCatalogue& catalogue, TransportRouter
         if (type == "Bus"s) {
             name = request_dict_view.at("name"s).AsString();
 
-            if (auto bus_statistics = catalogue.GetBusStatistics(name)) {
+            if (auto bus_statistics = handler.GetBusStat(name)) {
                 MakeBusResponse(request_id, *bus_statistics, response);
             } else {
                 MakeErrorResponse(request_id, response);
             }
         } else if (type == "Stop"s) {
             name = request_dict_view.at("name"s).AsString();
-            if (auto buses = catalogue.GetBusesPassingThroughTheStop(name)) {
+            if (auto buses = handler.GetBusesThroughTheStop(name)) {
                 MakeStopResponse(request_id, *buses, response);
             } else {
                 MakeErrorResponse(request_id, response);
             }
         } else if (type == "Map"s) {
-            std::string image = RenderTransportMap(catalogue, settings.visualization);
-            MakeMapImageResponse(request_id, image, response);
+            MakeMapImageResponse(request_id, handler.RenderMap(), response);
         } else if (type == "Route"s) {
-            // Create router if it is still empty - crete only once
-            if (!router.has_value())
-                router.emplace(TransportRouter(catalogue, settings.routing));
-
             std::string stop_name_from = request_dict_view.at("from"s).AsString();
             std::string stop_name_to = request_dict_view.at("to"s).AsString();
 
-            if (auto route_info = router->BuildRoute(stop_name_from, stop_name_to)) {
+            if (auto route_info = handler.BuildRoute(stop_name_from, stop_name_to)) {
                 MakeRouteResponse(request_id, *route_info, response);
             } else {
                 MakeErrorResponse(request_id, response);
