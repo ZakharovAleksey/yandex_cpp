@@ -1,8 +1,39 @@
 #pragma once
+
 #include <cassert>
 #include <cstdlib>
 #include <new>
 #include <utility>
+
+template <typename Type>
+class RawMemory {
+public:  // Constructors
+    RawMemory() = default;
+    explicit RawMemory(size_t capacity);
+
+public:  // Destructors
+    ~RawMemory();
+
+public:  // Operators
+    Type* operator+(size_t offset) noexcept;
+    const Type* operator+(size_t offset) const noexcept;
+    const Type& operator[](size_t index) const noexcept;
+    Type& operator[](size_t index) noexcept;
+
+public:  // Methods
+    void Swap(RawMemory& other) noexcept;
+    const Type* GetAddress() const noexcept;
+    Type* GetAddress() noexcept;
+    [[nodiscard]] size_t Capacity() const;
+
+private:  // Methods
+    static Type* Allocate(size_t n);
+    static void Deallocate(Type* buf) noexcept;
+
+private:  // Fields
+    Type* buffer_{nullptr};
+    size_t capacity_{0};
+};
 
 template <typename Type>
 class Vector {
@@ -24,54 +55,107 @@ public:  // Operators
     Type& operator[](size_t index) noexcept;
 
 private:  // Methods
-    static Type* Allocate(size_t size);
-    static void Deallocate(Type* buffer);
-
     static void CopyConstruct(Type* buffer, const Type& value);
-
     void DestroyN(Type* buffer, size_t size);
 
 private:  // Fields
-    Type* data_{nullptr};
-    size_t capacity_{0};
+    RawMemory<Type> data_;
     size_t size_{0};
 };
 
-/* CONSTRUCTORS */
+/* RAW MEMORY IMPLEMENTATION */
 
 template <class Type>
-Vector<Type>::Vector(size_t size) : data_(Allocate(size)), capacity_(size), size_(size) {
+RawMemory<Type>::RawMemory(size_t capacity) : buffer_(Allocate(capacity)), capacity_(capacity) {}
+
+template <class Type>
+RawMemory<Type>::~RawMemory() {
+    Deallocate(buffer_);
+}
+
+template <class Type>
+Type* RawMemory<Type>::operator+(size_t offset) noexcept {
+    assert(offset <= capacity_);
+    return buffer_ + offset;
+}
+
+template <class Type>
+const Type* RawMemory<Type>::operator+(size_t offset) const noexcept {
+    return const_cast<RawMemory&>(*this) + offset;
+}
+
+template <class Type>
+const Type& RawMemory<Type>::operator[](size_t index) const noexcept {
+    return const_cast<RawMemory&>(*this)[index];
+}
+
+template <class Type>
+Type& RawMemory<Type>::operator[](size_t index) noexcept {
+    assert(index < capacity_);
+    return buffer_[index];
+}
+
+template <class Type>
+void RawMemory<Type>::Swap(RawMemory& other) noexcept {
+    std::swap(buffer_, other.buffer_);
+    std::swap(capacity_, other.capacity_);
+}
+
+template <class Type>
+const Type* RawMemory<Type>::GetAddress() const noexcept {
+    return buffer_;
+}
+
+template <class Type>
+Type* RawMemory<Type>::GetAddress() noexcept {
+    return buffer_;
+}
+
+template <class Type>
+size_t RawMemory<Type>::Capacity() const {
+    return capacity_;
+}
+
+template <class Type>
+Type* RawMemory<Type>::Allocate(size_t n) {
+    return n != 0 ? static_cast<Type*>(operator new(n * sizeof(Type))) : nullptr;
+}
+
+template <class Type>
+void RawMemory<Type>::Deallocate(Type* buf) noexcept {
+    operator delete(buf);
+}
+
+/* VECTOR IMPLEMENTATION */
+
+template <class Type>
+Vector<Type>::Vector(size_t size) : data_(size), size_(size) {
     size_t created_count{0};
     try {
         for (; created_count < size; ++created_count)
             new (data_ + created_count) Type();
     } catch (...) {
-        DestroyN(data_, created_count);
-        Deallocate(data_);
+        DestroyN(data_.GetAddress(), created_count);
         throw;
     }
 }
 
 template <class Type>
-Vector<Type>::Vector(const Vector& other) : data_(Allocate(other.size_)), capacity_(other.size_), size_(other.size_) {
+Vector<Type>::Vector(const Vector& other) : data_(other.size_), size_(other.size_) {
     size_t created_count{0};
     try {
         for (; created_count != other.size_; ++created_count)
             CopyConstruct(data_ + created_count, other.data_[created_count]);
     } catch (...) {
-        DestroyN(data_, created_count);
-        Deallocate(data_);
+        DestroyN(data_.GetAddress(), created_count);
         throw;
     }
 }
 
 template <class Type>
 Vector<Type>::~Vector() {
-    DestroyN(data_, size_);
-    Deallocate(data_);
+    DestroyN(data_.GetAddress(), size_);
 }
-
-/* METHODS */
 
 template <class Type>
 size_t Vector<Type>::Size() const noexcept {
@@ -80,29 +164,24 @@ size_t Vector<Type>::Size() const noexcept {
 
 template <class Type>
 size_t Vector<Type>::Capacity() const noexcept {
-    return capacity_;
+    return data_.Capacity();
 }
 
 template <class Type>
 void Vector<Type>::Reserve(size_t capacity) {
     size_t created_count{0};
-    Type* new_data{nullptr};
+    RawMemory<Type> new_data(capacity);
+
     try {
-        if (capacity > capacity_) {
-            new_data = Allocate(capacity);
-            for (; created_count != size_; ++created_count) {
+        if (capacity > data_.Capacity()) {
+            for (; created_count != size_; ++created_count)
                 CopyConstruct(new_data + created_count, data_[created_count]);
-            }
 
-            DestroyN(data_, size_);
-            Deallocate(data_);
-
-            data_ = new_data;
-            capacity_ = capacity;
+            DestroyN(data_.GetAddress(), size_);
+            data_.Swap(new_data);
         }
     } catch (...) {
-        DestroyN(new_data, created_count);
-        Deallocate(new_data);
+        DestroyN(new_data.GetAddress(), created_count);
         throw;
     }
 }
@@ -116,15 +195,6 @@ template <class Type>
 Type& Vector<Type>::operator[](size_t index) noexcept {
     assert(index < size_);
     return data_[index];
-}
-
-template <class Type>
-Type* Vector<Type>::Allocate(size_t size) {
-    return size != 0 ? static_cast<Type*>(operator new(size * sizeof(Type))) : nullptr;
-}
-template <class Type>
-void Vector<Type>::Deallocate(Type* buffer) {
-    operator delete(buffer);
 }
 
 template <class Type>
