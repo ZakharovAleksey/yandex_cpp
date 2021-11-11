@@ -27,8 +27,9 @@ private:  // Methods
     static Type* Allocate(size_t size);
     static void Deallocate(Type* buffer);
 
-    void DestroyN(size_t size);
-    void CopyN(const Vector& from, Type* to);
+    static void CopyConstruct(Type* buffer, const Type& value);
+
+    void DestroyN(Type* buffer, size_t size);
 
 private:  // Fields
     Type* data_{nullptr};
@@ -40,18 +41,33 @@ private:  // Fields
 
 template <class Type>
 Vector<Type>::Vector(size_t size) : data_(Allocate(size)), capacity_(size), size_(size) {
-    for (size_t id = 0; id < size; ++id)
-        new (data_ + id) Type();
+    size_t created_count{0};
+    try {
+        for (; created_count < size; ++created_count)
+            new (data_ + created_count) Type();
+    } catch (...) {
+        DestroyN(data_, created_count);
+        Deallocate(data_);
+        throw;
+    }
 }
 
 template <class Type>
 Vector<Type>::Vector(const Vector& other) : data_(Allocate(other.size_)), capacity_(other.size_), size_(other.size_) {
-    CopyN(other, data_);
+    size_t created_count{0};
+    try {
+        for (; created_count != other.size_; ++created_count)
+            CopyConstruct(data_ + created_count, other.data_[created_count]);
+    } catch (...) {
+        DestroyN(data_, created_count);
+        Deallocate(data_);
+        throw;
+    }
 }
 
 template <class Type>
 Vector<Type>::~Vector() {
-    DestroyN(size_);
+    DestroyN(data_, size_);
     Deallocate(data_);
 }
 
@@ -69,16 +85,26 @@ size_t Vector<Type>::Capacity() const noexcept {
 
 template <class Type>
 void Vector<Type>::Reserve(size_t capacity) {
-    if (capacity > capacity_) {
-        Type* new_data = Allocate(capacity);
-        CopyN(*this, new_data);
+    size_t created_count{0};
+    Type* new_data{nullptr};
+    try {
+        if (capacity > capacity_) {
+            new_data = Allocate(capacity);
+            for (; created_count != size_; ++created_count) {
+                CopyConstruct(new_data + created_count, data_[created_count]);
+            }
 
-        DestroyN(size_);
-        Deallocate(data_);
-        data_ = new_data;
+            DestroyN(data_, size_);
+            Deallocate(data_);
+
+            data_ = new_data;
+            capacity_ = capacity;
+        }
+    } catch (...) {
+        DestroyN(new_data, created_count);
+        Deallocate(new_data);
+        throw;
     }
-
-    capacity_ = capacity;
 }
 
 template <class Type>
@@ -102,18 +128,12 @@ void Vector<Type>::Deallocate(Type* buffer) {
 }
 
 template <class Type>
-void Vector<Type>::DestroyN(size_t size) {
-    for (size_t id = 0; id < size; ++id)
-        (data_ + id)->~Type();
+void Vector<Type>::CopyConstruct(Type* buffer, const Type& value) {
+    new (buffer) Type(value);
 }
 
 template <class Type>
-void Vector<Type>::CopyValue(const Type& value, Type* to) {
-    new (to) Type(value);
-}
-
-template <class Type>
-void Vector<Type>::CopyN(const Vector& from, Type* to) {
-    for (size_t id = 0; id < from.size_; ++id)
-        new (to + id) Type(*(from.data_ + id));
+void Vector<Type>::DestroyN(Type* buffer, size_t size) {
+    for (size_t id = 0; id != size; ++id)
+        (buffer + id)->~Type();
 }
