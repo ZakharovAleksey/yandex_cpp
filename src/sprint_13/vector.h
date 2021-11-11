@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <memory>
 #include <new>
 #include <utility>
 
@@ -23,7 +24,7 @@ public:  // Operators
 public:  // Methods
     void Swap(RawMemory& other) noexcept;
     const Type* GetAddress() const noexcept;
-    Type* GetAddress() noexcept;
+    [[maybe_unused]] Type* GetAddress() noexcept;
     [[nodiscard]] size_t Capacity() const;
 
 private:  // Methods
@@ -32,7 +33,7 @@ private:  // Methods
 
 private:  // Fields
     Type* buffer_{nullptr};
-    size_t capacity_{0};
+    size_t capacity_{0u};
 };
 
 template <typename Type>
@@ -54,13 +55,9 @@ public:  // Operators
     const Type& operator[](size_t index) const noexcept;
     Type& operator[](size_t index) noexcept;
 
-private:  // Methods
-    static void CopyConstruct(Type* buffer, const Type& value);
-    void DestroyN(Type* buffer, size_t size);
-
 private:  // Fields
     RawMemory<Type> data_;
-    size_t size_{0};
+    size_t size_{0u};
 };
 
 /* RAW MEMORY IMPLEMENTATION */
@@ -107,7 +104,7 @@ const Type* RawMemory<Type>::GetAddress() const noexcept {
 }
 
 template <class Type>
-Type* RawMemory<Type>::GetAddress() noexcept {
+[[maybe_unused]] Type* RawMemory<Type>::GetAddress() noexcept {
     return buffer_;
 }
 
@@ -130,31 +127,17 @@ void RawMemory<Type>::Deallocate(Type* buf) noexcept {
 
 template <class Type>
 Vector<Type>::Vector(size_t size) : data_(size), size_(size) {
-    size_t created_count{0};
-    try {
-        for (; created_count < size; ++created_count)
-            new (data_ + created_count) Type();
-    } catch (...) {
-        DestroyN(data_.GetAddress(), created_count);
-        throw;
-    }
+    std::uninitialized_value_construct_n(data_.GetAddress(), size);
 }
 
 template <class Type>
 Vector<Type>::Vector(const Vector& other) : data_(other.size_), size_(other.size_) {
-    size_t created_count{0};
-    try {
-        for (; created_count != other.size_; ++created_count)
-            CopyConstruct(data_ + created_count, other.data_[created_count]);
-    } catch (...) {
-        DestroyN(data_.GetAddress(), created_count);
-        throw;
-    }
+    std::uninitialized_copy_n(other.data_.GetAddress(), size_, data_.GetAddress());
 }
 
 template <class Type>
 Vector<Type>::~Vector() {
-    DestroyN(data_.GetAddress(), size_);
+    std::destroy_n(data_.GetAddress(), size_);
 }
 
 template <class Type>
@@ -169,20 +152,15 @@ size_t Vector<Type>::Capacity() const noexcept {
 
 template <class Type>
 void Vector<Type>::Reserve(size_t capacity) {
-    size_t created_count{0};
-    RawMemory<Type> new_data(capacity);
-
-    try {
-        if (capacity > data_.Capacity()) {
-            for (; created_count != size_; ++created_count)
-                CopyConstruct(new_data + created_count, data_[created_count]);
-
-            DestroyN(data_.GetAddress(), size_);
-            data_.Swap(new_data);
+    if (capacity > data_.Capacity()) {
+        RawMemory<Type> new_data(capacity);
+        if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+            std::uninitialized_move_n(data_.GetAddress(), size_, new_data.GetAddress());
+        } else {
+            std::uninitialized_copy_n(data_.GetAddress(), size_, new_data.GetAddress());
         }
-    } catch (...) {
-        DestroyN(new_data.GetAddress(), created_count);
-        throw;
+        std::destroy_n(data_.GetAddress(), size_);
+        data_.Swap(new_data);
     }
 }
 
@@ -195,15 +173,4 @@ template <class Type>
 Type& Vector<Type>::operator[](size_t index) noexcept {
     assert(index < size_);
     return data_[index];
-}
-
-template <class Type>
-void Vector<Type>::CopyConstruct(Type* buffer, const Type& value) {
-    new (buffer) Type(value);
-}
-
-template <class Type>
-void Vector<Type>::DestroyN(Type* buffer, size_t size) {
-    for (size_t id = 0; id != size; ++id)
-        (buffer + id)->~Type();
 }
