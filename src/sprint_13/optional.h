@@ -37,13 +37,16 @@ public:  // Methods
     template <typename... Args>
     void Emplace(Args&&... values);
 
-    Type& operator*();
-    const Type& operator*() const;
+    Type& operator*() &;
+    const Type& operator*() const&;
     Type* operator->();
     const Type* operator->() const;
 
-    Type& Value();
-    const Type& Value() const;
+    Type&& operator*() &&;
+
+    Type&& Value() &&;
+    Type& Value() &;
+    const Type& Value() const&;
 
     void Reset();
 
@@ -171,34 +174,46 @@ void Optional<Type>::Emplace(Args&&... values) {
 }
 
 template <class Type>
-Type& Optional<Type>::operator*() {
-    return *value_;
+Type& Optional<Type>::operator*() & {
+    return Value();
 }
 
 template <class Type>
-const Type& Optional<Type>::operator*() const {
-    return *value_;
+const Type& Optional<Type>::operator*() const& {
+    return Value();
+}
+
+template <class Type>
+Type&& Optional<Type>::operator*() && {
+    return std::move(Value());
 }
 
 template <class Type>
 Type* Optional<Type>::operator->() {
-    return value_;
+    return &Value();
 }
 
 template <class Type>
 const Type* Optional<Type>::operator->() const {
-    return value_;
+    return &Value();
 }
 
 template <class Type>
-Type& Optional<Type>::Value() {
+Type&& Optional<Type>::Value() && {
+    if (!is_initialized_)
+        throw BadOptionalAccess();
+    return std::move(*value_);
+}
+
+template <class Type>
+Type& Optional<Type>::Value() & {
     if (!is_initialized_)
         throw BadOptionalAccess();
     return *value_;
 }
 
 template <class Type>
-const Type& Optional<Type>::Value() const {
+const Type& Optional<Type>::Value() const& {
     if (!is_initialized_)
         throw BadOptionalAccess();
     return *value_;
