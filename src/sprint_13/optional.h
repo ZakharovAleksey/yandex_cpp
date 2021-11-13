@@ -34,6 +34,9 @@ public:  // Destructors
 public:  // Methods
     [[nodiscard]] bool HasValue() const;
 
+    template <typename... Args>
+    void Emplace(Args&&... values);
+
     Type& operator*();
     const Type& operator*() const;
     Type* operator->();
@@ -156,6 +159,15 @@ Optional<Type>::~Optional() {
 template <class Type>
 bool Optional<Type>::HasValue() const {
     return is_initialized_;
+}
+
+template <class Type>
+template <typename... Args>
+void Optional<Type>::Emplace(Args&&... values) {
+    if (is_initialized_)
+        Reset();
+    value_ = new (&data_[0]) Type(std::forward<Args>(values)...);
+    is_initialized_ = true;
 }
 
 template <class Type>
