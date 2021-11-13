@@ -71,6 +71,9 @@ public:  // Methods
     void PushBack(Type&& value);
     void PopBack() noexcept;
 
+    template <typename... Args>
+    Type& EmplaceBack(Args&&... args);
+
 public:  // Operators
     const Type& operator[](size_t index) const noexcept;
     Type& operator[](size_t index) noexcept;
@@ -317,6 +320,31 @@ template <class Type>
 void Vector<Type>::PopBack() noexcept {
     std::destroy_n(data_.GetAddress() + size_ - 1, 1);
     --size_;
+}
+
+template <class Type>
+template <typename... Args>
+Type& Vector<Type>::EmplaceBack(Args&&... args) {
+    if (size_ == data_.Capacity()) {
+        size_t new_size = (size_ == 0) ? 1 : 2 * size_;
+
+        RawMemory<Type> tmp_memory(new_size);
+        new (tmp_memory.GetAddress() + size_) Type(std::forward<Args>(args)...);
+        if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+            std::uninitialized_move_n(data_.GetAddress(), size_, tmp_memory.GetAddress());
+        } else {
+            std::uninitialized_copy_n(data_.GetAddress(), size_, tmp_memory.GetAddress());
+        }
+        std::destroy_n(data_.GetAddress(), size_);
+
+        data_.Swap(tmp_memory);
+    } else {
+        new (data_.GetAddress() + size_) Type(std::forward<Args>(args)...);
+    }
+
+    ++size_;
+
+    return *(data_.GetAddress() + size_ - 1);
 }
 
 template <class Type>
