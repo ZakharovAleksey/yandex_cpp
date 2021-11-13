@@ -79,39 +79,52 @@ public:  // Methods
         auto pos = const_cast<iterator>(position);
 
         if (size_ == data_.Capacity()) {
-            size_t new_size = (size_ == 0) ? 1 : 2 * size_;
             size_t before = std::distance(cbegin(), position);
             size_t after = std::distance(position, cend());
 
             // Step 1. Allocate new memory
-            RawMemory<Type> tmp_memory(new_size);
-
-            // Step 2. !!! Move existed value to the end of the memory (value could be vector's element) !!!
+            RawMemory<Type> tmp_memory((size_ == 0) ? 1 : 2 * size_);
             new (tmp_memory.GetAddress() + index) Type(std::forward<Args>(args)...);
 
             // Step 3. Copy the rest elements to the new memory
             if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-                std::uninitialized_move_n(begin(), before, tmp_memory.GetAddress());
-                std::uninitialized_move_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
+                try {
+                    std::uninitialized_move_n(begin(), before, tmp_memory.GetAddress());
+                } catch (...) {
+                    std::destroy_at(tmp_memory.GetAddress() + index);
+                    throw;
+                }
+                try {
+                    std::uninitialized_move_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
+                } catch (...) {
+                    std::destroy_n(tmp_memory.GetAddress(), index + 1);
+                    throw;
+                }
             } else {
-                std::uninitialized_copy_n(begin(), before, tmp_memory.GetAddress());
-                std::uninitialized_copy_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
+                try {
+                    std::uninitialized_copy_n(begin(), before, tmp_memory.GetAddress());
+                } catch (...) {
+                    std::destroy_at(tmp_memory.GetAddress() + index);
+                    throw;
+                }
+                try {
+                    std::uninitialized_copy_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
+                } catch (...) {
+                    std::destroy_n(tmp_memory.GetAddress(), index + 1);
+                    throw;
+                }
             }
             std::destroy_n(data_.GetAddress(), size_);
-
-            // Step 4. Swap memories
             data_.Swap(tmp_memory);
         } else {
-            if (size_ != 0) {
-                if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-                    new (end()) Type(std::move(*(begin() + size_ - 1)));
-                } else {
-                    new (end()) Type(*(begin() + size_ - 1));
-                }
-
-                std::move_backward(pos, end(), end() + 1);
+            if (size_ != index) {
+                auto tmp = Type(std::forward<Args>(args)...);
+                new(end()) Type(std::forward<Type>(*(end() - 1)));
+                std::move_backward(pos, end() - 1, end());
+                data_[index] = std::move(tmp);
+            } else {
+                new (pos) Type(std::forward<Args>(args)...);
             }
-            new (pos) Type(std::forward<Args>(args)...);
         }
 
         ++size_;
@@ -130,90 +143,11 @@ public:  // Methods
     }
 
     iterator Insert(const_iterator position, const Type& value) {
-        size_t index = std::distance(cbegin(), position);
-        auto pos = const_cast<iterator>(position);
-
-        if (size_ == data_.Capacity()) {
-            size_t new_size = (size_ == 0) ? 1 : 2 * size_;
-            size_t before = std::distance(cbegin(), position);
-            size_t after = std::distance(position, cend());
-
-            // Step 1. Allocate new memory
-            RawMemory<Type> tmp_memory(new_size);
-
-            // Step 2. !!! Move existed value to the end of the memory (value could be vector's element) !!!
-            new (tmp_memory.GetAddress() + index) Type(value);
-
-            // Step 3. Copy the rest elements to the new memory
-            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-                std::uninitialized_move_n(begin(), before, tmp_memory.GetAddress());
-                std::uninitialized_move_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
-            } else {
-                std::uninitialized_copy_n(begin(), before, tmp_memory.GetAddress());
-                std::uninitialized_copy_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
-            }
-            std::destroy_n(begin(), size_);
-
-            // Step 4. Swap memories
-            data_.Swap(tmp_memory);
-        } else {
-            if (size_ != 0) {
-                if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-                    new (end()) Type(std::move(*(begin() + size_ - 1)));
-                    std::move_backward(pos, end() - 1, end());
-                } else {
-                    new (end()) Type(*(begin() + size_ - 1));
-                    std::copy_backward(pos, end() - 1, end());
-                }
-            }
-            new (pos) Type(value);
-        }
-
-        ++size_;
-
-        return begin() + index;
+        return Emplace(position, value);
     }
 
     iterator Insert(const_iterator position, Type&& value) {
-        size_t index = std::distance(cbegin(), position);
-        auto pos = const_cast<iterator>(position);
-
-        if (size_ == data_.Capacity()) {
-            size_t new_size = (size_ == 0) ? 1 : 2 * size_;
-            size_t before = std::distance(cbegin(), position);
-            size_t after = std::distance(position, cend());
-
-            RawMemory<Type> tmp_memory(new_size);
-
-            new (tmp_memory.GetAddress() + index) Type(std::move(value));
-
-            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-                std::uninitialized_move_n(begin(), before, tmp_memory.GetAddress());
-                std::uninitialized_move_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
-            } else {
-                std::uninitialized_copy_n(begin(), before, tmp_memory.GetAddress());
-                std::uninitialized_copy_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
-            }
-            std::destroy_n(data_.GetAddress(), size_);
-
-            data_.Swap(tmp_memory);
-        } else {
-            if (size_ != 0) {
-                if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-                    new (end()) Type(std::move(*(begin() + size_ - 1)));
-                    std::move_backward(pos, end() - 1, end());
-
-                } else {
-                    new (end()) Type(*(begin() + size_ - 1));
-                    std::copy_backward(pos, end() - 1, end());
-                }
-                new (pos) Type(std::move(value));
-            }
-        }
-
-        ++size_;
-
-        return begin() + index;
+        return Emplace(position, std::move(value));
     }
 
     template <typename... Args>
