@@ -48,6 +48,10 @@ private:  // Fields
 
 template <typename Type>
 class Vector {
+public:  // Types
+    using iterator = Type*;
+    using const_iterator = const Type*;
+
 public:  // Constructor
     Vector() = default;
     explicit Vector(size_t size);
@@ -62,6 +66,159 @@ public:  // Destructor
     ~Vector();
 
 public:  // Methods
+    iterator begin() noexcept;
+    iterator end() noexcept;
+    const_iterator begin() const noexcept;
+    const_iterator end() const noexcept;
+    const_iterator cbegin() const noexcept;
+    const_iterator cend() const noexcept;
+
+    template <typename... Args>
+    iterator Emplace(const_iterator position, Args&&... args) {
+        size_t index = std::distance(cbegin(), position);
+        auto pos = const_cast<iterator>(position);
+
+        if (size_ == data_.Capacity()) {
+            size_t new_size = (size_ == 0) ? 1 : 2 * size_;
+            size_t before = std::distance(cbegin(), position);
+            size_t after = std::distance(position, cend());
+
+            // Step 1. Allocate new memory
+            RawMemory<Type> tmp_memory(new_size);
+
+            // Step 2. !!! Move existed value to the end of the memory (value could be vector's element) !!!
+            new (tmp_memory.GetAddress() + index) Type(std::forward<Args>(args)...);
+
+            // Step 3. Copy the rest elements to the new memory
+            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+                std::uninitialized_move_n(begin(), before, tmp_memory.GetAddress());
+                std::uninitialized_move_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
+            } else {
+                std::uninitialized_copy_n(begin(), before, tmp_memory.GetAddress());
+                std::uninitialized_copy_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
+            }
+            std::destroy_n(data_.GetAddress(), size_);
+
+            // Step 4. Swap memories
+            data_.Swap(tmp_memory);
+        } else {
+            if (size_ != 0) {
+                if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+                    new (end()) Type(std::move(*(begin() + size_ - 1)));
+                } else {
+                    new (end()) Type(*(begin() + size_ - 1));
+                }
+
+                std::move_backward(pos, end(), end() + 1);
+            }
+            new (pos) Type(std::forward<Args>(args)...);
+        }
+
+        ++size_;
+
+        return begin() + index;
+    }
+
+    iterator Erase(const_iterator position) noexcept(std::is_nothrow_move_assignable_v<Type>) {
+        size_t index = std::distance(cbegin(), position);
+
+        std::move(data_.GetAddress() + index + 1, end(), data_.GetAddress() + index);
+        std::destroy_n(end() - 1, 1);
+
+        --size_;
+        return begin() + index;
+    }
+
+    iterator Insert(const_iterator position, const Type& value) {
+        size_t index = std::distance(cbegin(), position);
+        auto pos = const_cast<iterator>(position);
+
+        if (size_ == data_.Capacity()) {
+            size_t new_size = (size_ == 0) ? 1 : 2 * size_;
+            size_t before = std::distance(cbegin(), position);
+            size_t after = std::distance(position, cend());
+
+            // Step 1. Allocate new memory
+            RawMemory<Type> tmp_memory(new_size);
+
+            // Step 2. !!! Move existed value to the end of the memory (value could be vector's element) !!!
+            new (tmp_memory.GetAddress() + index) Type(value);
+
+            // Step 3. Copy the rest elements to the new memory
+            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+                std::uninitialized_move_n(begin(), before, tmp_memory.GetAddress());
+                std::uninitialized_move_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
+            } else {
+                std::uninitialized_copy_n(begin(), before, tmp_memory.GetAddress());
+                std::uninitialized_copy_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
+            }
+            std::destroy_n(begin(), size_);
+
+            // Step 4. Swap memories
+            data_.Swap(tmp_memory);
+        } else {
+            if (size_ != 0) {
+                if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+                    new (end()) Type(std::move(*(begin() + size_ - 1)));
+                    std::move_backward(pos, end() - 1, end());
+                } else {
+                    new (end()) Type(*(begin() + size_ - 1));
+                    std::copy_backward(pos, end() - 1, end());
+                }
+            }
+            new (pos) Type(value);
+        }
+
+        ++size_;
+
+        return begin() + index;
+    }
+
+    iterator Insert(const_iterator position, Type&& value) {
+        size_t index = std::distance(cbegin(), position);
+        auto pos = const_cast<iterator>(position);
+
+        if (size_ == data_.Capacity()) {
+            size_t new_size = (size_ == 0) ? 1 : 2 * size_;
+            size_t before = std::distance(cbegin(), position);
+            size_t after = std::distance(position, cend());
+
+            RawMemory<Type> tmp_memory(new_size);
+
+            new (tmp_memory.GetAddress() + index) Type(std::move(value));
+
+            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+                std::uninitialized_move_n(begin(), before, tmp_memory.GetAddress());
+                std::uninitialized_move_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
+            } else {
+                std::uninitialized_copy_n(begin(), before, tmp_memory.GetAddress());
+                std::uninitialized_copy_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
+            }
+            std::destroy_n(data_.GetAddress(), size_);
+
+            data_.Swap(tmp_memory);
+        } else {
+            if (size_ != 0) {
+                if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+                    new (end()) Type(std::move(*(begin() + size_ - 1)));
+                    std::move_backward(pos, end() - 1, end());
+
+                } else {
+                    new (end()) Type(*(begin() + size_ - 1));
+                    std::copy_backward(pos, end() - 1, end());
+                }
+                new (pos) Type(std::move(value));
+            }
+        }
+
+        ++size_;
+
+        return begin() + index;
+    }
+
+    template <typename... Args>
+    Type& EmplaceBack(Args&&... args);
+
     [[nodiscard]] size_t Size() const noexcept;
     [[nodiscard]] size_t Capacity() const noexcept;
     void Reserve(size_t capacity);
@@ -70,9 +227,6 @@ public:  // Methods
     void PushBack(const Type& value);
     void PushBack(Type&& value);
     void PopBack() noexcept;
-
-    template <typename... Args>
-    Type& EmplaceBack(Args&&... args);
 
 public:  // Operators
     const Type& operator[](size_t index) const noexcept;
@@ -222,6 +376,36 @@ template <class Type>
 Vector<Type>::~Vector() {
     if (size_ != 0)
         std::destroy_n(data_.GetAddress(), size_);
+}
+
+template <class Type>
+typename Vector<Type>::iterator Vector<Type>::begin() noexcept {
+    return data_.GetAddress();
+}
+
+template <class Type>
+typename Vector<Type>::iterator Vector<Type>::end() noexcept {
+    return data_.GetAddress() + size_;
+}
+
+template <class Type>
+typename Vector<Type>::const_iterator Vector<Type>::begin() const noexcept {
+    return data_.GetAddress();
+}
+
+template <class Type>
+typename Vector<Type>::const_iterator Vector<Type>::end() const noexcept {
+    return data_.GetAddress() + size_;
+}
+
+template <class Type>
+typename Vector<Type>::const_iterator Vector<Type>::cbegin() const noexcept {
+    return data_.GetAddress();
+}
+
+template <class Type>
+typename Vector<Type>::const_iterator Vector<Type>::cend() const noexcept {
+    return data_.GetAddress() + size_;
 }
 
 template <class Type>
