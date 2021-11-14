@@ -1,6 +1,6 @@
 # Yandex Practicum C++
 
-:boom: **Sprint #12 description added [here](#Sprint-12)** 
+:boom: **Sprint #13 description added [here](#Sprint-13)** 
 
 - [ ] Add `conan` package manager (could not find packages)
 - [ ] Make good `CMAKE` basing on chosen compiler
@@ -163,8 +163,6 @@ Implemented items:
 
 ## Sprint 12
 
-:exclamation: :exclamation: :exclamation:
-
 Code with JSON builder could be found here: [dev/sprint-12](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-12)
 
 Implemented items:
@@ -181,6 +179,18 @@ P.S. Implementation notes:
 * Each bus ride starts with the `end` vertex stop and ends on the `start` vertex.
 * Bus could go through the same stop several times - only the lowes time is chosen to build the fastest route.
 
+## Sprint 13
 
+:exclamation: :exclamation: :exclamation:
+
+Code changes for `Optional<Type>` and `Vector<Type>` could be found here: [dev/sprint-13](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-13)
+
+Implemented items:
+1. Class `Vector<Type>` is analog of `std::vector<Type>`:
+   * [vector.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-13/src/sprint_13/vector.h)
+2. Class `Optional<Type>` is analog of `std::optional<Type>:
+   * [optional.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-13/src/sprint_13/optional.h)
+
+P.S. Both classes implementation use **raw memory**, so the speed should be close to the analogs from `STL` library.
 
 # Notes
