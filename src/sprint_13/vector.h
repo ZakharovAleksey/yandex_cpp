@@ -1,13 +1,15 @@
 #pragma once
 
+/*
+ * Description: analog of std::vector<> implementation
+ */
+
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
 #include <memory>
 #include <new>
 #include <utility>
-
-/* RAW MEMORY CLASS DECLARATION */
 
 template <typename Type>
 class RawMemory {
@@ -79,8 +81,6 @@ private:  // Fields
     size_t capacity_{0};
 };
 
-/* VECTOR CLASS DECLARATION */
-
 template <typename Type>
 class Vector {
 public:  // Types
@@ -136,15 +136,30 @@ public:  // Constructors & Assigment operators
     }
 
 public:  // Destructor
-    ~Vector();
+    ~Vector() {
+        if (size_ != 0)
+            std::destroy_n(begin(), size_);
+    }
 
 public:  // Methods
-    iterator begin() noexcept;
-    iterator end() noexcept;
-    const_iterator begin() const noexcept;
-    const_iterator end() const noexcept;
-    const_iterator cbegin() const noexcept;
-    const_iterator cend() const noexcept;
+    iterator begin() noexcept {
+        return data_.GetAddress();
+    }
+    iterator end() noexcept {
+        return data_.GetAddress() + size_;
+    }
+    const_iterator begin() const noexcept {
+        return data_.GetAddress();
+    }
+    const_iterator end() const noexcept {
+        return data_.GetAddress() + size_;
+    }
+    const_iterator cbegin() const noexcept {
+        return data_.GetAddress();
+    }
+    const_iterator cend() const noexcept {
+        return data_.GetAddress() + size_;
+    }
 
     template <typename... Args>
     iterator Emplace(const_iterator position, Args&&... args) {
@@ -226,164 +241,93 @@ public:  // Methods
         return *(begin() + size_ - 1);
     }
 
-    [[nodiscard]] size_t Size() const noexcept;
-    [[nodiscard]] size_t Capacity() const noexcept;
-    void Reserve(size_t capacity);
-    void Swap(Vector<Type>& other);
-    void Resize(size_t new_size);
-    void PushBack(const Type& value);
-    void PushBack(Type&& value);
-    void PopBack() noexcept;
+    [[nodiscard]] size_t Size() const noexcept {
+        return size_;
+    }
+    [[nodiscard]] size_t Capacity() const noexcept {
+        return data_.Capacity();
+    }
+    void Reserve(size_t capacity) {
+        if (capacity > data_.Capacity()) {
+            RawMemory<Type> tmp_memory(capacity);
+            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+                std::uninitialized_move_n(begin(), size_, tmp_memory.GetAddress());
+            } else {
+                std::uninitialized_copy_n(begin(), size_, tmp_memory.GetAddress());
+            }
+            std::destroy_n(begin(), size_);
+            data_.Swap(tmp_memory);
+        }
+    }
+    void Swap(Vector<Type>& other) {
+        std::swap(data_, other.data_);
+        std::swap(size_, other.size_);
+    }
+    void Resize(size_t new_size) {
+        if (new_size > data_.Capacity()) {
+            Reserve(new_size);
+            std::uninitialized_value_construct_n(begin(), new_size - size_);
+        } else {
+            std::destroy_n(begin() + new_size, size_ - new_size);
+        }
+        size_ = new_size;
+    }
+    void PushBack(const Type& value) {
+        if (size_ == data_.Capacity()) {
+            // Step 1. Allocate new memory
+            RawMemory<Type> tmp_memory((size_ == 0) ? 1 : 2 * size_);
+
+            // Step 2. !!! Move existed value to the end of the memory (value could be vector's element) !!!
+            new (tmp_memory.GetAddress() + size_) Type(value);
+
+            // Step 3. Copy the rest elements to the new memory
+            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+                std::uninitialized_move_n(begin(), size_, tmp_memory.GetAddress());
+            } else {
+                std::uninitialized_copy_n(begin(), size_, tmp_memory.GetAddress());
+            }
+            std::destroy_n(begin(), size_);
+
+            // Step 4. Swap memories
+            data_.Swap(tmp_memory);
+        } else {
+            new (begin() + size_) Type(value);
+        }
+        ++size_;
+    }
+    void PushBack(Type&& value) {
+        if (size_ == data_.Capacity()) {
+            RawMemory<Type> tmp_memory((size_ == 0) ? 1 : 2 * size_);
+
+            new (tmp_memory.GetAddress() + size_) Type(std::move(value));
+            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+                std::uninitialized_move_n(begin(), size_, tmp_memory.GetAddress());
+            } else {
+                std::uninitialized_copy_n(begin(), size_, tmp_memory.GetAddress());
+            }
+
+            std::destroy_n(begin(), size_);
+            data_.Swap(tmp_memory);
+        } else {
+            new (begin() + size_) Type(std::move(value));
+        }
+        ++size_;
+    }
+    void PopBack() noexcept {
+        std::destroy_n(begin() + size_ - 1, 1);
+        --size_;
+    }
 
 public:  // Operators
-    const Type& operator[](size_t index) const noexcept;
-    Type& operator[](size_t index) noexcept;
+    const Type& operator[](size_t index) const noexcept {
+        return const_cast<Vector&>(*this)[index];
+    }
+    Type& operator[](size_t index) noexcept {
+        assert(index < size_);
+        return data_[index];
+    }
 
 private:  // Fields
     RawMemory<Type> data_;
     size_t size_{0u};
 };
-
-/* VECTOR IMPLEMENTATION */
-
-template <class Type>
-Vector<Type>::~Vector() {
-    if (size_ != 0)
-        std::destroy_n(data_.GetAddress(), size_);
-}
-
-template <class Type>
-typename Vector<Type>::iterator Vector<Type>::begin() noexcept {
-    return data_.GetAddress();
-}
-
-template <class Type>
-typename Vector<Type>::iterator Vector<Type>::end() noexcept {
-    return data_.GetAddress() + size_;
-}
-
-template <class Type>
-typename Vector<Type>::const_iterator Vector<Type>::begin() const noexcept {
-    return data_.GetAddress();
-}
-
-template <class Type>
-typename Vector<Type>::const_iterator Vector<Type>::end() const noexcept {
-    return data_.GetAddress() + size_;
-}
-
-template <class Type>
-typename Vector<Type>::const_iterator Vector<Type>::cbegin() const noexcept {
-    return data_.GetAddress();
-}
-
-template <class Type>
-typename Vector<Type>::const_iterator Vector<Type>::cend() const noexcept {
-    return data_.GetAddress() + size_;
-}
-
-template <class Type>
-size_t Vector<Type>::Size() const noexcept {
-    return size_;
-}
-
-template <class Type>
-size_t Vector<Type>::Capacity() const noexcept {
-    return data_.Capacity();
-}
-
-template <class Type>
-void Vector<Type>::Reserve(size_t capacity) {
-    if (capacity > data_.Capacity()) {
-        RawMemory<Type> new_data(capacity);
-        if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-            std::uninitialized_move_n(data_.GetAddress(), size_, new_data.GetAddress());
-        } else {
-            std::uninitialized_copy_n(data_.GetAddress(), size_, new_data.GetAddress());
-        }
-        std::destroy_n(data_.GetAddress(), size_);
-        data_.Swap(new_data);
-    }
-}
-
-template <class Type>
-void Vector<Type>::Swap(Vector<Type>& other) {
-    std::swap(data_, other.data_);
-    std::swap(size_, other.size_);
-}
-
-template <class Type>
-void Vector<Type>::Resize(size_t new_size) {
-    if (new_size > data_.Capacity()) {
-        Reserve(new_size);
-        std::uninitialized_value_construct_n(data_.GetAddress(), new_size - size_);
-    } else {
-        std::destroy_n(data_.GetAddress() + new_size, size_ - new_size);
-    }
-
-    size_ = new_size;
-}
-
-template <class Type>
-void Vector<Type>::PushBack(const Type& value) {
-    if (size_ == data_.Capacity()) {
-        // Step 1. Allocate new memory
-        RawMemory<Type> tmp_memory((size_ == 0) ? 1 : 2 * size_);
-
-        // Step 2. !!! Move existed value to the end of the memory (value could be vector's element) !!!
-        new (tmp_memory.GetAddress() + size_) Type(value);
-
-        // Step 3. Copy the rest elements to the new memory
-        if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-            std::uninitialized_move_n(begin(), size_, tmp_memory.GetAddress());
-        } else {
-            std::uninitialized_copy_n(begin(), size_, tmp_memory.GetAddress());
-        }
-        std::destroy_n(begin(), size_);
-
-        // Step 4. Swap memories
-        data_.Swap(tmp_memory);
-    } else {
-        new (begin() + size_) Type(value);
-    }
-
-    ++size_;
-}
-
-template <class Type>
-void Vector<Type>::PushBack(Type&& value) {
-    if (size_ == data_.Capacity()) {
-        RawMemory<Type> tmp_memory((size_ == 0) ? 1 : 2 * size_);
-
-        new (tmp_memory.GetAddress() + size_) Type(std::move(value));
-        if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-            std::uninitialized_move_n(begin(), size_, tmp_memory.GetAddress());
-        } else {
-            std::uninitialized_copy_n(begin(), size_, tmp_memory.GetAddress());
-        }
-
-        std::destroy_n(begin(), size_);
-        data_.Swap(tmp_memory);
-    } else {
-        new (begin() + size_) Type(std::move(value));
-    }
-
-    ++size_;
-}
-
-template <class Type>
-void Vector<Type>::PopBack() noexcept {
-    std::destroy_n(data_.GetAddress() + size_ - 1, 1);
-    --size_;
-}
-
-template <class Type>
-const Type& Vector<Type>::operator[](size_t index) const noexcept {
-    return const_cast<Vector&>(*this)[index];
-}
-
-template <class Type>
-Type& Vector<Type>::operator[](size_t index) noexcept {
-    assert(index < size_);
-    return data_[index];
-}
