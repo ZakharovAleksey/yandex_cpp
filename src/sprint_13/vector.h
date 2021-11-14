@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <cmath>
 #include <cstdlib>
 #include <memory>
 #include <new>
@@ -86,17 +87,53 @@ public:  // Types
     using iterator = Type*;
     using const_iterator = const Type*;
 
-public:  // Constructor
+public:  // Constructors & Assigment operators
     Vector() = default;
     explicit Vector(size_t size) : data_(size), size_(size) {
         std::uninitialized_value_construct_n(begin(), size_);
     }
+    Vector(const Vector& other) : data_(other.size_), size_(other.size_) {
+        std::uninitialized_copy_n(other.begin(), size_, begin());
+    }
+    // clang-format off
+    Vector(Vector&& other) noexcept:
+          data_(std::exchange(other.data_, RawMemory<Type>{})),
+          size_(std::exchange(other.size_, 0)) {}
+    // clang-format on
 
-    Vector(const Vector& other);
-    Vector& operator=(const Vector& other);
+    Vector& operator=(const Vector& other) {
+        if (this != &other) {
+            if (other.size_ > data_.Capacity()) {
+                auto copy{other};
+                Swap(copy);
+            } else {
+                size_t extra_count = (other.size_ < size_) ? size_ - other.size_ : other.size_ - size_;
 
-    Vector(Vector&& other) noexcept;
-    Vector& operator=(Vector&& other) noexcept;
+                // In case other vector is smaller, we copy elements from him and destroy extra elements from original
+                if (other.size_ < size_) {
+                    for (size_t id = 0; id < other.size_; ++id)
+                        data_[id] = other.data_[id];
+
+                    std::destroy_n(begin() + other.size_, extra_count);
+                } else {
+                    // In case other vector is bigger, we copy elements from him and create extra elements from him
+                    for (size_t id = 0; id < size_; ++id)
+                        data_[id] = other.data_[id];
+
+                    std::uninitialized_copy_n(begin() + size_, extra_count, begin() + size_);
+                }
+                size_ = other.size_;
+            }
+        }
+        return *this;
+    }
+    Vector& operator=(Vector&& other) noexcept {
+        if (this != &other) {
+            data_ = std::exchange(other.data_, RawMemory<Type>{});
+            size_ = std::exchange(other.size_, 0);
+        }
+        return *this;
+    }
 
 public:  // Destructor
     ~Vector();
@@ -208,56 +245,6 @@ private:  // Fields
 };
 
 /* VECTOR IMPLEMENTATION */
-
-template <class Type>
-Vector<Type>::Vector(const Vector& other) : data_(other.size_), size_(other.size_) {
-    std::uninitialized_copy_n(other.data_.GetAddress(), size_, data_.GetAddress());
-}
-
-template <class Type>
-Vector<Type>::Vector(Vector&& other) noexcept {
-    data_ = std::move(other.data_);
-    size_ = std::exchange(other.size_, 0);
-}
-
-template <class Type>
-Vector<Type>& Vector<Type>::operator=(const Vector& other) {
-    if (this != &other) {
-        if (other.size_ > data_.Capacity()) {
-            auto tmp{other};
-            Swap(tmp);
-        } else {
-            if (other.size_ < size_) {
-                size_t remove_count{size_ - other.size_};
-
-                for (size_t id = 0; id < other.size_; ++id)
-                    *(data_.GetAddress() + id) = *(other.data_.GetAddress() + id);
-
-                std::destroy_n(data_.GetAddress() + other.size_, remove_count);
-            } else {
-                size_t create_count{other.size_ - size_};
-
-                for (size_t id = 0; id < size_; ++id)
-                    *(data_.GetAddress() + id) = *(other.data_.GetAddress() + id);
-
-                std::uninitialized_copy_n(other.data_.GetAddress() + size_, create_count, data_.GetAddress() + size_);
-            }
-
-            size_ = other.size_;
-        }
-    }
-
-    return *this;
-}
-
-template <class Type>
-Vector<Type>& Vector<Type>::operator=(Vector&& other) noexcept {
-    if (this != &other) {
-        data_ = std::exchange(other.data_, RawMemory<Type>{});
-        size_ = std::exchange(other.size_, 0);
-    }
-    return *this;
-}
 
 template <class Type>
 Vector<Type>::~Vector() {
