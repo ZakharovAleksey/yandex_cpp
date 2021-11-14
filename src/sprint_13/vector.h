@@ -74,63 +74,7 @@ public:  // Methods
     const_iterator cend() const noexcept;
 
     template <typename... Args>
-    iterator Emplace(const_iterator position, Args&&... args) {
-        size_t index = std::distance(cbegin(), position);
-        auto pos = const_cast<iterator>(position);
-
-        if (size_ == data_.Capacity()) {
-            size_t before = std::distance(cbegin(), position);
-            size_t after = std::distance(position, cend());
-
-            // Step 1. Allocate new memory
-            RawMemory<Type> tmp_memory((size_ == 0) ? 1 : 2 * size_);
-            new (tmp_memory.GetAddress() + index) Type(std::forward<Args>(args)...);
-
-            // Step 3. Copy the rest elements to the new memory
-            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-                try {
-                    std::uninitialized_move_n(begin(), before, tmp_memory.GetAddress());
-                } catch (...) {
-                    std::destroy_at(tmp_memory.GetAddress() + index);
-                    throw;
-                }
-                try {
-                    std::uninitialized_move_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
-                } catch (...) {
-                    std::destroy_n(tmp_memory.GetAddress(), index + 1);
-                    throw;
-                }
-            } else {
-                try {
-                    std::uninitialized_copy_n(begin(), before, tmp_memory.GetAddress());
-                } catch (...) {
-                    std::destroy_at(tmp_memory.GetAddress() + index);
-                    throw;
-                }
-                try {
-                    std::uninitialized_copy_n(begin() + before, after, tmp_memory.GetAddress() + before + 1);
-                } catch (...) {
-                    std::destroy_n(tmp_memory.GetAddress(), index + 1);
-                    throw;
-                }
-            }
-            std::destroy_n(data_.GetAddress(), size_);
-            data_.Swap(tmp_memory);
-        } else {
-            if (size_ != index) {
-                auto tmp = Type(std::forward<Args>(args)...);
-                new(end()) Type(std::forward<Type>(*(end() - 1)));
-                std::move_backward(pos, end() - 1, end());
-                data_[index] = std::move(tmp);
-            } else {
-                new (pos) Type(std::forward<Args>(args)...);
-            }
-        }
-
-        ++size_;
-
-        return begin() + index;
-    }
+    iterator Emplace(const_iterator position, Args&&... args);
 
     iterator Erase(const_iterator position) noexcept(std::is_nothrow_move_assignable_v<Type>) {
         size_t index = std::distance(cbegin(), position);
@@ -340,6 +284,49 @@ typename Vector<Type>::const_iterator Vector<Type>::cbegin() const noexcept {
 template <class Type>
 typename Vector<Type>::const_iterator Vector<Type>::cend() const noexcept {
     return data_.GetAddress() + size_;
+}
+
+template <class Type>
+template <typename... Args>
+typename Vector<Type>::iterator Vector<Type>::Emplace(const_iterator position, Args&&... args) {
+    size_t index = std::distance(cbegin(), position);
+
+    if (size_ == data_.Capacity()) {
+        size_t count_before = std::distance(cbegin(), position);
+        size_t count_after = std::distance(position, cend());
+
+        RawMemory<Type> tmp_memory((size_ == 0) ? 1 : 2 * size_);
+        new (tmp_memory.GetAddress() + index) Type(std::forward<Args>(args)...);
+
+        try {
+            // clang-format off
+            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+                std::uninitialized_move_n(begin(), count_before, tmp_memory.GetAddress());
+                std::uninitialized_move_n(begin() + count_before, count_after, tmp_memory.GetAddress() + count_before + 1);
+            } else {
+                std::uninitialized_copy_n(begin(), count_before, tmp_memory.GetAddress());
+                std::uninitialized_copy_n(begin() + count_before, count_after, tmp_memory.GetAddress() + count_before + 1);
+            }
+            // clang-format on
+        } catch (...) {
+            tmp_memory.~RawMemory();
+        }
+
+        std::destroy_n(begin(), size_);
+        data_.Swap(tmp_memory);
+    } else {
+        // In case we insert not in empty vector or not in the end of the vector, we need to shift elements
+        if (size_ != index) {
+            new (end()) Type(std::forward<Type>(*(end() - 1)));
+            std::move_backward(begin() + index, end() - 1, end());
+            data_[index] = Type(std::forward<Args>(args)...);
+        } else {
+            new (begin() + index) Type(std::forward<Args>(args)...);
+        }
+    }
+
+    ++size_;
+    return begin() + index;
 }
 
 template <class Type>

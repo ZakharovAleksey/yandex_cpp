@@ -1,7 +1,6 @@
 #include <stdexcept>
 #include <utility>
 
-// Исключение этого типа должно генерироватся при обращении к пустому optional
 class BadOptionalAccess : public std::exception {
 public:
     using exception::exception;
@@ -39,10 +38,10 @@ public:  // Methods
 
     Type& operator*() &;
     const Type& operator*() const&;
+    Type&& operator*() &&;
+
     Type* operator->();
     const Type* operator->() const;
-
-    Type&& operator*() &&;
 
     Type&& Value() &&;
     Type& Value() &;
