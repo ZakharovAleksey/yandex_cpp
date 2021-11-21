@@ -19,30 +19,31 @@ endif ()
 
 add_subdirectory(tests)
 
-add_executable(yp_cpp1
-        main.cpp
-        src/sprint_12/canvas.h
-        src/sprint_12/svg.h
-        src/sprint_12/svg.cpp
-        src/sprint_12/json.cpp
-        src/sprint_12/json.h
-        src/sprint_12/domain.cpp
-        src/sprint_12/domain.h
-        src/sprint_12/geo.cpp
-        src/sprint_12/geo.h
-        src/sprint_12/json_reader.cpp
-        src/sprint_12/json_reader.h
-        src/sprint_12/map_renderer.cpp
-        src/sprint_12/map_renderer.h
-        src/sprint_12/request_handler.cpp
-        src/sprint_12/request_handler.h
-        src/sprint_12/transport_catalogue.cpp
-        src/sprint_12/transport_catalogue.h
-        src/sprint_12/json_builder.cpp
-        src/sprint_12/json_builder.h
-        src/sprint_12/graph.h
-        src/sprint_12/ranges.h
-        src/sprint_12/router.h
-        src/sprint_12/transport_router.cpp
-        src/sprint_12/transport_router.h
-        src/sprint_13/optional.h src/sprint_13/vector.h)
+set(SOURCE_DIR src)
+
+# SPRINT 12
+set(SPRINT_12_DIR ${SOURCE_DIR}/sprint_12)
+set(SPRINT_12_FILES
+        ${SPRINT_12_DIR}/svg.cpp ${SPRINT_12_DIR}/svg.h
+        ${SPRINT_12_DIR}/json.cpp ${SPRINT_12_DIR}/json.h
+        ${SPRINT_12_DIR}/domain.cpp ${SPRINT_12_DIR}/domain.h
+        ${SPRINT_12_DIR}/geo.cpp ${SPRINT_12_DIR}/geo.h
+        ${SPRINT_12_DIR}/json_reader.cpp ${SPRINT_12_DIR}/json_reader.h
+        ${SPRINT_12_DIR}/map_renderer.cpp ${SPRINT_12_DIR}/map_renderer.h
+        ${SPRINT_12_DIR}/request_handler.cpp ${SPRINT_12_DIR}/request_handler.h
+        ${SPRINT_12_DIR}/transport_catalogue.cpp ${SPRINT_12_DIR}/transport_catalogue.h
+        ${SPRINT_12_DIR}/json_builder.cpp ${SPRINT_12_DIR}/json_builder.h
+        ${SPRINT_12_DIR}/transport_router.cpp ${SPRINT_12_DIR}/transport_router.h
+        ${SPRINT_12_DIR}/graph.h
+        ${SPRINT_12_DIR}/ranges.h
+        ${SPRINT_12_DIR}/router.h
+        ${SPRINT_12_DIR}/canvas.h
+)
+
+# SPRINT 13
+set(SPRINT_13_DIR ${SOURCE_DIR}/sprint_13)
+set(SPRINT_13_FILES ${SPRINT_13_DIR}/optional.h ${SPRINT_13_DIR}/vector.h)
+
+add_executable(sprint_12 main.cpp ${SPRINT_12_FILES})
+add_executable(sprint_13 main.cpp ${SPRINT_13_FILES})
+#add_executable(yp_cpp1 main.cpp ${SPRINT_13_FILES})
