@@ -67,7 +67,7 @@ bool SerializeTransportCatalogue(const Path& storage_path, const catalogue::Tran
     SerializationManager manager(catalogue);
     const auto& object = manager.GetTransportCatalogue();
 
-    std::ofstream out(storage_path.c_str(), std::ofstream::binary);
+    std::ofstream out(storage_path, std::ios::binary);
     object.SerializeToOstream(&out);
 
     return true;
@@ -144,7 +144,7 @@ catalogue::Bus DeserializationManager::DeserializeBus(const proto_catalogue::Bus
 
 catalogue::TransportCatalogue DeserializeTransportCatalogue(const Path& load_path) {
     proto_catalogue::TransportCatalogue object;
-    std::ifstream in(load_path.c_str(), std::ifstream::binary);
+    std::ifstream in(load_path, std::ios::binary);
 
     if (!object.ParseFromIstream(&in)) {
         return {};

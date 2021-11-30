@@ -109,4 +109,14 @@ void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
     }
 }
 
+void ProcessMakeBaseQuery(std::istream& input) {
+    const auto request_body = json::Load(input).GetRoot();
+    MakeBase(request_body);
+}
+
+void ProcessProcessRequestQuery(std::istream& input, std::ostream& output) {
+    const auto request_body = json::Load(input).GetRoot();
+    ProcessRequests(request_body, output);
+}
+
 }  // namespace request

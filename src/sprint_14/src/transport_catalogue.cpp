@@ -1,6 +1,5 @@
 #include "transport_catalogue.h"
 
-#include <execution>
 #include <numeric>
 
 namespace catalogue {

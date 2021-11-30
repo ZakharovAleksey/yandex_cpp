@@ -8,8 +8,8 @@ message Coordinates {
 }
 
 message Stop {
-  bytes name = 2;
-  Coordinates point = 3;
+  bytes name = 1;
+  Coordinates point = 2;
 }
 
 message Distance {
