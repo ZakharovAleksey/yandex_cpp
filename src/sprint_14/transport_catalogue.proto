@@ -13,15 +13,15 @@ message Stop {
 }
 
 message Distance {
-  bytes from = 1;
-  bytes to = 2;
+  uint32 from = 1;
+  uint32 to = 2;
   uint64 distance = 3;
 }
 
 message Bus {
   bytes number = 1;
   bool is_circle = 2;
-  repeated bytes stop_ids = 3;
+  repeated uint32 stop_ids = 3;
 }
 
 message TransportCatalogue {
