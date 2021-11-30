@@ -146,14 +146,9 @@ catalogue::TransportCatalogue DeserializeTransportCatalogue(const Path& load_pat
     proto_catalogue::TransportCatalogue object;
     std::ifstream in(load_path, std::ios::binary);
 
-    if (!object.ParseFromIstream(&in)) {
-        return {};
-    }
+    object.ParseFromIstream(&in);
 
-    DeserializationManager manager(object);
-    auto transport_catalogue = manager.GetTransportCatalogue();
-
-    return transport_catalogue;
+    return DeserializationManager(object).GetTransportCatalogue();
 }
 
 }  // namespace serialization
