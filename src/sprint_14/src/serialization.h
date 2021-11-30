@@ -1,10 +1,14 @@
-//
-// Created by azakharov on 11/30/2021.
-//
+#pragma once
 
-#ifndef YP_CPP1_SERIALIZATION_H
-#define YP_CPP1_SERIALIZATION_H
+#include <filesystem>
 
-class serialization {};
+#include "transport_catalogue.h"
 
-#endif  // YP_CPP1_SERIALIZATION_H
+namespace serialization {
+using Path = std::filesystem::path;
+
+bool SerializeTransportCatalogue(const Path& storage_path, const catalogue::TransportCatalogue& catalogue);
+
+catalogue::TransportCatalogue DeserializeTransportCatalogue(const Path& load_path);
+
+}  // namespace serialization

@@ -294,4 +294,8 @@ routing::Settings ParseRoutingSettings(const json::Dict& requests) {
     return settings;
 }
 
+std::string ParseSerializationSettings(const json::Dict& settings) {
+    return settings.at("file").AsString();
+}
+
 }  // namespace request

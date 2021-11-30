@@ -5,14 +5,21 @@
  * Acts as a Facade that simplifies interaction with the transport directory
  */
 
+#include <filesystem>
+
 #include "map_renderer.h"
 #include "transport_router.h"
 
 namespace request {
 
+using Path = std::filesystem::path;
+
+enum class RequestType { MakeBase, ProcessRequests };
+
 struct ResponseSettings {
     routing::Settings routing;
     render::Visualization visualization;
+    Path path_to_database;
 };
 
 /// @brief Class acts as a facade for the methods, required during the response creation

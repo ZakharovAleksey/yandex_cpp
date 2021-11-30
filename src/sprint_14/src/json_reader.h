@@ -17,6 +17,8 @@ render::Visualization ParseVisualizationSettings(const json::Dict& settings);
 
 routing::Settings ParseRoutingSettings(const json::Dict& requests);
 
+std::string ParseSerializationSettings(const json::Dict& settings);
+
 json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& requests);
 
 }  // namespace request
