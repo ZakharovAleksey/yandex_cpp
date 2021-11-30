@@ -261,18 +261,20 @@ json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& re
             } else {
                 MakeErrorResponse(request_id, response);
             }
-        } else if (type == "Map"s) {
-            MakeMapImageResponse(request_id, handler.RenderMap(), response);
-        } else if (type == "Route"s) {
-            std::string stop_name_from = request_dict_view.at("from"s).AsString();
-            std::string stop_name_to = request_dict_view.at("to"s).AsString();
-
-            if (auto route_info = handler.BuildRoute(stop_name_from, stop_name_to)) {
-                MakeRouteResponse(request_id, *route_info, response);
-            } else {
-                MakeErrorResponse(request_id, response);
-            }
         }
+        // TODO: uncomment
+//        else if (type == "Map"s) {
+//            MakeMapImageResponse(request_id, handler.RenderMap(), response);
+//        } else if (type == "Route"s) {
+//            std::string stop_name_from = request_dict_view.at("from"s).AsString();
+//            std::string stop_name_to = request_dict_view.at("to"s).AsString();
+//
+//            if (auto route_info = handler.BuildRoute(stop_name_from, stop_name_to)) {
+//                MakeRouteResponse(request_id, *route_info, response);
+//            } else {
+//                MakeErrorResponse(request_id, response);
+//            }
+//        }
     }
 
     response.EndArray();

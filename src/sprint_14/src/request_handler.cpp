@@ -37,13 +37,14 @@ void MakeBase(const json::Node& request_body) {
     const auto& base_requests = request_body.AsDict().at(RequestHeader::kBase).AsArray();
     auto transport_catalogue = ProcessBaseRequest(base_requests);
 
+    // TODO: uncomment
     // Step 2. Parse rendering settings
-    const auto& render_object = request_body.AsDict().at(RequestSettings::kRender).AsDict();
-    settings.visualization = ParseVisualizationSettings(render_object);
+//    const auto& render_object = request_body.AsDict().at(RequestSettings::kRender).AsDict();
+//    settings.visualization = ParseVisualizationSettings(render_object);
 
     // Step 3. Parse routing settings
-    const auto& routing_object = request_body.AsDict().at(RequestSettings::kRouting).AsDict();
-    settings.routing = ParseRoutingSettings(routing_object);
+//    const auto& routing_object = request_body.AsDict().at(RequestSettings::kRouting).AsDict();
+//    settings.routing = ParseRoutingSettings(routing_object);
 
     // Step 4. Extract path to the db serialization
     const auto& serialization_object = request_body.AsDict().at(RequestSettings::kSerialization).AsDict();
@@ -83,17 +84,19 @@ std::unique_ptr<std::set<std::string_view>> RequestHandler::GetBusesThroughTheSt
     return db_.GetBusesPassingThroughTheStop(stop_name);
 }
 
-std::string RequestHandler::RenderMap() const {
-    return render::RenderTransportMap(db_, settings_.visualization);
-}
+// TODO: uncomment
+//std::string RequestHandler::RenderMap() const {
+//    return render::RenderTransportMap(db_, settings_.visualization);
+//}
 
-routing::ResponseDataOpt RequestHandler::BuildRoute(std::string_view from, std::string_view to) const {
-    // Create router if it is still empty - crete only once
-    if (!router_.has_value())
-        router_.emplace(routing::TransportRouter(db_, settings_.routing));
-
-    return router_->BuildRoute(from, to);
-}
+// TODO: uncomment
+//routing::ResponseDataOpt RequestHandler::BuildRoute(std::string_view from, std::string_view to) const {
+//    // Create router if it is still empty - crete only once
+//    if (!router_.has_value())
+//        router_.emplace(routing::TransportRouter(db_, settings_.routing));
+//
+//    return router_->BuildRoute(from, to);
+//}
 
 void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
     const auto input_json = json::Load(input).GetRoot();

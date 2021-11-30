@@ -17,8 +17,9 @@ using Path = std::filesystem::path;
 enum class RequestType { MakeBase, ProcessRequests };
 
 struct ResponseSettings {
-    routing::Settings routing;
-    render::Visualization visualization;
+    // TODO: uncomment
+    // routing::Settings routing;
+    // render::Visualization visualization;
     Path path_to_database;
 };
 
@@ -30,14 +31,16 @@ public:  // Constructor
 public:  // Methods
     std::optional<catalogue::BusStatistics> GetBusStat(const std::string_view& bus_name) const;
     std::unique_ptr<std::set<std::string_view>> GetBusesThroughTheStop(const std::string_view& stop_name) const;
-    std::string RenderMap() const;
-    routing::ResponseDataOpt BuildRoute(std::string_view from, std::string_view to) const;
+    // TODO: uncomment
+    // std::string RenderMap() const;
+    // routing::ResponseDataOpt BuildRoute(std::string_view from, std::string_view to) const;
 
 private:  // Fields
     const catalogue::TransportCatalogue& db_;
     ResponseSettings settings_;
+    // TODO: uncomment
     // Mutable, because it is "Lazy Evaluation" object, creates only in case there is at least one "Route" request
-    mutable routing::TransportRouterOpt router_{std::nullopt};
+    // mutable routing::TransportRouterOpt router_{std::nullopt};
 };
 
 /// @brief Main function to process the requests
