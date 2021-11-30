@@ -13,11 +13,11 @@ Compilation flags:
 if (MSVC)
     message(STATUS "USE VISUAL STUDIO COMPILER")
     # All flags: https://docs.microsoft.com/ru-ru/cpp/build/reference/compiler-options-listed-by-category?view=msvc-160
-    set(SYSTEM_LIBS -lstdc++)
     add_compile_options(/WX)
 else ()
     message(STATUS "USE MINGW COMPILER")
-    add_compile_options(-Wall -Wextra -ltbb -lpthread)
+    set(SYSTEM_LIBS -lstdc++)
+#    add_compile_options(-Wall -Wextra -ltbb -lpthread) #   +fs --enable-libstdcxx-filesystem-ts
 endif ()
 
 add_subdirectory(tests)
@@ -40,8 +40,7 @@ set(SPRINT_12_FILES
         ${SPRINT_12_DIR}/graph.h
         ${SPRINT_12_DIR}/ranges.h
         ${SPRINT_12_DIR}/router.h
-        ${SPRINT_12_DIR}/canvas.h
-)
+        ${SPRINT_12_DIR}/canvas.h)
 
 # SPRINT 13
 set(SPRINT_13_DIR ${SOURCE_DIR}/sprint_13)
