@@ -238,4 +238,12 @@ std::unique_ptr<std::set<std::string_view>> TransportCatalogue::GetBusesPassingT
     return nullptr;
 }
 
+const std::deque<Stop>& TransportCatalogue::GetStops() const {
+    return stops_storage_;
+}
+
+const TransportCatalogue::InterStopsStorage<int>& TransportCatalogue::GetDistancesBetweenStops() const {
+    return distances_between_stops_;
+}
+
 }  // namespace catalogue

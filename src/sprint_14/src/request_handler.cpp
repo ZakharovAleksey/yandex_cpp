@@ -31,7 +31,6 @@ RequestType DetectRequestType(const json::Node& request_body) {
 }
 
 void MakeBase(const json::Node& request_body) {
-    TransportCatalogue catalogue;
     ResponseSettings settings;
 
     // Step 1. Form catalogue, basing on the input
@@ -49,8 +48,8 @@ void MakeBase(const json::Node& request_body) {
     // Step 4. Extract path to the db serialization
     const auto& serialization_object = request_body.AsDict().at(RequestSettings::kSerialization).AsDict();
     settings.path_to_database = Path(ParseSerializationSettings(serialization_object));
-
-    serialization::SerializeTransportCatalogue(settings.path_to_database, catalogue);
+    
+    serialization::SerializeTransportCatalogue(settings.path_to_database, transport_catalogue);
 }
 
 void ProcessRequests(const json::Node& request_body, std::ostream& output) {

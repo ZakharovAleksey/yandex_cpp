@@ -22,6 +22,21 @@ struct Info {
 };
 
 class TransportCatalogue {
+public:  // Types
+    using StopPointersPair = std::pair<std::shared_ptr<Stop>, std::shared_ptr<Stop>>;
+
+    struct StopPointersPairHash {
+        size_t operator()(const StopPointersPair& pair) const {
+            return pair.first->Hash() + kPrimeValue * pair.second->Hash();
+        }
+
+    private:
+        static const int kPrimeValue{31};
+    };
+
+    template <class Type>
+    using InterStopsStorage = std::unordered_map<StopPointersPair, Type, StopPointersPairHash>;
+
 public:  // Constructors
     TransportCatalogue() = default;
 
@@ -49,28 +64,18 @@ public:  // Methods
     /* METHODS FOR TRANSPORT ROUTING */
     [[nodiscard]] std::set<std::string_view> GetUniqueStops() const;
     [[nodiscard]] const std::deque<Bus>& GetBuses() const;
-    [[nodiscard]] StringViewPairStorage<Info> GetAllDistancesOnTheRoute(std::string_view bus_number, double bus_velocity) const;
+    [[nodiscard]] StringViewPairStorage<Info> GetAllDistancesOnTheRoute(std::string_view bus_number,
+                                                                        double bus_velocity) const;
+
+    /* METHODS FOR SERIALIZATION */
+    [[nodiscard]] const std::deque<Stop>& GetStops() const;
+    [[nodiscard]] const InterStopsStorage<int>& GetDistancesBetweenStops() const;
 
 private:  // Methods
     [[nodiscard]] int CalculateRouteLength(const std::shared_ptr<Bus>& bus_info) const;
     [[nodiscard]] double CalculateGeographicLength(const std::shared_ptr<Bus>& bus_info) const;
 
     void UpdateMinMaxStopCoordinates(const geo::Coordinates& coordinates);
-
-private:  // Types
-    using StopPointersPair = std::pair<std::shared_ptr<Stop>, std::shared_ptr<Stop>>;
-
-    struct StopPointersPairHash {
-        size_t operator()(const StopPointersPair& pair) const {
-            return pair.first->Hash() + kPrimeValue * pair.second->Hash();
-        }
-
-    private:
-        static const int kPrimeValue{31};
-    };
-
-    template <class Type>
-    using InterStopsStorage = std::unordered_map<StopPointersPair, Type, StopPointersPairHash>;
 
 private:  // Fields
     std::deque<Stop> stops_storage_;
