@@ -170,20 +170,41 @@ public:  // Methods
             size_t count_after = std::distance(position, cend());
 
             RawMemory<Type> tmp_memory((size_ == 0) ? 1 : 2 * size_);
+
             new (tmp_memory.GetAddress() + index) Type(std::forward<Args>(args)...);
 
             try {
-                // clang-format off
-            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-                std::uninitialized_move_n(begin(), count_before, tmp_memory.GetAddress());
-                std::uninitialized_move_n(begin() + count_before, count_after, tmp_memory.GetAddress() + count_before + 1);
-            } else {
-                std::uninitialized_copy_n(begin(), count_before, tmp_memory.GetAddress());
-                std::uninitialized_copy_n(begin() + count_before, count_after, tmp_memory.GetAddress() + count_before + 1);
-            }
-                // clang-format on
+                if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+                    try {
+                        std::uninitialized_move_n(begin(), count_before, tmp_memory.GetAddress());
+                        throw;
+                    } catch (...) {
+                        std::destroy_n(begin(), count_before);
+                    }
+                    try {
+                        std::uninitialized_move_n(begin() + count_before, count_after,
+                                                  tmp_memory.GetAddress() + count_before + 1);
+                        throw;
+                    } catch (...) {
+                        std::destroy_n(begin() + count_before, count_after);
+                    }
+                } else {
+                    try {
+                        std::uninitialized_copy_n(begin(), count_before, tmp_memory.GetAddress());
+                        throw;
+                    } catch (...) {
+                        std::destroy_n(begin(), count_before);
+                    }
+                    try {
+                        std::uninitialized_copy_n(begin() + count_before, count_after,
+                                                  tmp_memory.GetAddress() + count_before + 1);
+                        throw;
+                    } catch (...) {
+                        std::destroy_n(begin() + count_before, count_after);
+                    }
+                }
             } catch (...) {
-                tmp_memory.~RawMemory();
+                // pass - could not initialize memory
             }
 
             std::destroy_n(begin(), size_);
@@ -225,11 +246,7 @@ public:  // Methods
             RawMemory<Type> tmp_memory((size_ == 0) ? 1 : 2 * size_);
 
             new (tmp_memory.GetAddress() + size_) Type(std::forward<Args>(args)...);
-            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-                std::uninitialized_move_n(begin(), size_, tmp_memory.GetAddress());
-            } else {
-                std::uninitialized_copy_n(begin(), size_, tmp_memory.GetAddress());
-            }
+            DeInitializeMemory(tmp_memory);
 
             std::destroy_n(begin(), size_);
             data_.Swap(tmp_memory);
@@ -250,11 +267,8 @@ public:  // Methods
     void Reserve(size_t capacity) {
         if (capacity > data_.Capacity()) {
             RawMemory<Type> tmp_memory(capacity);
-            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-                std::uninitialized_move_n(begin(), size_, tmp_memory.GetAddress());
-            } else {
-                std::uninitialized_copy_n(begin(), size_, tmp_memory.GetAddress());
-            }
+            DeInitializeMemory(tmp_memory);
+
             std::destroy_n(begin(), size_);
             data_.Swap(tmp_memory);
         }
@@ -273,46 +287,13 @@ public:  // Methods
         size_ = new_size;
     }
     void PushBack(const Type& value) {
-        if (size_ == data_.Capacity()) {
-            // Step 1. Allocate new memory
-            RawMemory<Type> tmp_memory((size_ == 0) ? 1 : 2 * size_);
-
-            // Step 2. !!! Move existed value to the end of the memory (value could be vector's element) !!!
-            new (tmp_memory.GetAddress() + size_) Type(value);
-
-            // Step 3. Copy the rest elements to the new memory
-            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-                std::uninitialized_move_n(begin(), size_, tmp_memory.GetAddress());
-            } else {
-                std::uninitialized_copy_n(begin(), size_, tmp_memory.GetAddress());
-            }
-            std::destroy_n(begin(), size_);
-
-            // Step 4. Swap memories
-            data_.Swap(tmp_memory);
-        } else {
-            new (begin() + size_) Type(value);
-        }
-        ++size_;
+        EmplaceBack(value);
     }
+
     void PushBack(Type&& value) {
-        if (size_ == data_.Capacity()) {
-            RawMemory<Type> tmp_memory((size_ == 0) ? 1 : 2 * size_);
-
-            new (tmp_memory.GetAddress() + size_) Type(std::move(value));
-            if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
-                std::uninitialized_move_n(begin(), size_, tmp_memory.GetAddress());
-            } else {
-                std::uninitialized_copy_n(begin(), size_, tmp_memory.GetAddress());
-            }
-
-            std::destroy_n(begin(), size_);
-            data_.Swap(tmp_memory);
-        } else {
-            new (begin() + size_) Type(std::move(value));
-        }
-        ++size_;
+        EmplaceBack(std::forward<Type>(value));
     }
+
     void PopBack() noexcept {
         std::destroy_n(begin() + size_ - 1, 1);
         --size_;
@@ -325,6 +306,15 @@ public:  // Operators
     Type& operator[](size_t index) noexcept {
         assert(index < size_);
         return data_[index];
+    }
+
+private:  // Methods
+    void DeInitializeMemory(RawMemory<Type> tmp_memory) {
+        if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
+            std::uninitialized_move_n(begin(), size_, tmp_memory.GetAddress());
+        } else {
+            std::uninitialized_copy_n(begin(), size_, tmp_memory.GetAddress());
+        }
     }
 
 private:  // Fields
