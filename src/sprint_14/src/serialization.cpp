@@ -1,5 +1,6 @@
 #include "serialization.h"
 
+#include <map_renderer.pb.h>
 #include <transport_catalogue.pb.h>
 
 #include <fstream>
@@ -35,7 +36,7 @@ IdToStopNameContainer SetNameToEachStop(const std::deque<catalogue::Stop>& stops
 
 }  // namespace
 
-void SerializeTransportCatalogue(const catalogue::Path& path, const catalogue::TransportCatalogue& catalogue) {
+void SerializeTransportCatalogue(std::ofstream& output, const catalogue::TransportCatalogue& catalogue) {
     proto_tc::TransportCatalogue object;
 
     const auto& stops = catalogue.GetStops();
@@ -77,15 +78,13 @@ void SerializeTransportCatalogue(const catalogue::Path& path, const catalogue::T
         object.mutable_buses()->Add(std::move(bus_object));
     }
 
-    std::ofstream output(path, std::ios::binary);
     object.SerializeToOstream(&output);
 }
 
-catalogue::TransportCatalogue DeserializeTransportCatalogue(const catalogue::Path& path) {
+catalogue::TransportCatalogue DeserializeTransportCatalogue(std::ifstream& input) {
     proto_tc::TransportCatalogue object;
     catalogue::TransportCatalogue catalogue;
 
-    std::ifstream input(path, std::ios::binary);
     object.ParseFromIstream(&input);
 
     auto to_int = [](uint32_t value) { return static_cast<int>(value); };
@@ -129,9 +128,67 @@ catalogue::TransportCatalogue DeserializeTransportCatalogue(const catalogue::Pat
     return catalogue;
 }
 
-void SerializeVisualizationSettings(const catalogue::Path& path, const render::Visualization& settings) {}
+void SerializeVisualizationSettings(std::ofstream& output, const render::Visualization& settings) {
+    proto_render::MapRenderer object;
 
-render::Visualization DeserializeVisualizationSettings(const catalogue::Path& path) {
+    auto set_color = [](const svg::Color& color) {
+        // Color = std::variant<std::monostate, std::string, Rgb, Rgba>;
+        proto_render::Color object;
+
+        if (std::holds_alternative<std::monostate>(color)) {
+            object.set_is_none(true);
+        } else if (std::holds_alternative<std::string>(color)) {
+            object.set_name(std::get<std::string>(color));
+        } else {
+            bool is_rgba = std::holds_alternative<svg::Rgba>(color);
+            object.mutable_rgba()->set_is_rgba(is_rgba);
+
+            if (is_rgba) {
+                svg::Rgba rgba = std::get<svg::Rgba>(color);
+                object.mutable_rgba()->set_red(rgba.red);
+                object.mutable_rgba()->set_green(rgba.green);
+                object.mutable_rgba()->set_blue(rgba.blue);
+                object.mutable_rgba()->set_opacity(rgba.opacity);
+            } else {
+                svg::Rgb rgb = std::get<svg::Rgb>(color);
+                object.mutable_rgba()->set_red(rgb.red);
+                object.mutable_rgba()->set_green(rgb.green);
+                object.mutable_rgba()->set_blue(rgb.blue);
+            }
+        }
+
+        return object;
+    };
+
+    const auto& screen = settings.GetScreen();
+    object.mutable_screen()->set_width(screen.width_);
+    object.mutable_screen()->set_height(screen.height_);
+    object.mutable_screen()->set_padding(screen.padding_);
+
+    object.set_stop_radius(settings.GetStopRadius());
+    object.set_line_width(settings.GetLineWidth());
+
+    const auto& bus = settings.GetLabels(render::LabelType::Bus);
+    object.mutable_bus()->set_font_size(bus.font_size_);
+    object.mutable_bus()->mutable_offset()->set_x(bus.offset_.x);
+    object.mutable_bus()->mutable_offset()->set_y(bus.offset_.y);
+
+    const auto& stop = settings.GetLabels(render::LabelType::Stop);
+    object.mutable_stop()->set_font_size(bus.font_size_);
+    object.mutable_stop()->mutable_offset()->set_x(bus.offset_.x);
+    object.mutable_stop()->mutable_offset()->set_y(bus.offset_.y);
+
+    const auto& background = settings.GetUnderLayer();
+    object.mutable_background()->set_width(background.width_);
+    *object.mutable_background()->mutable_color() = set_color(background.color_);
+
+    for (const auto& color : settings.GetColors())
+        object.mutable_color_palette()->Add(set_color(color));
+
+    object.SerializeToOstream(&output);
+}
+
+render::Visualization DeserializeVisualizationSettings(std::ifstream& input) {
     return {};
 }
 
