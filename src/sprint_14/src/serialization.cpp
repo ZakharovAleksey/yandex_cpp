@@ -193,7 +193,7 @@ render::Visualization DeserializeVisualizationSettings(const catalogue::Path& pa
     auto set_color = [](const proto_render::Color& object) -> svg::Color {
         if (object.is_none()) {
             return std::monostate();
-        } else if (object.has_name()) {
+        } else if (!object.name().empty()) {
             return object.name();
         } else {
             bool is_rgba = object.rgba().is_rgba();

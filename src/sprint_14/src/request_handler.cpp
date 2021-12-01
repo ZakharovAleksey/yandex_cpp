@@ -80,7 +80,7 @@ void ProcessRequestsQuery(std::istream& input, std::ostream& output) {
     // Step 2. Deserialization
     const auto transport_catalogue = serialization::DeserializeTransportCatalogue(settings.path_to_db);
     settings.visualization = serialization::DeserializeVisualizationSettings(settings.path_to_db);
-    
+
 
     // Step 3. Form a response
     const auto& stat_requests = request_body.AsDict().at("stat_requests"s).AsArray();
