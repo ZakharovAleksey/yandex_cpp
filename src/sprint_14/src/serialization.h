@@ -1,7 +1,5 @@
 #pragma once
 
-#include <transport_catalogue.pb.h>
-
 #include "transport_catalogue.h"
 
 namespace serialization {
