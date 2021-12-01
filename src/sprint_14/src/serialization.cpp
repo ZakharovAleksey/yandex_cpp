@@ -81,10 +81,11 @@ void SerializeTransportCatalogue(std::ofstream& output, const catalogue::Transpo
     object.SerializeToOstream(&output);
 }
 
-catalogue::TransportCatalogue DeserializeTransportCatalogue(std::ifstream& input) {
+catalogue::TransportCatalogue DeserializeTransportCatalogue(const catalogue::Path& path) {
     proto_tc::TransportCatalogue object;
     catalogue::TransportCatalogue catalogue;
 
+    std::ifstream input(path, std::ios::binary);
     object.ParseFromIstream(&input);
 
     auto to_int = [](uint32_t value) { return static_cast<int>(value); };
@@ -174,9 +175,9 @@ void SerializeVisualizationSettings(std::ofstream& output, const render::Visuali
     object.mutable_bus()->mutable_offset()->set_y(bus.offset_.y);
 
     const auto& stop = settings.GetLabels(render::LabelType::Stop);
-    object.mutable_stop()->set_font_size(bus.font_size_);
-    object.mutable_stop()->mutable_offset()->set_x(bus.offset_.x);
-    object.mutable_stop()->mutable_offset()->set_y(bus.offset_.y);
+    object.mutable_stop()->set_font_size(stop.font_size_);
+    object.mutable_stop()->mutable_offset()->set_x(stop.offset_.x);
+    object.mutable_stop()->mutable_offset()->set_y(stop.offset_.y);
 
     const auto& background = settings.GetUnderLayer();
     object.mutable_background()->set_width(background.width_);
@@ -188,8 +189,69 @@ void SerializeVisualizationSettings(std::ofstream& output, const render::Visuali
     object.SerializeToOstream(&output);
 }
 
-render::Visualization DeserializeVisualizationSettings(std::ifstream& input) {
-    return {};
+render::Visualization DeserializeVisualizationSettings(const catalogue::Path& path) {
+    auto set_color = [](const proto_render::Color& object) -> svg::Color {
+        if (object.is_none()) {
+            return std::monostate();
+        } else if (object.has_name()) {
+            return object.name();
+        } else {
+            bool is_rgba = object.rgba().is_rgba();
+            if (is_rgba) {
+                svg::Rgba color;
+                color.red = object.rgba().red();
+                color.green = object.rgba().green();
+                color.blue = object.rgba().blue();
+                color.opacity = object.rgba().opacity();
+                return color;
+            } else {
+                svg::Rgb color;
+                color.red = object.rgba().red();
+                color.green = object.rgba().green();
+                color.blue = object.rgba().blue();
+                return color;
+            }
+        }
+    };
+
+    proto_render::MapRenderer object;
+    std::ifstream input(path, std::ios::binary);
+    object.ParseFromIstream(&input);
+
+    render::Visualization settings;
+
+    render::Screen screen;
+    screen.width_ = object.screen().width();
+    screen.height_ = object.screen().height();
+    screen.padding_ = object.screen().padding();
+    settings.SetScreen(screen);
+
+    settings.SetStopRadius(object.stop_radius()).SetLineWidth(object.line_width());
+
+    render::Label bus;
+    bus.font_size_ = object.bus().font_size();
+    bus.offset_.x = object.bus().offset().x();
+    bus.offset_.y = object.bus().offset().y();
+    settings.SetLabels(render::LabelType::Bus, bus);
+
+    render::Label stop;
+    stop.font_size_ = object.stop().font_size();
+    stop.offset_.x = object.stop().offset().x();
+    stop.offset_.y = object.stop().offset().y();
+    settings.SetLabels(render::LabelType::Stop, stop);
+
+    render::UnderLayer background;
+    background.width_ = object.background().width();
+    background.color_ = set_color(object.background().color());
+    settings.SetUnderLayer(background);
+
+    std::vector<svg::Color> svg_colors;
+    svg_colors.reserve(object.color_palette_size());
+    for (const auto& color : object.color_palette())
+        svg_colors.emplace_back(set_color(color));
+    settings.SetColors(std::move(svg_colors));
+
+    return settings;
 }
 
 }  // namespace serialization

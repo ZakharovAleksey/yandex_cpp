@@ -268,7 +268,8 @@ json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& re
             } else {
                 MakeErrorResponse(request_id, response);
             }
-        } else if (type == "Map"s) {
+        }
+        else if (type == "Map"s) {
             MakeMapImageResponse(request_id, handler.RenderMap(), response);
         }
         // TODO: uncomment

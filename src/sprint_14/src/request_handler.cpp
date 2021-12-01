@@ -78,9 +78,9 @@ void ProcessRequestsQuery(std::istream& input, std::ostream& output) {
     settings.path_to_db = catalogue::Path(ParseSerializationSettings(serialization_object));
 
     // Step 2. Deserialization
-    std::ifstream db_input(settings.path_to_db, std::ios::binary);
-    const auto transport_catalogue = serialization::DeserializeTransportCatalogue(db_input);
-    settings.visualization = serialization::DeserializeVisualizationSettings(db_input);
+    const auto transport_catalogue = serialization::DeserializeTransportCatalogue(settings.path_to_db);
+    settings.visualization = serialization::DeserializeVisualizationSettings(settings.path_to_db);
+    
 
     // Step 3. Form a response
     const auto& stat_requests = request_body.AsDict().at("stat_requests"s).AsArray();
