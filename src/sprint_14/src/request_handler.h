@@ -5,16 +5,14 @@
  * Acts as a Facade that simplifies interaction with the transport directory
  */
 
-#include "transport_catalogue.h"
-// TODO: uncomment
 #include "map_renderer.h"
-// #include "transport_router.h"
+#include "transport_catalogue.h"
+#include "transport_router.h"
 
 namespace request {
 
 struct ResponseSettings {
-    // TODO: uncomment
-    // routing::Settings routing;
+    routing::Settings routing;
     render::Visualization visualization;
     catalogue::Path path_to_db;
 };
@@ -27,16 +25,14 @@ public:  // Constructor
 public:  // Methods
     std::optional<catalogue::BusStatistics> GetBusStat(const std::string_view& bus_name) const;
     std::unique_ptr<std::set<std::string_view>> GetBusesThroughTheStop(const std::string_view& stop_name) const;
-    // TODO: uncomment
     std::string RenderMap() const;
-    // routing::ResponseDataOpt BuildRoute(std::string_view from, std::string_view to) const;
+    routing::ResponseDataOpt BuildRoute(std::string_view from, std::string_view to) const;
 
 private:  // Fields
     const catalogue::TransportCatalogue& db_;
     ResponseSettings settings_;
     // Mutable, because it is "Lazy Evaluation" object, creates only in case there is at least one "Route" request
-    // TODO: uncomment
-    // mutable routing::TransportRouterOpt router_{std::nullopt};
+    mutable routing::TransportRouterOpt router_{std::nullopt};
 };
 
 void ProcessMakeBaseQuery(std::istream& input);

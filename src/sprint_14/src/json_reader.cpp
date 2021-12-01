@@ -9,8 +9,7 @@ namespace request {
 using namespace std::literals;
 using namespace catalogue;
 using namespace request;
-// TODO: uncomment
-// using namespace routing;
+ using namespace routing;
 
 namespace {
 
@@ -67,43 +66,41 @@ void MakeStopResponse(int request_id, const std::set<std::string_view>& buses, j
     json_builder.EndDict();
 }
 
-// TODO: uncomment
-// struct RouteItemVisitor {
-//    json::Builder& json;
-//
-//    void operator()(const WaitResponse& response) const {
-//        json.Key("type"s).Value(response.type);
-//        json.Key("stop_name"s).Value(response.stop_name);
-//        json.Key("time"s).Value(response.time);
-//    }
-//
-//    void operator()(const BusResponse& response) const {
-//        json.Key("type"s).Value(response.type);
-//        json.Key("bus").Value(response.bus);
-//        json.Key("span_count"s).Value(response.span_count);
-//        json.Key("time"s).Value(response.time);
-//    }
-//};
+ struct RouteItemVisitor {
+    json::Builder& json;
 
-// TODO: uncomment
-// void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, json::Builder& json_builder) {
-//    json_builder.StartDict();
-//
-//    json_builder.Key("request_id"s).Value(request_id);
-//    json_builder.Key("total_time"s).Value(route_info.total_time);
-//
-//    json_builder.Key("items"s).StartArray();
-//
-//    for (const auto& item : route_info.items) {
-//        json_builder.StartDict();
-//        std::visit(RouteItemVisitor{json_builder}, item);
-//        json_builder.EndDict();
-//    }
-//
-//    json_builder.EndArray();
-//
-//    json_builder.EndDict();
-//}
+    void operator()(const WaitResponse& response) const {
+        json.Key("type"s).Value(response.type);
+        json.Key("stop_name"s).Value(response.stop_name);
+        json.Key("time"s).Value(response.time);
+    }
+
+    void operator()(const BusResponse& response) const {
+        json.Key("type"s).Value(response.type);
+        json.Key("bus").Value(response.bus);
+        json.Key("span_count"s).Value(response.span_count);
+        json.Key("time"s).Value(response.time);
+    }
+};
+
+ void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, json::Builder& json_builder) {
+    json_builder.StartDict();
+
+    json_builder.Key("request_id"s).Value(request_id);
+    json_builder.Key("total_time"s).Value(route_info.total_time);
+
+    json_builder.Key("items"s).StartArray();
+
+    for (const auto& item : route_info.items) {
+        json_builder.StartDict();
+        std::visit(RouteItemVisitor{json_builder}, item);
+        json_builder.EndDict();
+    }
+
+    json_builder.EndArray();
+
+    json_builder.EndDict();
+}
 
 void MakeErrorResponse(int request_id, json::Builder& json_builder) {
     json_builder.StartDict();
@@ -272,37 +269,36 @@ json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& re
         else if (type == "Map"s) {
             MakeMapImageResponse(request_id, handler.RenderMap(), response);
         }
-        // TODO: uncomment
-        //        else if (type == "Route"s) {
-        //            std::string stop_name_from = request_dict_view.at("from"s).AsString();
-        //            std::string stop_name_to = request_dict_view.at("to"s).AsString();
-        //
-        //            if (auto route_info = handler.BuildRoute(stop_name_from, stop_name_to)) {
-        //                MakeRouteResponse(request_id, *route_info, response);
-        //            } else {
-        //                MakeErrorResponse(request_id, response);
-        //            }
-        //        }
+
+        else if (type == "Route"s) {
+            std::string stop_name_from = request_dict_view.at("from"s).AsString();
+            std::string stop_name_to = request_dict_view.at("to"s).AsString();
+
+            if (auto route_info = handler.BuildRoute(stop_name_from, stop_name_to)) {
+                MakeRouteResponse(request_id, *route_info, response);
+            } else {
+                MakeErrorResponse(request_id, response);
+            }
+        }
     }
 
     response.EndArray();
     return std::move(response.Build());
 }
 
-// TODO: uncomment
-// routing::Settings ParseRoutingSettings(const json::Dict& requests) {
-//    using namespace routing;
-//
-//    auto meter_per_min = [](double km_per_hour) { return 1'000. * km_per_hour / 60.; };
-//
-//    // clang-format off
-//    Settings settings{
-//        meter_per_min(requests.at("bus_velocity"s).AsDouble()),
-//        requests.at("bus_wait_time"s).AsInt()
-//    };
-//    // clang-format on
-//
-//    return settings;
-//}
+ routing::Settings ParseRoutingSettings(const json::Dict& requests) {
+    using namespace routing;
+
+    auto meter_per_min = [](double km_per_hour) { return 1'000. * km_per_hour / 60.; };
+
+    // clang-format off
+    Settings settings{
+        meter_per_min(requests.at("bus_velocity"s).AsDouble()),
+        requests.at("bus_wait_time"s).AsInt()
+    };
+    // clang-format on
+
+    return settings;
+}
 
 }  // namespace request

@@ -10,8 +10,7 @@ namespace request {
 
 using namespace std::literals;
 using namespace catalogue;
-// TODO: uncomment
-// using namespace routing;
+using namespace routing;
 
 RequestHandler::RequestHandler(const catalogue::TransportCatalogue& db, request::ResponseSettings settings)
     : db_(db), settings_(std::move(settings)) {}
@@ -29,14 +28,13 @@ std::string RequestHandler::RenderMap() const {
     return render::RenderTransportMap(db_, settings_.visualization);
 }
 
-// TODO: uncomment
-// routing::ResponseDataOpt RequestHandler::BuildRoute(std::string_view from, std::string_view to) const {
-//    // Create router if it is still empty - crete only once
-//    if (!router_.has_value())
-//        router_.emplace(routing::TransportRouter(db_, settings_.routing));
-//
-//    return router_->BuildRoute(from, to);
-//}
+routing::ResponseDataOpt RequestHandler::BuildRoute(std::string_view from, std::string_view to) const {
+    // Create router if it is still empty - crete only once
+    if (!router_.has_value())
+        router_.emplace(routing::TransportRouter(db_, settings_.routing));
+
+    return router_->BuildRoute(from, to);
+}
 
 void ProcessMakeBaseQuery(std::istream& input) {
     ResponseSettings settings;
@@ -55,10 +53,9 @@ void ProcessMakeBaseQuery(std::istream& input) {
     const auto& render_object = request_body.AsDict().at("render_settings"s).AsDict();
     settings.visualization = ParseVisualizationSettings(render_object);
 
-    // TODO: uncomment
     // Step 4. Parse routing settings
-    // const auto& routing_object = request_body.AsDict().at("routing_settings"s).AsDict();
-    // settings.routing = ParseRoutingSettings(routing_object);
+    const auto& routing_object = request_body.AsDict().at("routing_settings"s).AsDict();
+    settings.routing = ParseRoutingSettings(routing_object);
 
     // Step 5. Serialization
     std::ofstream output(settings.path_to_db, std::ios::binary);
@@ -67,8 +64,7 @@ void ProcessMakeBaseQuery(std::istream& input) {
 }
 
 void ProcessRequestsQuery(std::istream& input, std::ostream& output) {
-    // TODO: uncomment
-    // TransportRouterOpt router{std::nullopt};
+    TransportRouterOpt router{std::nullopt};
     ResponseSettings settings;
 
     const auto request_body = json::Load(input).GetRoot();
@@ -80,7 +76,6 @@ void ProcessRequestsQuery(std::istream& input, std::ostream& output) {
     // Step 2. Deserialization
     const auto transport_catalogue = serialization::DeserializeTransportCatalogue(settings.path_to_db);
     settings.visualization = serialization::DeserializeVisualizationSettings(settings.path_to_db);
-
 
     // Step 3. Form a response
     const auto& stat_requests = request_body.AsDict().at("stat_requests"s).AsArray();
