@@ -27,8 +27,8 @@ IdToStopNameContainer SetNameToEachStop(const std::deque<catalogue::Stop>& stops
     IdToStopNameContainer result;
     result.reserve(stops.size());
 
-    for (int id = stops.size() - 1; id >= 0; --id)
-        result.emplace(id, stops[id].name);
+    for (int id = 0; id < stops.size(); ++id)
+        result.emplace(id, stops[stops.size() - id - 1].name);
 
     return result;
 }
@@ -73,6 +73,8 @@ void SerializeTransportCatalogue(const catalogue::Path& path, const catalogue::T
         bus_object.set_is_circle(bus.type == catalogue::RouteType::CIRCLE);
         for (std::string_view stop : bus.stop_names)
             bus_object.add_stops_ids(stop_to_id.at(stop));
+
+        object.mutable_buses()->Add(std::move(bus_object));
     }
 
     std::ofstream output(path, std::ios::binary);
@@ -80,7 +82,51 @@ void SerializeTransportCatalogue(const catalogue::Path& path, const catalogue::T
 }
 
 catalogue::TransportCatalogue DeserializeTransportCatalogue(const catalogue::Path& path) {
-    return {};
+    proto_tc::TransportCatalogue object;
+    catalogue::TransportCatalogue catalogue;
+
+    std::ifstream input(path, std::ios::binary);
+    object.ParseFromIstream(&input);
+
+    auto to_int = [](uint32_t value) { return static_cast<int>(value); };
+
+    // Step 1. Parse stops
+    for (const auto& stop_object : object.stops()) {
+        catalogue::Stop stop;
+
+        stop.name = stop_object.name();
+        stop.point.lng = stop_object.point().lng();
+        stop.point.lat = stop_object.point().lat();
+
+        catalogue.AddStop(std::move(stop));
+    }
+
+    const auto id_to_stop = SetNameToEachStop(catalogue.GetStops());
+
+    // Step 2. Parse all distances between stops
+    for (const auto& distance_object : object.distances()) {
+        std::string_view from = id_to_stop.at(to_int(distance_object.from()));
+        std::string_view to = id_to_stop.at(to_int(distance_object.to()));
+
+        catalogue.AddDistance(from, to, to_int(distance_object.distance()));
+    }
+
+    // Step 3. Parse all buses
+    using Route = catalogue::RouteType;
+    for (const auto& bus_object : object.buses()) {
+        catalogue::Bus bus;
+
+        bus.number = bus_object.name();
+        bus.type = bus_object.is_circle() ? Route::CIRCLE : Route::TWO_DIRECTIONAL;
+
+        bus.stop_names.reserve(bus_object.stops_ids_size());
+        for (uint32_t stop_id : bus_object.stops_ids())
+            bus.stop_names.emplace_back(id_to_stop.at(to_int(stop_id)));
+
+        catalogue.AddBus(std::move(bus));
+    }
+
+    return catalogue;
 }
 
 }  // namespace serialization
