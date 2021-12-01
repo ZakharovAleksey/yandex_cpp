@@ -36,6 +36,30 @@ Visualization& Visualization::SetColors(std::vector<svg::Color> colors) {
     return *this;
 }
 
+const Screen& Visualization::GetScreen() const {
+    return screen_;
+}
+
+double Visualization::GetLineWidth() const {
+    return line_width_;
+}
+
+double Visualization::GetStopRadius() const {
+    return stop_radius_;
+}
+
+const Label& Visualization::GetLabels(LabelType type) const {
+    return labels_.at(type);
+}
+
+const UnderLayer& Visualization::GetUnderLayer() const {
+    return under_layer_;
+}
+
+const std::vector<svg::Color>& Visualization::GetColors() const {
+    return colors_;
+}
+
 /* MAP IMAGE RENDERED */
 
 MapImageRenderer::MapImageRenderer(const catalogue::TransportCatalogue& catalogue, const Visualization& settings,

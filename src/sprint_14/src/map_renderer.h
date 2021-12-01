@@ -45,6 +45,14 @@ public:  // Methods
     Visualization& SetUnderLayer(UnderLayer layer);
     Visualization& SetColors(std::vector<svg::Color> colors);
 
+    const Screen& GetScreen() const;
+    double GetLineWidth() const;
+    double GetStopRadius() const;
+
+    const Label& GetLabels(LabelType type) const;
+    const UnderLayer& GetUnderLayer() const;
+    const std::vector<svg::Color>& GetColors() const;
+
 private:  // Fields
     Screen screen_;
     double line_width_{0.};
@@ -68,7 +76,8 @@ private:  // Fields
 
 class MapImageRenderer {
 public:  // Constructor
-    MapImageRenderer(const catalogue::TransportCatalogue& catalogue, const Visualization& settings, svg::Document& image);
+    MapImageRenderer(const catalogue::TransportCatalogue& catalogue, const Visualization& settings,
+                     svg::Document& image);
 
 public:  // Method
     void Render();
