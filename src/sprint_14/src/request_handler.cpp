@@ -24,10 +24,9 @@ std::unique_ptr<std::set<std::string_view>> RequestHandler::GetBusesThroughTheSt
     return db_.GetBusesPassingThroughTheStop(stop_name);
 }
 
-// TODO: uncomment
-// std::string RequestHandler::RenderMap() const {
-//    return render::RenderTransportMap(db_, settings_.visualization);
-//}
+std::string RequestHandler::RenderMap() const {
+    return render::RenderTransportMap(db_, settings_.visualization);
+}
 
 // TODO: uncomment
 // routing::ResponseDataOpt RequestHandler::BuildRoute(std::string_view from, std::string_view to) const {
@@ -51,10 +50,9 @@ void ProcessMakeBaseQuery(std::istream& input) {
     const auto& base_requests = request_body.AsDict().at("base_requests"s).AsArray();
     auto transport_catalogue = ProcessBaseRequest(base_requests);
 
-    // TODO: uncomment
     // Step 3. Parse rendering settings
-    // const auto& render_object = request_body.AsDict().at("render_settings"s).AsDict();
-    // settings.visualization = ParseVisualizationSettings(render_object);
+    const auto& render_object = request_body.AsDict().at("render_settings"s).AsDict();
+    settings.visualization = ParseVisualizationSettings(render_object);
 
     // TODO: uncomment
     // Step 4. Parse routing settings

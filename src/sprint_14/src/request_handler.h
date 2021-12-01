@@ -7,7 +7,7 @@
 
 #include "transport_catalogue.h"
 // TODO: uncomment
-// #include "map_renderer.h"
+#include "map_renderer.h"
 // #include "transport_router.h"
 
 namespace request {
@@ -15,7 +15,7 @@ namespace request {
 struct ResponseSettings {
     // TODO: uncomment
     // routing::Settings routing;
-    // render::Visualization visualization;
+    render::Visualization visualization;
     catalogue::Path path_to_db;
 };
 
@@ -28,7 +28,7 @@ public:  // Methods
     std::optional<catalogue::BusStatistics> GetBusStat(const std::string_view& bus_name) const;
     std::unique_ptr<std::set<std::string_view>> GetBusesThroughTheStop(const std::string_view& stop_name) const;
     // TODO: uncomment
-    // std::string RenderMap() const;
+    std::string RenderMap() const;
     // routing::ResponseDataOpt BuildRoute(std::string_view from, std::string_view to) const;
 
 private:  // Fields

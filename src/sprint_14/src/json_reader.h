@@ -14,8 +14,7 @@ namespace request {
 
 catalogue::TransportCatalogue ProcessBaseRequest(const json::Array& requests);
 
-// TODO: uncomment
-// render::Visualization ParseVisualizationSettings(const json::Dict& settings);
+ render::Visualization ParseVisualizationSettings(const json::Dict& settings);
 // TODO: uncomment
 // routing::Settings ParseRoutingSettings(const json::Dict& requests);
 
