@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package proto_render;
+
+import "svg.proto";
+
+message Label {
+  uint32 font_size = 1;
+  Point offset = 2;
+}
+
+message Screen {
+  double width = 1;
+  double height = 2;
+  double padding = 3;
+}
+
+message UnderLayer {
+  Color color = 1;
+  double width = 2;
+}
+
+message MapRenderer {
+  Screen screen = 1;
+  double stop_radius = 2;
+  double line_width = 3;
+  Label bus = 4;
+  Label stop = 5;
+  UnderLayer background = 6;
+  repeated Color color_palette = 7;
+}

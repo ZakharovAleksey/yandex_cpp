@@ -129,4 +129,10 @@ catalogue::TransportCatalogue DeserializeTransportCatalogue(const catalogue::Pat
     return catalogue;
 }
 
+void SerializeVisualizationSettings(const catalogue::Path& path, const render::Visualization& settings) {}
+
+render::Visualization DeserializeVisualizationSettings(const catalogue::Path& path) {
+    return {};
+}
+
 }  // namespace serialization

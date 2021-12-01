@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package proto_render;
+
+message Point {
+  double x = 1;
+  double y = 2;
+}
+
+message Rgba {
+  bool is_rgba = 1;
+  uint32 red = 2;
+  uint32 green = 3;
+  uint32 blue = 4;
+  double opacity = 5;
+}
+
+message Color {
+  oneof data {
+    bool is_none = 1;
+    string name = 2;
+    Rgba rgba = 3;
+  }
+}

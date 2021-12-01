@@ -61,6 +61,7 @@ void ProcessMakeBaseQuery(std::istream& input) {
 
     // Step 5. Serialization
     serialization::SerializeTransportCatalogue(settings.path_to_db, transport_catalogue);
+    serialization::SerializeVisualizationSettings(settings.path_to_db, settings.visualization);
 }
 
 void ProcessRequestsQuery(std::istream& input, std::ostream& output) {
@@ -74,9 +75,11 @@ void ProcessRequestsQuery(std::istream& input, std::ostream& output) {
     const auto& serialization_object = request_body.AsDict().at("serialization_settings").AsDict();
     settings.path_to_db = catalogue::Path(ParseSerializationSettings(serialization_object));
 
+    // Step 2. Deserialization
     const auto transport_catalogue = serialization::DeserializeTransportCatalogue(settings.path_to_db);
+    settings.visualization = serialization::DeserializeVisualizationSettings(settings.path_to_db);
 
-    // Step 2. Form a response
+    // Step 3. Form a response
     const auto& stat_requests = request_body.AsDict().at("stat_requests"s).AsArray();
 
     RequestHandler handler_(transport_catalogue, settings);
