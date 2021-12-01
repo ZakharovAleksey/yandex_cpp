@@ -1,1 +1,31 @@
 syntax = "proto3";
+
+package proto_tc;
+
+message Coordinates {
+  double lat = 1;
+  double lng = 2;
+}
+
+message Stop {
+  string name = 1;
+  Coordinates point = 2;
+}
+
+message DistanceBetweenStops {
+  uint32 from = 1;
+  uint32 to = 2;
+  uint64 distance = 3;
+}
+
+message Bus {
+  string name = 1;
+  bool is_circle = 2;
+  repeated uint32 stops_ids = 3;
+}
+
+message TransportCatalogue {
+  repeated Stop stops = 1;
+  repeated DistanceBetweenStops distances = 2;
+  repeated Bus buses = 3;
+}

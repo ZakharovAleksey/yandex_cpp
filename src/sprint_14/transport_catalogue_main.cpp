@@ -15,7 +15,8 @@ int main() {
     try {
         auto start = std::chrono::system_clock::now();
 
-        request::ProcessTransportCatalogueQuery(in, out);
+        request::ProcessMakeBaseQuery(in);
+        request::ProcessRequestsQuery(in, out);
 
         auto end = std::chrono::system_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);

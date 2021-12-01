@@ -9,7 +9,8 @@ namespace request {
 using namespace std::literals;
 using namespace catalogue;
 using namespace request;
-using namespace routing;
+// TODO: uncomment
+// using namespace routing;
 
 namespace {
 
@@ -66,41 +67,43 @@ void MakeStopResponse(int request_id, const std::set<std::string_view>& buses, j
     json_builder.EndDict();
 }
 
-struct RouteItemVisitor {
-    json::Builder& json;
+// TODO: uncomment
+//struct RouteItemVisitor {
+//    json::Builder& json;
+//
+//    void operator()(const WaitResponse& response) const {
+//        json.Key("type"s).Value(response.type);
+//        json.Key("stop_name"s).Value(response.stop_name);
+//        json.Key("time"s).Value(response.time);
+//    }
+//
+//    void operator()(const BusResponse& response) const {
+//        json.Key("type"s).Value(response.type);
+//        json.Key("bus").Value(response.bus);
+//        json.Key("span_count"s).Value(response.span_count);
+//        json.Key("time"s).Value(response.time);
+//    }
+//};
 
-    void operator()(const WaitResponse& response) const {
-        json.Key("type"s).Value(response.type);
-        json.Key("stop_name"s).Value(response.stop_name);
-        json.Key("time"s).Value(response.time);
-    }
-
-    void operator()(const BusResponse& response) const {
-        json.Key("type"s).Value(response.type);
-        json.Key("bus").Value(response.bus);
-        json.Key("span_count"s).Value(response.span_count);
-        json.Key("time"s).Value(response.time);
-    }
-};
-
-void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, json::Builder& json_builder) {
-    json_builder.StartDict();
-
-    json_builder.Key("request_id"s).Value(request_id);
-    json_builder.Key("total_time"s).Value(route_info.total_time);
-
-    json_builder.Key("items"s).StartArray();
-
-    for (const auto& item : route_info.items) {
-        json_builder.StartDict();
-        std::visit(RouteItemVisitor{json_builder}, item);
-        json_builder.EndDict();
-    }
-
-    json_builder.EndArray();
-
-    json_builder.EndDict();
-}
+// TODO: uncomment
+//void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, json::Builder& json_builder) {
+//    json_builder.StartDict();
+//
+//    json_builder.Key("request_id"s).Value(request_id);
+//    json_builder.Key("total_time"s).Value(route_info.total_time);
+//
+//    json_builder.Key("items"s).StartArray();
+//
+//    for (const auto& item : route_info.items) {
+//        json_builder.StartDict();
+//        std::visit(RouteItemVisitor{json_builder}, item);
+//        json_builder.EndDict();
+//    }
+//
+//    json_builder.EndArray();
+//
+//    json_builder.EndDict();
+//}
 
 void MakeErrorResponse(int request_id, json::Builder& json_builder) {
     json_builder.StartDict();
@@ -118,53 +121,57 @@ void MakeMapImageResponse(int request_id, const std::string& image, json::Builde
 
 /* METHODS FOR MAP IMAGE RENDERING */
 
-render::Screen ParseScreenSettings(const json::Dict& settings) {
-    render::Screen screen;
+// TODO: uncomment
+//render::Screen ParseScreenSettings(const json::Dict& settings) {
+//    render::Screen screen;
+//
+//    screen.width_ = settings.at("width"s).AsDouble();
+//    screen.height_ = settings.at("height"s).AsDouble();
+//    screen.padding_ = settings.at("padding"s).AsDouble();
+//
+//    return screen;
+//}
 
-    screen.width_ = settings.at("width"s).AsDouble();
-    screen.height_ = settings.at("height"s).AsDouble();
-    screen.padding_ = settings.at("padding"s).AsDouble();
+// TODO: uncomment
+//render::Label ParseLabelSettings(const json::Dict& settings, const std::string& key_type) {
+//    int font_size = settings.at(key_type + "_label_font_size"s).AsInt();
+//    const json::Array offset = settings.at(key_type + "_label_offset"s).AsArray();
+//
+//    double offset_x = offset.at(0).AsDouble();
+//    double offset_y = offset.at(1).AsDouble();
+//
+//    return {font_size, {offset_x, offset_y}};
+//}
 
-    return screen;
-}
+// TODO: uncomment
+//svg::Color ParseColor(const json::Node& node) {
+//    // Node with color could be: string, rgb, rgba
+//    if (node.IsString())
+//        return node.AsString();
+//
+//    const auto& array = node.AsArray();
+//    uint8_t red = array.at(0).AsInt();
+//    uint8_t green = array.at(1).AsInt();
+//    uint8_t blue = array.at(2).AsInt();
+//
+//    // In case there is only 3 colors in the array - it is egb
+//    if (array.size() == 3)
+//        return svg::Rgb(red, green, blue);
+//
+//    // Otherwise - this is rgba
+//    double alpha = array.at(3).AsDouble();
+//    return svg::Rgba(red, green, blue, alpha);
+//}
 
-render::Label ParseLabelSettings(const json::Dict& settings, const std::string& key_type) {
-    int font_size = settings.at(key_type + "_label_font_size"s).AsInt();
-    const json::Array offset = settings.at(key_type + "_label_offset"s).AsArray();
-
-    double offset_x = offset.at(0).AsDouble();
-    double offset_y = offset.at(1).AsDouble();
-
-    return {font_size, {offset_x, offset_y}};
-}
-
-svg::Color ParseColor(const json::Node& node) {
-    // Node with color could be: string, rgb, rgba
-    if (node.IsString())
-        return node.AsString();
-
-    const auto& array = node.AsArray();
-    uint8_t red = array.at(0).AsInt();
-    uint8_t green = array.at(1).AsInt();
-    uint8_t blue = array.at(2).AsInt();
-
-    // In case there is only 3 colors in the array - it is egb
-    if (array.size() == 3)
-        return svg::Rgb(red, green, blue);
-
-    // Otherwise - this is rgba
-    double alpha = array.at(3).AsDouble();
-    return svg::Rgba(red, green, blue, alpha);
-}
-
-render::UnderLayer ParseLayer(const json::Dict& settings) {
-    render::UnderLayer layer;
-
-    layer.color_ = ParseColor(settings.at("underlayer_color"s));
-    layer.width_ = settings.at("underlayer_width"s).AsDouble();
-
-    return layer;
-}
+// TODO: uncomment
+//render::UnderLayer ParseLayer(const json::Dict& settings) {
+//    render::UnderLayer layer;
+//
+//    layer.color_ = ParseColor(settings.at("underlayer_color"s));
+//    layer.width_ = settings.at("underlayer_width"s).AsDouble();
+//
+//    return layer;
+//}
 
 }  // namespace
 
@@ -211,28 +218,33 @@ TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
     return catalogue;
 }
 
-render::Visualization ParseVisualizationSettings(const json::Dict& settings) {
-    render::Visualization final_settings;
+// TODO: uncomment
+//render::Visualization ParseVisualizationSettings(const json::Dict& settings) {
+//    render::Visualization final_settings;
+//
+//    double line_width = settings.at("line_width"s).AsDouble();
+//    double stop_radius = settings.at("stop_radius"s).AsDouble();
+//
+//    // Parse list of colors
+//    const auto& colors = settings.at("color_palette"s).AsArray();
+//    std::vector<svg::Color> svg_colors;
+//    svg_colors.reserve(colors.size());
+//    for (const auto& color : colors)
+//        svg_colors.emplace_back(ParseColor(color));
+//
+//    final_settings.SetScreen(ParseScreenSettings(settings))
+//        .SetLineWidth(line_width)
+//        .SetStopRadius(stop_radius)
+//        .SetLabels(render::LabelType::Stop, ParseLabelSettings(settings, "stop"s))
+//        .SetLabels(render::LabelType::Bus, ParseLabelSettings(settings, "bus"s))
+//        .SetUnderLayer(ParseLayer(settings))
+//        .SetColors(std::move(svg_colors));
+//
+//    return final_settings;
+//}
 
-    double line_width = settings.at("line_width"s).AsDouble();
-    double stop_radius = settings.at("stop_radius"s).AsDouble();
-
-    // Parse list of colors
-    const auto& colors = settings.at("color_palette"s).AsArray();
-    std::vector<svg::Color> svg_colors;
-    svg_colors.reserve(colors.size());
-    for (const auto& color : colors)
-        svg_colors.emplace_back(ParseColor(color));
-
-    final_settings.SetScreen(ParseScreenSettings(settings))
-        .SetLineWidth(line_width)
-        .SetStopRadius(stop_radius)
-        .SetLabels(render::LabelType::Stop, ParseLabelSettings(settings, "stop"s))
-        .SetLabels(render::LabelType::Bus, ParseLabelSettings(settings, "bus"s))
-        .SetUnderLayer(ParseLayer(settings))
-        .SetColors(std::move(svg_colors));
-
-    return final_settings;
+std::string ParseSerializationSettings(const json::Dict& settings) {
+    return settings.at("file"s).AsString();
 }
 
 json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& requests) {
@@ -261,37 +273,40 @@ json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& re
             } else {
                 MakeErrorResponse(request_id, response);
             }
-        } else if (type == "Map"s) {
-            MakeMapImageResponse(request_id, handler.RenderMap(), response);
-        } else if (type == "Route"s) {
-            std::string stop_name_from = request_dict_view.at("from"s).AsString();
-            std::string stop_name_to = request_dict_view.at("to"s).AsString();
-
-            if (auto route_info = handler.BuildRoute(stop_name_from, stop_name_to)) {
-                MakeRouteResponse(request_id, *route_info, response);
-            } else {
-                MakeErrorResponse(request_id, response);
-            }
         }
+        // TODO: uncomment
+        //        else if (type == "Map"s) {
+        //            MakeMapImageResponse(request_id, handler.RenderMap(), response);
+        //        } else if (type == "Route"s) {
+        //            std::string stop_name_from = request_dict_view.at("from"s).AsString();
+        //            std::string stop_name_to = request_dict_view.at("to"s).AsString();
+        //
+        //            if (auto route_info = handler.BuildRoute(stop_name_from, stop_name_to)) {
+        //                MakeRouteResponse(request_id, *route_info, response);
+        //            } else {
+        //                MakeErrorResponse(request_id, response);
+        //            }
+        //        }
     }
 
     response.EndArray();
     return std::move(response.Build());
 }
 
-routing::Settings ParseRoutingSettings(const json::Dict& requests) {
-    using namespace routing;
-
-    auto meter_per_min = [](double km_per_hour) { return 1'000. * km_per_hour / 60.; };
-
-    // clang-format off
-    Settings settings{
-        meter_per_min(requests.at("bus_velocity"s).AsDouble()),
-        requests.at("bus_wait_time"s).AsInt()
-    };
-    // clang-format on
-
-    return settings;
-}
+// TODO: uncomment
+//routing::Settings ParseRoutingSettings(const json::Dict& requests) {
+//    using namespace routing;
+//
+//    auto meter_per_min = [](double km_per_hour) { return 1'000. * km_per_hour / 60.; };
+//
+//    // clang-format off
+//    Settings settings{
+//        meter_per_min(requests.at("bus_velocity"s).AsDouble()),
+//        requests.at("bus_wait_time"s).AsInt()
+//    };
+//    // clang-format on
+//
+//    return settings;
+//}
 
 }  // namespace request

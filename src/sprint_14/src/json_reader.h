@@ -5,17 +5,21 @@
  * of JSON responses
  */
 
+
 #include "json.h"
-#include "map_renderer.h"
-#include "request_handler.h"
+// #include "map_renderer.h"
+ #include "request_handler.h"
 
 namespace request {
 
 catalogue::TransportCatalogue ProcessBaseRequest(const json::Array& requests);
 
-render::Visualization ParseVisualizationSettings(const json::Dict& settings);
+// TODO: uncomment
+// render::Visualization ParseVisualizationSettings(const json::Dict& settings);
+// TODO: uncomment
+// routing::Settings ParseRoutingSettings(const json::Dict& requests);
 
-routing::Settings ParseRoutingSettings(const json::Dict& requests);
+std::string ParseSerializationSettings(const json::Dict& settings);
 
 json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& requests);
 

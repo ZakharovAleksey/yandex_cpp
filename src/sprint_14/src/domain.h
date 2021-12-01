@@ -5,6 +5,7 @@
  * describe buses and stops
  */
 
+#include <filesystem>
 #include <memory>
 #include <set>
 #include <string>
@@ -15,6 +16,8 @@
 #include "geo.h"
 
 namespace catalogue {
+
+using Path = std::filesystem::path;
 
 enum class RouteType { CIRCLE, TWO_DIRECTIONAL };
 
@@ -52,7 +55,7 @@ std::ostream& operator<<(std::ostream& os, const BusStatistics& statistics);
 
 using StringViewPair = std::pair<std::string_view, std::string_view>;
 
-struct StringViewPairHash{
+struct StringViewPairHash {
     size_t operator()(const StringViewPair& pair) const {
         //clang-format off
         return kPrimeValue * std::hash<std::string_view>{}(pair.first) +

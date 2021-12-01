@@ -3,12 +3,14 @@
 #include <string>
 
 #include "json_reader.h"
+#include "serialization.h"
 
 namespace request {
 
 using namespace std::literals;
 using namespace catalogue;
-using namespace routing;
+// TODO: uncomment
+// using namespace routing;
 
 RequestHandler::RequestHandler(const catalogue::TransportCatalogue& db, request::ResponseSettings settings)
     : db_(db), settings_(std::move(settings)) {}
@@ -22,39 +24,62 @@ std::unique_ptr<std::set<std::string_view>> RequestHandler::GetBusesThroughTheSt
     return db_.GetBusesPassingThroughTheStop(stop_name);
 }
 
-std::string RequestHandler::RenderMap() const {
-    return render::RenderTransportMap(db_, settings_.visualization);
-}
+// TODO: uncomment
+// std::string RequestHandler::RenderMap() const {
+//    return render::RenderTransportMap(db_, settings_.visualization);
+//}
 
-routing::ResponseDataOpt RequestHandler::BuildRoute(std::string_view from, std::string_view to) const {
-    // Create router if it is still empty - crete only once
-    if (!router_.has_value())
-        router_.emplace(routing::TransportRouter(db_, settings_.routing));
+// TODO: uncomment
+// routing::ResponseDataOpt RequestHandler::BuildRoute(std::string_view from, std::string_view to) const {
+//    // Create router if it is still empty - crete only once
+//    if (!router_.has_value())
+//        router_.emplace(routing::TransportRouter(db_, settings_.routing));
+//
+//    return router_->BuildRoute(from, to);
+//}
 
-    return router_->BuildRoute(from, to);
-}
-
-void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
-    TransportCatalogue catalogue;
-    TransportRouterOpt router{std::nullopt};
+void ProcessMakeBaseQuery(std::istream& input) {
     ResponseSettings settings;
 
-    const auto input_json = json::Load(input).GetRoot();
+    const auto request_body = json::Load(input).GetRoot();
 
-    // Step 1. Form catalogue, basing on the input
-    const auto& base_requests = input_json.AsDict().at("base_requests"s).AsArray();
+    // Step 1. Get serialization path
+    const auto& serialization_object = request_body.AsDict().at("serialization_settings").AsDict();
+    settings.path_to_db = catalogue::Path(ParseSerializationSettings(serialization_object));
+
+    // Step 2. Form catalogue, basing on the input
+    const auto& base_requests = request_body.AsDict().at("base_requests"s).AsArray();
     auto transport_catalogue = ProcessBaseRequest(base_requests);
 
-    // Step 2. Parse rendering settings
-    const auto& render_object = input_json.AsDict().at("render_settings"s).AsDict();
-    settings.visualization = ParseVisualizationSettings(render_object);
+    // TODO: uncomment
+    // Step 3. Parse rendering settings
+    // const auto& render_object = request_body.AsDict().at("render_settings"s).AsDict();
+    // settings.visualization = ParseVisualizationSettings(render_object);
 
-    // Step 3. Parse routing settings
-    const auto& routing_object = input_json.AsDict().at("routing_settings"s).AsDict();
-    settings.routing = ParseRoutingSettings(routing_object);
+    // TODO: uncomment
+    // Step 4. Parse routing settings
+    // const auto& routing_object = request_body.AsDict().at("routing_settings"s).AsDict();
+    // settings.routing = ParseRoutingSettings(routing_object);
 
-    // Step 4. Form response
-    const auto& stat_requests = input_json.AsDict().at("stat_requests"s).AsArray();
+    // Step 5. Serialization
+    serialization::SerializeTransportCatalogue(settings.path_to_db, transport_catalogue);
+}
+
+void ProcessRequestsQuery(std::istream& input, std::ostream& output) {
+    // TODO: uncomment
+    // TransportRouterOpt router{std::nullopt};
+    ResponseSettings settings;
+
+    const auto request_body = json::Load(input).GetRoot();
+
+    // Step 1. Get deserialization path
+    const auto& serialization_object = request_body.AsDict().at("serialization_settings").AsDict();
+    settings.path_to_db = catalogue::Path(ParseSerializationSettings(serialization_object));
+
+    const auto transport_catalogue = serialization::DeserializeTransportCatalogue(settings.path_to_db);
+
+    // Step 2. Form a response
+    const auto& stat_requests = request_body.AsDict().at("stat_requests"s).AsArray();
 
     RequestHandler handler_(transport_catalogue, settings);
     auto response = MakeStatisticsResponse(handler_, stat_requests);
