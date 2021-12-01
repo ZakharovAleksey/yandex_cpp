@@ -68,7 +68,7 @@ void MakeStopResponse(int request_id, const std::set<std::string_view>& buses, j
 }
 
 // TODO: uncomment
-//struct RouteItemVisitor {
+// struct RouteItemVisitor {
 //    json::Builder& json;
 //
 //    void operator()(const WaitResponse& response) const {
@@ -86,7 +86,7 @@ void MakeStopResponse(int request_id, const std::set<std::string_view>& buses, j
 //};
 
 // TODO: uncomment
-//void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, json::Builder& json_builder) {
+// void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, json::Builder& json_builder) {
 //    json_builder.StartDict();
 //
 //    json_builder.Key("request_id"s).Value(request_id);
@@ -268,11 +268,11 @@ json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& re
             } else {
                 MakeErrorResponse(request_id, response);
             }
+        } else if (type == "Map"s) {
+            MakeMapImageResponse(request_id, handler.RenderMap(), response);
         }
         // TODO: uncomment
-        //        else if (type == "Map"s) {
-        //            MakeMapImageResponse(request_id, handler.RenderMap(), response);
-        //        } else if (type == "Route"s) {
+        //        else if (type == "Route"s) {
         //            std::string stop_name_from = request_dict_view.at("from"s).AsString();
         //            std::string stop_name_to = request_dict_view.at("to"s).AsString();
         //
@@ -289,7 +289,7 @@ json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& re
 }
 
 // TODO: uncomment
-//routing::Settings ParseRoutingSettings(const json::Dict& requests) {
+// routing::Settings ParseRoutingSettings(const json::Dict& requests) {
 //    using namespace routing;
 //
 //    auto meter_per_min = [](double km_per_hour) { return 1'000. * km_per_hour / 60.; };
