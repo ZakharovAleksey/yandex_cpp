@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package proto_router;
+
+import "graph.proto";
+
+message Settings {
+  double bus_velocity = 1;
+  uint32 bus_wait_time = 2;
+}

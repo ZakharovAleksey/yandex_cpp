@@ -36,7 +36,7 @@ set(SPRINT_14_FILES
         ${SPRINT_14_DIR}/canvas.h)
 
 add_executable(sprint_14 transport_catalogue_main.cpp ${SPRINT_14_FILES})
-protobuf_generate(LANGUAGE cpp TARGET sprint_14 PROTOS transport_catalogue.proto svg.proto map_renderer.proto)
+protobuf_generate(LANGUAGE cpp TARGET sprint_14 PROTOS transport_catalogue.proto svg.proto map_renderer.proto graph.proto transport_router.proto)
 
 target_include_directories(sprint_14 PUBLIC ${Protobuf_INCLUDE_DIRS})
 target_include_directories(sprint_14 PUBLIC ${CMAKE_CURRENT_BINARY_DIR})

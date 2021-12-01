@@ -2,6 +2,7 @@
 
 #include <map_renderer.pb.h>
 #include <transport_catalogue.pb.h>
+#include <transport_router.pb.h>
 
 #include <fstream>
 
@@ -250,6 +251,27 @@ render::Visualization DeserializeVisualizationSettings(const catalogue::Path& pa
     for (const auto& color : object.color_palette())
         svg_colors.emplace_back(set_color(color));
     settings.SetColors(std::move(svg_colors));
+
+    return settings;
+}
+
+void SerializeRoutingSettings(std::ofstream& output, const routing::Settings& settings) {
+    proto_router::Settings object;
+
+    object.set_bus_velocity(settings.bus_velocity_);
+    object.set_bus_wait_time(settings.bus_wait_time_);
+
+    object.SerializeToOstream(&output);
+}
+
+routing::Settings DeserializeRoutingSettings(const catalogue::Path& path) {
+    std::ifstream input(path, std::ios::binary);
+    proto_router::Settings object;
+    object.ParseFromIstream(&input);
+
+    routing::Settings settings;
+    settings.bus_velocity_ = object.bus_velocity();
+    settings.bus_wait_time_ = static_cast<int>(object.bus_wait_time());
 
     return settings;
 }
