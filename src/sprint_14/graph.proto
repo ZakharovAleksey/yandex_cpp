@@ -1,3 +1,27 @@
 syntax = "proto3";
 
 package proto_router;
+
+message Edge {
+  uint64 from = 1;
+  uint64 to = 2;
+  double weight = 3;
+}
+
+message EdgeId {
+  uint64 id = 1;
+}
+
+message Graph {
+  map<uint32, Edge> edges = 1;
+  uint64 vertices_count = 2;
+}
+
+//message RouteInternalData {
+//  double weight = 1;
+//  EdgeId prev_edge_id = 2;
+//}
+//
+//message RoutesInternalData {
+//  repeated RouteInternalData routes_data = 1;
+//}

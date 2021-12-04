@@ -4,7 +4,30 @@ package proto_router;
 
 import "graph.proto";
 
+message StopVertices {
+  uint64 start = 1;
+  uint64 end = 2;
+}
+
+message Response {
+  enum ResponseType {
+    Bus = 0;
+    Wait = 1;
+  }
+  ResponseType type = 1;
+  double time = 2;
+  string name = 3;
+  uint64 span_count = 4;
+}
+
 message Settings {
   double bus_velocity = 1;
   uint32 bus_wait_time = 2;
+}
+
+message TransportRouter{
+  Settings settings = 1;
+  map<uint32, StopVertices> stop_to_vertex = 2;
+  map<uint32, Response> edge_id_to_response = 3;
+  Graph routes = 4;
 }
