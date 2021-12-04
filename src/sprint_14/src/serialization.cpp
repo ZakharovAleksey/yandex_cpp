@@ -276,4 +276,105 @@ routing::Settings DeserializeRoutingSettings(const catalogue::Path& path) {
     return settings;
 }
 
+void SerializeGraph(std::ofstream& output, const graph::DirectedWeightedGraph<double>& graph) {
+    // TODO: add map <id to Edge>
+    proto_router::Graph object;
+
+    object.set_vertices_count(graph.GetVertexCount());
+
+    for (int id = 0; id < graph.GetEdgeCount(); ++id) {
+        proto_router::Edge edge_object;
+        const auto& edge = graph.GetEdge(id);
+
+        edge_object.set_from(edge.from);
+        edge_object.set_to(edge.to);
+        edge_object.set_weight(edge.weight);
+
+        object.mutable_edges()->insert({static_cast<uint32_t>(id), edge_object});
+    }
+
+    // -> END GRAPH SERIALIZATION object.SerializeToOstream(&output);
+}
+
+void SerializeTransportRouter(std::ofstream& output, const routing::TransportRouter& router) {
+    proto_router::TransportRouter object;
+
+    // Step 1. Serialize settings
+    const auto& settings = router.GetSettings();
+    object.mutable_settings()->set_bus_velocity(settings.bus_velocity_);
+    object.mutable_settings()->set_bus_wait_time(settings.bus_wait_time_);
+
+    // Step 1. Serialize graph & edge -> response at the same time because they use edges
+    const auto& graph = router.GetGraph();
+    object.mutable_routes()->set_vertices_count(graph.GetVertexCount());
+
+    for (int id = 0; id < graph.GetEdgeCount(); ++id) {
+        // Step 1.1 Add edge to graph
+        proto_router::Edge edge_object;
+        const auto& edge = graph.GetEdge(id);
+
+        edge_object.set_from(edge.from);
+        edge_object.set_to(edge.to);
+        edge_object.set_weight(edge.weight);
+
+        object.mutable_routes()->mutable_edges()->insert({static_cast<uint32_t>(id), edge_object});
+
+        // Step 1.2 Add corresponding to the edge response
+        proto_router::Response response_object;
+        const auto& response = router.GetResponse(edge);
+        if (std::holds_alternative<routing::WaitResponse>(response)) {
+            const auto& tmp = std::get<routing::WaitResponse>(response);
+            response_object.set_type(proto_router::Response::ResponseType::Response_ResponseType_Wait);
+            response_object.set_time(tmp.time);
+            response_object.set_name(tmp.stop_name);
+        } else {
+            const auto& tmp = std::get<routing::BusResponse>(response);
+            response_object.set_type(proto_router::Response::ResponseType::Response_ResponseType_Bus);
+            response_object.set_time(tmp.time);
+            response_object.set_name(tmp.bus);
+            response_object.set_span_count(tmp.span_count);
+        }
+
+        object.mutable_edge_id_to_response()->insert({static_cast<uint32_t>(id), response_object});
+    }
+
+    // Step 3. Serialize stop to vertex info
+    const auto& stops = router.GetTransportCatalogue().GetStops();
+    const auto stop_to_id = SetIdToEachStop(stops);
+    for (const auto& stop : stops) {
+        const auto& vertex = router.GetStopVertices(stop.name);
+
+        proto_router::StopVertices stop_object;
+        stop_object.set_start(vertex.start);
+        stop_object.set_end(vertex.end);
+
+        object.mutable_stop_to_vertex()->insert({static_cast<uint32_t>(stop_to_id.at(stop.name)), stop_object});
+    }
+
+    object.SerializeToOstream(&output);
+}
+
+graph::DirectedWeightedGraph<double> DeserializeGraph(const catalogue::Path& path) {
+    proto_router::Graph object;
+
+    std::ifstream input(path, std::ios::binary);
+    object.ParseFromIstream(&input);
+
+    std::unordered_map<graph::Edge<double>, int, routing::TransportRouter::EdgeHash> edge_to_id;
+    edge_to_id.reserve(object.edges_size());
+
+    graph::DirectedWeightedGraph<double> graph(object.vertices_count());
+    for (const auto& [edge_id, edge_object] : object.edges()) {
+        graph::Edge<double> edge;
+        edge.from = edge_object.from();
+        edge.to = edge_object.to();
+        edge.weight = edge_object.weight();
+
+        graph.AddEdge(edge);
+        edge_to_id.insert({edge, edge_id});
+    }
+
+    return graph;
+}
+
 }  // namespace serialization
