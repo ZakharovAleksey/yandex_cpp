@@ -9,7 +9,6 @@
 namespace serialization {
 
 using StopNameToIdContaner = std::unordered_map<std::string_view, int>;
-// TODO: maybe string_view here
 using IdToStopNameContainer = std::unordered_map<int, std::string>;
 
 namespace {
@@ -95,13 +94,13 @@ catalogue::TransportCatalogue DeserializeTransportCatalogue(const catalogue::Pat
     for (const auto& stop_object : object.stops()) {
         catalogue::Stop stop;
 
+        // TODO: find out why protobuf reads more stops than it really is
+        if (stop_object.name().empty())
+            continue;
+
         stop.name = stop_object.name();
         stop.point.lng = stop_object.point().lng();
         stop.point.lat = stop_object.point().lat();
-
-        // TODO: find out why protobuf reads more stops than it really is
-        if (stop.name.empty())
-            continue;
 
         catalogue.AddStop(std::move(stop));
     }
@@ -121,10 +120,11 @@ catalogue::TransportCatalogue DeserializeTransportCatalogue(const catalogue::Pat
     for (const auto& bus_object : object.buses()) {
         catalogue::Bus bus;
 
-        bus.number = bus_object.name();
         // TODO: find out why protobuf reads more stops than it really is
-        if (bus.number.empty())
+        if (bus_object.name().empty())
             continue;
+
+        bus.number = bus_object.name();
 
         bus.type = bus_object.is_circle() ? Route::CIRCLE : Route::TWO_DIRECTIONAL;
 
@@ -272,18 +272,6 @@ void SerializeRoutingSettings(std::ofstream& output, const routing::Settings& se
     object.SerializeToOstream(&output);
 }
 
-routing::Settings DeserializeRoutingSettings(const catalogue::Path& path) {
-    std::ifstream input(path, std::ios::binary);
-    proto_router::Settings object;
-    object.ParseFromIstream(&input);
-
-    routing::Settings settings;
-    settings.bus_velocity_ = object.bus_velocity();
-    settings.bus_wait_time_ = static_cast<int>(object.bus_wait_time());
-
-    return settings;
-}
-
 void SerializeTransportRouter(std::ofstream& output, const routing::TransportRouter& router) {
     proto_router::TransportRouter object;
 
@@ -386,7 +374,7 @@ routing::TransportRouter DeserializeTransportRouter(const catalogue::Path& path,
     stop_to_vertex.reserve(object.stop_to_vertex_size());
 
     for (const auto& [id, vertex] : object.stop_to_vertex())
-        stop_to_vertex.insert({id_to_stop.at(id), {vertex.start(), vertex.end()}});
+        stop_to_vertex.insert({id_to_stop.at(static_cast<int>(id)), {vertex.start(), vertex.end()}});
 
     return TransportRouter{catalogue, graph, stop_to_vertex, edge_to_response, settings};
 }

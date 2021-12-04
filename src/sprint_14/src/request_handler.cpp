@@ -65,7 +65,6 @@ void ProcessMakeBaseQuery(std::istream& input) {
     std::ofstream output(settings.path_to_db, std::ios::binary);
     serialization::SerializeTransportCatalogue(output, transport_catalogue);
     serialization::SerializeVisualizationSettings(output, settings.visualization);
-    // serialization::SerializeRoutingSettings(output, settings.routing);
     serialization::SerializeTransportRouter(output, TransportRouter(transport_catalogue, settings.routing));
 }
 
@@ -82,7 +81,6 @@ void ProcessRequestsQuery(std::istream& input, std::ostream& output) {
     const auto transport_catalogue = serialization::DeserializeTransportCatalogue(settings.path_to_db);
     auto router = serialization::DeserializeTransportRouter(settings.path_to_db, transport_catalogue);
     settings.visualization = serialization::DeserializeVisualizationSettings(settings.path_to_db);
-    settings.routing = serialization::DeserializeRoutingSettings(settings.path_to_db);
 
     // Step 3. Form a response
     const auto& stat_requests = request_body.AsDict().at("stat_requests"s).AsArray();
