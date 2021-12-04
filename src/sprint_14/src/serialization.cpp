@@ -329,6 +329,7 @@ void SerializeTransportRouter(std::ofstream& output, const routing::TransportRou
     // Step 3. Serialize stop to vertex info
     const auto& stops = router.GetTransportCatalogue().GetStops();
     const auto stop_to_id = SetIdToEachStop(stops);
+
     for (const auto& stop : stops) {
         const auto& vertex = router.GetStopVertices(stop.name);
 
@@ -360,13 +361,10 @@ routing::TransportRouter DeserializeTransportRouter(const catalogue::Path& path,
     TransportRouter::EdgeToResponseStorage edge_to_response;
     edge_to_response.reserve(object.edge_id_to_response_size());
 
-    for (const auto& [edge_id, edge_object] : object.routes().edges()) {
+    for (int edge_id = 0; edge_id != object.edge_id_to_response_size(); ++edge_id) {
+        auto& edge_object = object.routes().edges().at(edge_id);
         // Step 2.1 Add edge to the graph
-        graph::Edge<double> edge {
-            edge_object.from(),
-            edge_object.to(),
-            edge_object.weight()
-        };
+        graph::Edge<double> edge{edge_object.from(), edge_object.to(), edge_object.weight()};
         graph.AddEdge(edge);
 
         // Step 2.2 Add edge to response correspondence
@@ -388,7 +386,7 @@ routing::TransportRouter DeserializeTransportRouter(const catalogue::Path& path,
     stop_to_vertex.reserve(object.stop_to_vertex_size());
 
     for (const auto& [id, vertex] : object.stop_to_vertex())
-        stop_to_vertex.insert({stops.at(id).name, {vertex.start(), vertex.end()}});
+        stop_to_vertex.insert({id_to_stop.at(id), {vertex.start(), vertex.end()}});
 
     return TransportRouter{catalogue, graph, stop_to_vertex, edge_to_response, settings};
 }
