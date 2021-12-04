@@ -79,7 +79,7 @@ void MapImageRenderer::Render() {
 }
 
 void MapImageRenderer::PutRouteLines() {
-    const double& width = settings_.line_width_;
+    const double width = settings_.line_width_;
 
     int route_id{0};
     bool is_previous_route_empty{true};

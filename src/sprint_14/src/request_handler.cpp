@@ -15,6 +15,10 @@ using namespace routing;
 RequestHandler::RequestHandler(const catalogue::TransportCatalogue& db, request::ResponseSettings settings)
     : db_(db), settings_(std::move(settings)) {}
 
+RequestHandler::RequestHandler(const catalogue::TransportCatalogue& db, routing::TransportRouter router,
+                               request::ResponseSettings settings)
+    : db_(db), settings_(std::move(settings)), router_(std::make_optional(std::move(router))) {}
+
 std::optional<catalogue::BusStatistics> RequestHandler::GetBusStat(const std::string_view& bus_name) const {
     return db_.GetBusStatistics(bus_name);
 }
@@ -76,6 +80,7 @@ void ProcessRequestsQuery(std::istream& input, std::ostream& output) {
 
     // Step 2. Deserialization
     const auto transport_catalogue = serialization::DeserializeTransportCatalogue(settings.path_to_db);
+    auto router = serialization::DeserializeTransportRouter(settings.path_to_db, transport_catalogue);
     settings.visualization = serialization::DeserializeVisualizationSettings(settings.path_to_db);
     settings.routing = serialization::DeserializeRoutingSettings(settings.path_to_db);
 
@@ -83,7 +88,7 @@ void ProcessRequestsQuery(std::istream& input, std::ostream& output) {
     const auto& stat_requests = request_body.AsDict().at("stat_requests"s).AsArray();
 
     // TODO: add router here
-    RequestHandler handler_(transport_catalogue, settings);
+    RequestHandler handler_(transport_catalogue, std::move(router), settings);
     auto response = MakeStatisticsResponse(handler_, stat_requests);
 
     json::Print(json::Document{std::move(response)}, output);

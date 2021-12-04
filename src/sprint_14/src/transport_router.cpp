@@ -1,5 +1,7 @@
 #include "transport_router.h"
 
+#include <iostream>
+
 namespace routing {
 
 TransportRouter::TransportRouter(const catalogue::TransportCatalogue& catalogue, Settings settings)
@@ -9,6 +11,20 @@ TransportRouter::TransportRouter(const catalogue::TransportCatalogue& catalogue,
 
     router_ = std::make_unique<Router>(*routes_);
 }
+
+// clang-format off
+TransportRouter::TransportRouter(const catalogue::TransportCatalogue& catalogue,
+                                 Graph graph,
+                                 StopToVertexStorage stop_to_vertex,
+                                 EdgeToResponseStorage edge_to_response,
+                                 Settings settings)
+    : catalogue_(catalogue),
+      routes_(std::make_unique<Graph>(std::move(graph))),
+      router_(std::make_unique<Router>(*routes_)),
+      stop_to_vertex_(std::move(stop_to_vertex)),
+      edge_to_response_(std::move(edge_to_response)),
+      settings_(settings) {}
+// clang-format on
 
 void TransportRouter::BuildVerticesForStops(const std::set<std::string_view>& stops) {
     graph::VertexId start{0};
@@ -100,5 +116,4 @@ const ResponseItem& TransportRouter::GetResponse(const graph::Edge<TransportRout
 const TransportRouter::StopVertices& TransportRouter::GetStopVertices(std::string_view stop) const {
     return stop_to_vertex_.at(stop);
 }
-
 }  // namespace routing

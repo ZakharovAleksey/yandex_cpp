@@ -21,6 +21,7 @@ struct ResponseSettings {
 class RequestHandler {
 public:  // Constructor
     RequestHandler(const catalogue::TransportCatalogue& db, ResponseSettings settings);
+    RequestHandler(const catalogue::TransportCatalogue& db, routing::TransportRouter router, ResponseSettings settings);
 
 public:  // Methods
     std::optional<catalogue::BusStatistics> GetBusStat(const std::string_view& bus_name) const;

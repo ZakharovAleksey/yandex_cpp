@@ -99,6 +99,10 @@ catalogue::TransportCatalogue DeserializeTransportCatalogue(const catalogue::Pat
         stop.point.lng = stop_object.point().lng();
         stop.point.lat = stop_object.point().lat();
 
+        // TODO: find out why protobuf reads more stops than it really is
+        if (stop.name.empty())
+            continue;
+
         catalogue.AddStop(std::move(stop));
     }
 
@@ -118,6 +122,10 @@ catalogue::TransportCatalogue DeserializeTransportCatalogue(const catalogue::Pat
         catalogue::Bus bus;
 
         bus.number = bus_object.name();
+        // TODO: find out why protobuf reads more stops than it really is
+        if (bus.number.empty())
+            continue;
+
         bus.type = bus_object.is_circle() ? Route::CIRCLE : Route::TWO_DIRECTIONAL;
 
         bus.stop_names.reserve(bus_object.stops_ids_size());
@@ -230,13 +238,13 @@ render::Visualization DeserializeVisualizationSettings(const catalogue::Path& pa
     settings.SetStopRadius(object.stop_radius()).SetLineWidth(object.line_width());
 
     render::Label bus;
-    bus.font_size_ = object.bus().font_size();
+    bus.font_size_ = static_cast<int>(object.bus().font_size());
     bus.offset_.x = object.bus().offset().x();
     bus.offset_.y = object.bus().offset().y();
     settings.SetLabels(render::LabelType::Bus, bus);
 
     render::Label stop;
-    stop.font_size_ = object.stop().font_size();
+    stop.font_size_ = static_cast<int>(object.stop().font_size());
     stop.offset_.x = object.stop().offset().x();
     stop.offset_.y = object.stop().offset().y();
     settings.SetLabels(render::LabelType::Stop, stop);
@@ -274,26 +282,6 @@ routing::Settings DeserializeRoutingSettings(const catalogue::Path& path) {
     settings.bus_wait_time_ = static_cast<int>(object.bus_wait_time());
 
     return settings;
-}
-
-void SerializeGraph(std::ofstream& output, const graph::DirectedWeightedGraph<double>& graph) {
-    // TODO: add map <id to Edge>
-    proto_router::Graph object;
-
-    object.set_vertices_count(graph.GetVertexCount());
-
-    for (int id = 0; id < graph.GetEdgeCount(); ++id) {
-        proto_router::Edge edge_object;
-        const auto& edge = graph.GetEdge(id);
-
-        edge_object.set_from(edge.from);
-        edge_object.set_to(edge.to);
-        edge_object.set_weight(edge.weight);
-
-        object.mutable_edges()->insert({static_cast<uint32_t>(id), edge_object});
-    }
-
-    // -> END GRAPH SERIALIZATION object.SerializeToOstream(&output);
 }
 
 void SerializeTransportRouter(std::ofstream& output, const routing::TransportRouter& router) {
@@ -354,27 +342,55 @@ void SerializeTransportRouter(std::ofstream& output, const routing::TransportRou
     object.SerializeToOstream(&output);
 }
 
-graph::DirectedWeightedGraph<double> DeserializeGraph(const catalogue::Path& path) {
-    proto_router::Graph object;
-
+routing::TransportRouter DeserializeTransportRouter(const catalogue::Path& path,
+                                                    const catalogue::TransportCatalogue& catalogue) {
+    using namespace routing;
     std::ifstream input(path, std::ios::binary);
+    proto_router::TransportRouter object;
     object.ParseFromIstream(&input);
 
-    std::unordered_map<graph::Edge<double>, int, routing::TransportRouter::EdgeHash> edge_to_id;
-    edge_to_id.reserve(object.edges_size());
+    // Step 1. Parse settings
+    Settings settings;
+    settings.bus_wait_time_ = static_cast<int>(object.settings().bus_wait_time());
+    settings.bus_velocity_ = static_cast<int>(object.settings().bus_velocity());
 
-    graph::DirectedWeightedGraph<double> graph(object.vertices_count());
-    for (const auto& [edge_id, edge_object] : object.edges()) {
-        graph::Edge<double> edge;
-        edge.from = edge_object.from();
-        edge.to = edge_object.to();
-        edge.weight = edge_object.weight();
+    // Step 2. Parse graph
+    TransportRouter::Graph graph(object.routes().vertices_count());
 
+    TransportRouter::EdgeToResponseStorage edge_to_response;
+    edge_to_response.reserve(object.edge_id_to_response_size());
+
+    for (const auto& [edge_id, edge_object] : object.routes().edges()) {
+        // Step 2.1 Add edge to the graph
+        graph::Edge<double> edge {
+            edge_object.from(),
+            edge_object.to(),
+            edge_object.weight()
+        };
         graph.AddEdge(edge);
-        edge_to_id.insert({edge, edge_id});
+
+        // Step 2.2 Add edge to response correspondence
+        proto_router::Response response = object.edge_id_to_response().at(edge_id);
+        if (response.type() == proto_router::Response_ResponseType_Wait) {
+            WaitResponse tmp(response.time(), response.name());
+            edge_to_response.insert({edge, std::move(tmp)});
+        } else {
+            BusResponse tmp(response.time(), response.name(), static_cast<int>(response.span_count()));
+            edge_to_response.insert({edge, std::move(tmp)});
+        }
     }
 
-    return graph;
+    // Step 3. Add stops to vertex correspondence
+    const auto& stops = catalogue.GetStops();
+    const auto id_to_stop = SetNameToEachStop(stops);
+
+    TransportRouter::StopToVertexStorage stop_to_vertex;
+    stop_to_vertex.reserve(object.stop_to_vertex_size());
+
+    for (const auto& [id, vertex] : object.stop_to_vertex())
+        stop_to_vertex.insert({stops.at(id).name, {vertex.start(), vertex.end()}});
+
+    return TransportRouter{catalogue, graph, stop_to_vertex, edge_to_response, settings};
 }
 
 }  // namespace serialization

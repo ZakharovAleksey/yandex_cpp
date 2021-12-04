@@ -9,7 +9,7 @@ namespace request {
 using namespace std::literals;
 using namespace catalogue;
 using namespace request;
- using namespace routing;
+using namespace routing;
 
 namespace {
 
@@ -66,7 +66,7 @@ void MakeStopResponse(int request_id, const std::set<std::string_view>& buses, j
     json_builder.EndDict();
 }
 
- struct RouteItemVisitor {
+struct RouteItemVisitor {
     json::Builder& json;
 
     void operator()(const WaitResponse& response) const {
@@ -83,7 +83,7 @@ void MakeStopResponse(int request_id, const std::set<std::string_view>& buses, j
     }
 };
 
- void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, json::Builder& json_builder) {
+void MakeRouteResponse(int request_id, const routing::ResponseData& route_info, json::Builder& json_builder) {
     json_builder.StartDict();
 
     json_builder.Key("request_id"s).Value(request_id);
@@ -258,19 +258,16 @@ json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& re
             } else {
                 MakeErrorResponse(request_id, response);
             }
-        }
-        else if (type == "Stop"s) {
+        } else if (type == "Stop"s) {
             name = request_dict_view.at("name"s).AsString();
             if (auto buses = handler.GetBusesThroughTheStop(name)) {
                 MakeStopResponse(request_id, *buses, response);
             } else {
                 MakeErrorResponse(request_id, response);
             }
-        }
-        else if (type == "Map"s) {
+        } else if (type == "Map"s) {
             MakeMapImageResponse(request_id, handler.RenderMap(), response);
-        }
-        else if (type == "Route"s) {
+        } else if (type == "Route"s) {
             std::string stop_name_from = request_dict_view.at("from"s).AsString();
             std::string stop_name_to = request_dict_view.at("to"s).AsString();
 
@@ -286,7 +283,7 @@ json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& re
     return std::move(response.Build());
 }
 
- routing::Settings ParseRoutingSettings(const json::Dict& requests) {
+routing::Settings ParseRoutingSettings(const json::Dict& requests) {
     using namespace routing;
 
     auto meter_per_min = [](double km_per_hour) { return 1'000. * km_per_hour / 60.; };

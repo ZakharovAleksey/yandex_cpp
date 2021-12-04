@@ -62,6 +62,7 @@ public:
         graph::VertexId start{0};
         graph::VertexId end{0};
     };
+    using StopToVertexStorage = std::unordered_map<std::string_view, StopVertices>;
 
     struct EdgeHash {
         inline size_t operator()(const graph::Edge<Weight>& edge) const {
@@ -75,9 +76,16 @@ public:
     private:
         static constexpr int kPrimeValue{41};
     };
+    using EdgeToResponseStorage = std::unordered_map<graph::Edge<Weight>, ResponseItem, EdgeHash>;
 
 public:  // Constructor
     TransportRouter(const catalogue::TransportCatalogue& catalogue, Settings settings);
+    // clang-format off
+    TransportRouter(const catalogue::TransportCatalogue& catalogue,
+                    Graph graph,
+                    StopToVertexStorage stop_to_vertex,
+                    EdgeToResponseStorage edge_to_response, Settings settings);
+    // clang-format on
 
 public:  // Methods
     [[nodiscard]] ResponseDataOpt BuildRoute(std::string_view from, std::string_view to) const;
@@ -90,7 +98,6 @@ public:  // Methods
     const ResponseItem& GetResponse(const graph::Edge<Weight>& edge) const;
     const StopVertices& GetStopVertices(std::string_view stop) const;
 
-
 private:  // Methods
     void BuildVerticesForStops(const std::set<std::string_view>& stops);
     void AddBusRouteEdges(const catalogue::Bus& bus);
@@ -101,8 +108,8 @@ private:  // Fields
     const catalogue::TransportCatalogue& catalogue_;
     Settings settings_;
 
-    std::unordered_map<std::string_view, StopVertices> stop_to_vertex_;
-    std::unordered_map<graph::Edge<Weight>, ResponseItem, EdgeHash> edge_to_response_;
+    StopToVertexStorage stop_to_vertex_;
+    EdgeToResponseStorage edge_to_response_;
 
     /// @brief Graph, which stores all possible routes for the given TransportCatalogue
     /// @details Each stop in graph consists from the two vertices: {start, end} to take into account passenger wait for

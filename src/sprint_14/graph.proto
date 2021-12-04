@@ -16,12 +16,3 @@ message Graph {
   map<uint32, Edge> edges = 1;
   uint64 vertices_count = 2;
 }
-
-//message RouteInternalData {
-//  double weight = 1;
-//  EdgeId prev_edge_id = 2;
-//}
-//
-//message RoutesInternalData {
-//  repeated RouteInternalData routes_data = 1;
-//}
