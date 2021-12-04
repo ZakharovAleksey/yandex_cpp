@@ -258,7 +258,8 @@ json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& re
             } else {
                 MakeErrorResponse(request_id, response);
             }
-        } else if (type == "Stop"s) {
+        }
+        else if (type == "Stop"s) {
             name = request_dict_view.at("name"s).AsString();
             if (auto buses = handler.GetBusesThroughTheStop(name)) {
                 MakeStopResponse(request_id, *buses, response);
@@ -269,7 +270,6 @@ json::Node MakeStatisticsResponse(RequestHandler& handler, const json::Array& re
         else if (type == "Map"s) {
             MakeMapImageResponse(request_id, handler.RenderMap(), response);
         }
-
         else if (type == "Route"s) {
             std::string stop_name_from = request_dict_view.at("from"s).AsString();
             std::string stop_name_to = request_dict_view.at("to"s).AsString();

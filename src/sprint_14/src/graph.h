@@ -40,6 +40,7 @@ public:
     size_t GetVertexCount() const;
     size_t GetEdgeCount() const;
     const Edge<Weight>& GetEdge(EdgeId edge_id) const;
+    const std::vector<Edge<Weight>>& GetEdges() const;
     IncidentEdgesRange GetIncidentEdges(VertexId vertex) const;
 
 private:
@@ -71,6 +72,11 @@ size_t DirectedWeightedGraph<Weight>::GetEdgeCount() const {
 template <typename Weight>
 const Edge<Weight>& DirectedWeightedGraph<Weight>::GetEdge(EdgeId edge_id) const {
     return edges_.at(edge_id);
+}
+
+template <typename Weight>
+const std::vector<Edge<Weight>>& DirectedWeightedGraph<Weight>::GetEdges() const {
+    return edges_;
 }
 
 template <typename Weight>

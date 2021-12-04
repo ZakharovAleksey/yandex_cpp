@@ -58,19 +58,6 @@ public:
     using Graph = graph::DirectedWeightedGraph<Weight>;
     using Router = graph::Router<Weight>;
 
-public:  // Constructor
-    TransportRouter(const catalogue::TransportCatalogue& catalogue, Settings settings);
-
-public:  // Methods
-    [[nodiscard]] ResponseDataOpt BuildRoute(std::string_view from, std::string_view to) const;
-
-private:  // Methods
-    void BuildVerticesForStops(const std::set<std::string_view>& stops);
-    void AddBusRouteEdges(const catalogue::Bus& bus);
-
-    void BuildRoutesGraph(const std::deque<catalogue::Bus>& buses);
-
-private:  // Types
     struct StopVertices {
         graph::VertexId start{0};
         graph::VertexId end{0};
@@ -88,6 +75,27 @@ private:  // Types
     private:
         static constexpr int kPrimeValue{41};
     };
+
+public:  // Constructor
+    TransportRouter(const catalogue::TransportCatalogue& catalogue, Settings settings);
+
+public:  // Methods
+    [[nodiscard]] ResponseDataOpt BuildRoute(std::string_view from, std::string_view to) const;
+
+    /* METHODS USED FOR SERIALIZATION */
+
+    const Settings& GetSettings() const;
+    const catalogue::TransportCatalogue& GetTransportCatalogue() const;
+    const Graph& GetGraph() const;
+    const ResponseItem& GetResponse(const graph::Edge<Weight>& edge) const;
+    const StopVertices& GetStopVertices(std::string_view stop) const;
+
+
+private:  // Methods
+    void BuildVerticesForStops(const std::set<std::string_view>& stops);
+    void AddBusRouteEdges(const catalogue::Bus& bus);
+
+    void BuildRoutesGraph(const std::deque<catalogue::Bus>& buses);
 
 private:  // Fields
     const catalogue::TransportCatalogue& catalogue_;

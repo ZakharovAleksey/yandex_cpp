@@ -81,4 +81,24 @@ ResponseDataOpt TransportRouter::BuildRoute(std::string_view from, std::string_v
     return response;
 }
 
+const Settings& TransportRouter::GetSettings() const {
+    return settings_;
+}
+
+const catalogue::TransportCatalogue& TransportRouter::GetTransportCatalogue() const {
+    return catalogue_;
+}
+
+const TransportRouter::Graph& TransportRouter::GetGraph() const {
+    return *routes_;
+}
+
+const ResponseItem& TransportRouter::GetResponse(const graph::Edge<TransportRouter::Weight>& edge) const {
+    return edge_to_response_.at(edge);
+}
+
+const TransportRouter::StopVertices& TransportRouter::GetStopVertices(std::string_view stop) const {
+    return stop_to_vertex_.at(stop);
+}
+
 }  // namespace routing
