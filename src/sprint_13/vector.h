@@ -171,9 +171,9 @@ public:  // Methods
 
             RawMemory<Type> tmp_memory((size_ == 0) ? 1 : 2 * size_);
 
-            new (tmp_memory.GetAddress() + index) Type(std::forward<Args>(args)...);
 
             try {
+                new (tmp_memory.GetAddress() + index) Type(std::forward<Args>(args)...);
                 if constexpr (std::is_nothrow_move_constructible_v<Type> || !std::is_copy_constructible_v<Type>) {
                     try {
                         std::uninitialized_move_n(begin(), count_before, tmp_memory.GetAddress());
