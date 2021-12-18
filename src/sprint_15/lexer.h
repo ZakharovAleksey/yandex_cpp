@@ -6,20 +6,21 @@
 #include <stdexcept>
 #include <string>
 #include <variant>
+#include <vector>
 
 namespace parse {
 
 namespace token_type {
 struct Number {  // Лексема «число»
-    int value;   // число
+    int value;
 };
 
-struct Id {             // Лексема «идентификатор»
-    std::string value;  // Имя идентификатора
+struct Id {  // Лексема «идентификатор»
+    std::string value;
 };
 
-struct Char {    // Лексема «символ»
-    char value;  // код символа
+struct Char {  // Лексема «символ»
+    char value;
 };
 
 struct String {  // Лексема «строковая константа»
@@ -74,10 +75,10 @@ struct Token : TokenBase {
     }
 };
 
-bool operator==(const Token& lhs, const Token& rhs);
-bool operator!=(const Token& lhs, const Token& rhs);
+bool operator==(const Token& left, const Token& right);
+bool operator!=(const Token& left, const Token& right);
 
-std::ostream& operator<<(std::ostream& os, const Token& rhs);
+std::ostream& operator<<(std::ostream& os, const Token& token);
 
 class LexerError : public std::runtime_error {
 public:
@@ -85,53 +86,107 @@ public:
 };
 
 class Lexer {
-public:
+public:  // Constructor
     explicit Lexer(std::istream& input);
 
-    // Возвращает ссылку на текущий токен или token_type::Eof, если поток токенов закончился
+public:  // Methods
+    /*!
+     * @brief Gets reference to the current token
+     * @return Reference to the current token, EOF in case the stream is over
+     */
     [[nodiscard]] const Token& CurrentToken() const;
 
-    // Возвращает следующий токен, либо token_type::Eof, если поток токенов закончился
+    /*!
+     * @brief Gets reference to the next token
+     * @return Reference to the current token, EOF in case the stream is over
+     */
     Token NextToken();
 
-    // Если текущий токен имеет тип T, метод возвращает ссылку на него.
-    // В противном случае метод выбрасывает исключение LexerError
-    template <typename T>
-    const T& Expect() const {
-        using namespace std::literals;
-        // Заглушка. Реализуйте метод самостоятельно
-        throw LexerError("Not implemented"s);
+    /*!
+     * @brief Checks if token has assumed type
+     * @tparam TokenType Assumed token type
+     * @return Reference to the token of specified type
+     * @throws LexerError In case if token type is differ from expected
+     */
+    template <typename TokenType>
+    const TokenType& Expect() const {
+        using namespace std::string_literals;
+
+        if (tokens_[current_token_id].Is<TokenType>())
+            return tokens_[current_token_id].As<TokenType>();
+
+        throw LexerError("Token is has unexpected type:" + std::string(typeid(TokenType).name()));
     }
 
-    // Метод проверяет, что текущий токен имеет тип T, а сам токен содержит значение value.
-    // В противном случае метод выбрасывает исключение LexerError
-    template <typename T, typename U>
-    void Expect(const U& /*value*/) const {
-        using namespace std::literals;
-        // Заглушка. Реализуйте метод самостоятельно
-        throw LexerError("Not implemented"s);
+    /*!
+     *  @brief Checks if token has assumed type and value
+     *  @param value Expected value of token
+     *  @tparam TokenType Assumed token type
+     *  @tparam ValueType Assumed value type
+     *  @throws LexerError In case token type or value is differ from expected
+     */
+    template <typename TokenType, typename ValueType>
+    void Expect(const ValueType& value) const {
+        if (!tokens_[current_token_id].Is<TokenType>() || tokens_[current_token_id].As<TokenType>().value != value)
+            throw LexerError("Token is has unexpected type or value");
     }
 
-    // Если следующий токен имеет тип T, метод возвращает ссылку на него.
-    // В противном случае метод выбрасывает исключение LexerError
-    template <typename T>
-    const T& ExpectNext() {
-        using namespace std::literals;
-        // Заглушка. Реализуйте метод самостоятельно
-        throw LexerError("Not implemented"s);
+    /*!
+     *  @brief Gets reference to the next token if it has expected type
+     *  @tparam TokenType Assumed token type
+     *  @return Reference to the next token
+     *  @throws LexerError In case token type is differ from expected
+     */
+    template <typename TokenType>
+    const TokenType& ExpectNext() {
+        current_token_id = current_token_id + 1 < tokens_.size() ? current_token_id + 1 : current_token_id;
+        return Expect<TokenType>();
     }
 
-    // Метод проверяет, что следующий токен имеет тип T, а сам токен содержит значение value.
-    // В противном случае метод выбрасывает исключение LexerError
-    template <typename T, typename U>
-    void ExpectNext(const U& /*value*/) {
-        using namespace std::literals;
-        // Заглушка. Реализуйте метод самостоятельно
-        throw LexerError("Not implemented"s);
+    /*!
+     *  @brief Gets reference to the next token if it has expected type and value
+     *  @tparam TokenType Assumed token type
+     *  @tparam ValueType Assumed token value
+     *  @return Reference to the next token
+     *  @throws LexerError In case token type or value is differ from expected
+     */
+    template <typename TokenType, typename ValueType>
+    void ExpectNext(const ValueType& value) {
+        current_token_id = current_token_id + 1 < tokens_.size() ? current_token_id + 1 : current_token_id;
+        Expect<TokenType>(value);
     }
 
-private:
-    // Реализуйте приватную часть самостоятельно
+private:  // Methods
+    /// @brief Reads the whole line converting it to the sequence of tokens
+    void ReadLine(std::istringstream& input);
+
+    /// @brief Reads the identifiers
+    void ReadId(std::istringstream& input);
+
+    /// @brief Reads the numbers
+    void ReadNumber(std::istringstream& input);
+
+    /// @brief Reads the string in ""
+    void ReadString(std::istringstream& input, char last_symbol);
+
+    /* SUPPORT FUNCTIONS */
+
+    /// @brief Checks if the line is empty of consists only from comment
+    [[nodiscard]] bool EmptyLine(std::string_view) const;
+
+    /*!
+     * @brief Gets line without indent
+     * @return Indent value
+     */
+    size_t GetAndCutLineIndent(std::string& input) const;
+
+    /// @brief Set new indent value
+    void SetNewIndent(size_t new_indent);
+
+private:  // Fields
+    size_t current_token_id{0};
+    size_t indent_{0};
+    std::vector<Token> tokens_;
 };
 
 }  // namespace parse
