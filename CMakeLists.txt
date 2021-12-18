@@ -50,8 +50,10 @@ set(SPRINT_13_FILES ${SPRINT_13_DIR}/optional.h ${SPRINT_13_DIR}/vector.h)
 set(SPRINT_15_DIR ${SOURCE_DIR}/sprint_15)
 set(SPRINT_15_FILES
         ${SPRINT_15_DIR}/lexer.h ${SPRINT_15_DIR}/lexer.cpp
+        ${SPRINT_15_DIR}/runtime.h ${SPRINT_15_DIR}/runtime.cpp
         ${SPRINT_15_DIR}/test_runner_p.h
-        ${SPRINT_15_DIR}/lexer_test_open.cpp)
+        ${SPRINT_15_DIR}/lexer_test_open.cpp
+        ${SPRINT_15_DIR}/runtime_test.cpp)
 
 # SET UP BUILD TARGETS
 add_executable(sprint_12 main.cpp ${SPRINT_12_FILES})
