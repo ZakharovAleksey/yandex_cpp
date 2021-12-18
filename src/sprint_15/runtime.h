@@ -8,201 +8,204 @@
 
 namespace runtime {
 
-// Контекст исполнения инструкций Mython
 class Context {
-public:
-    // Возвращает поток вывода для команд print
+public:  // Methods
     virtual std::ostream& GetOutputStream() = 0;
 
-protected:
+protected:  // Destructor
     ~Context() = default;
 };
 
-// Базовый класс для всех объектов языка Mython
+/// @brief Base class for all Mython objects
 class Object {
-public:
+public:  // Destructor
     virtual ~Object() = default;
-    // выводит в os своё представление в виде строки
+
+public:  // Methods
     virtual void Print(std::ostream& os, Context& context) = 0;
 };
 
-// Специальный класс-обёртка, предназначенный для хранения объекта в Mython-программе
 class ObjectHolder {
-public:
-    // Создаёт пустое значение
+public:  // Constructor
     ObjectHolder() = default;
 
-    // Возвращает ObjectHolder, владеющий объектом типа T
-    // Тип T - конкретный класс-наследник Object.
-    // object копируется или перемещается в кучу
-    template <typename T>
-    [[nodiscard]] static ObjectHolder Own(T&& object) {
-        return ObjectHolder(std::make_shared<T>(std::forward<T>(object)));
+public:  // Methods
+    /*!
+     * @brief Returns an ObjectHolder that owns an object of type Type
+     * @tparam Type Type of object
+     * @return Holder for the object
+     */
+    template <typename Type>
+    [[nodiscard]] static ObjectHolder Own(Type&& object) {
+        return ObjectHolder(std::make_shared<Type>(std::forward<Type>(object)));
     }
 
-    // Создаёт ObjectHolder, не владеющий объектом (аналог слабой ссылки)
+    /// @brief Creates an ObjectHolder that does not own the object (analogous to a weak reference)
     [[nodiscard]] static ObjectHolder Share(Object& object);
-    // Создаёт пустой ObjectHolder, соответствующий значению None
+    /// @brief Creates an empty ObjectHolder corresponding to None
     [[nodiscard]] static ObjectHolder None();
 
-    // Возвращает ссылку на Object внутри ObjectHolder.
-    // ObjectHolder должен быть непустым
+    /*!
+     *  @brief Returns a reference to the Object inside the ObjectHolder.
+     *  @attention ObjectHolder must be non-empty
+     */
     Object& operator*() const;
 
     Object* operator->() const;
 
     [[nodiscard]] Object* Get() const;
 
-    // Возвращает указатель на объект типа T либо nullptr, если внутри ObjectHolder не хранится
-    // объект данного типа
+    /*!
+     *  @brief Try to get a pointer to the object of specified type
+     *  @tparam T Type of object
+     *  @return Pointer to the object if it is in ObjectHolder, nullptr otherwise
+     */
     template <typename T>
     [[nodiscard]] T* TryAs() const {
         return dynamic_cast<T*>(this->Get());
     }
 
-    // Возвращает true, если ObjectHolder не пуст
+public:  // Operators
+    /// @brief Returns true if the ObjectHolder is not empty
     explicit operator bool() const;
 
-private:
+private:  // Constructor
     explicit ObjectHolder(std::shared_ptr<Object> data);
+
+private:  // Methods
     void AssertIsValid() const;
 
-    std::shared_ptr<Object> data_;
+private:  // Fields
+    std::shared_ptr<Object> data_{nullptr};
 };
 
-// Объект-значение, хранящий значение типа T
-template <typename T>
+template <typename Type>
 class ValueObject : public Object {
-public:
-    ValueObject(T v)  // NOLINT(google-explicit-constructor,hicpp-explicit-conversions)
-        : value_(v) {}
+public:                      // Constructor
+    ValueObject(Type value)  // NOLINT(google-explicit-constructor,hicpp-explicit-conversions)
+        : value_(value) {}
 
+public:  // Methods
     void Print(std::ostream& os, [[maybe_unused]] Context& context) override {
         os << value_;
     }
 
-    [[nodiscard]] const T& GetValue() const {
+    [[nodiscard]] const Type& GetValue() const {
         return value_;
     }
 
-private:
-    T value_;
+private:  // Fields
+    Type value_{};
 };
 
-// Таблица символов, связывающая имя объекта с его значением
 using Closure = std::unordered_map<std::string, ObjectHolder>;
 
-// Проверяет, содержится ли в object значение, приводимое к True
-// Для отличных от нуля чисел, True и непустых строк возвращается true. В остальных случаях - false.
 bool IsTrue(const ObjectHolder& object);
 
-// Интерфейс для выполнения действий над объектами Mython
+/// @brief An interface for performing actions on Mython objects
 class Executable {
-public:
+public:  // Destructor
     virtual ~Executable() = default;
-    // Выполняет действие над объектами внутри closure, используя context
-    // Возвращает результирующее значение либо None
+
+public:  // Methods
+    /*!
+     * @brief Performs an action on objects inside a closure using context
+     * @return Returns the resulting value or None
+     */
     virtual ObjectHolder Execute(Closure& closure, Context& context) = 0;
 };
 
-// Строковое значение
+/* MYTHON TYPES */
+
 using String = ValueObject<std::string>;
-// Числовое значение
 using Number = ValueObject<int>;
 
-// Логическое значение
 class Bool : public ValueObject<bool> {
-public:
+public:  // Types
     using ValueObject<bool>::ValueObject;
 
+public:  // Methods
     void Print(std::ostream& os, Context& context) override;
 };
 
-// Метод класса
 struct Method {
-    // Имя метода
+    /// @brief Name of the method
     std::string name;
-    // Имена формальных параметров метода
+    /// @brief Formal parameters names
     std::vector<std::string> formal_params;
-    // Тело метода
+    /// @brief Methods body
     std::unique_ptr<Executable> body;
 };
 
-// Класс
 class Class : public Object {
 public:
-    // Создаёт класс с именем name и набором методов methods, унаследованный от класса parent
-    // Если parent равен nullptr, то создаётся базовый класс
+    /*!
+     *  @brief Создаёт класс с именем name и набором методов methods, унаследованный от класса parent.
+     *  Если parent равен nullptr, то создаётся базовый класс
+     */
     explicit Class(std::string name, std::vector<Method> methods, const Class* parent);
 
-    // Возвращает указатель на метод name или nullptr, если метод с таким именем отсутствует
+    /// @brief Returns a pointer to the method name or nullptr if there is no method with this name
     [[nodiscard]] const Method* GetMethod(const std::string& name) const;
 
-    // Возвращает имя класса
+    /// @brief Returns the name fo the class
     [[nodiscard]] const std::string& GetName() const;
 
-    // Выводит в os строку "Class <имя класса>", например "Class cat"
+    /*!
+     *  @brief Prints the string "Class <class name>" to ostream
+     *  @example For the class Cat it will be: "Class cat"
+     */
     void Print(std::ostream& os, Context& context) override;
+
+private:  // Fields
+    std::string name_;
+    std::vector<Method> methods_;
+    const Class* parent_;
+    std::unordered_map<std::string_view, const Method*> name_to_method_;
 };
 
-// Экземпляр класса
 class ClassInstance : public Object {
-public:
+public:  // Constructor
     explicit ClassInstance(const Class& cls);
 
-    /*
-     * Если у объекта есть метод __str__, выводит в os результат, возвращённый этим методом.
-     * В противном случае в os выводится адрес объекта.
-     */
+public:  // Methods
+    /// @brief Calls for the __str__ method, if exists, otherwise prints the object address
     void Print(std::ostream& os, Context& context) override;
 
-    /*
-     * Вызывает у объекта метод method, передавая ему actual_args параметров.
-     * Параметр context задаёт контекст для выполнения метода.
-     * Если ни сам класс, ни его родители не содержат метод method, метод выбрасывает исключение
-     * runtime_error
+    /*!
+     *  @brief Calls for the specified method with arguments
+     *  @param method_name Name of the method
+     *  @param actual_arguments Method's arguments
+     *  @param context Method execution context
+     *  @return Method return value
+     *  @throws std::runtime_error in case object or his parents don't have this method
      */
-    ObjectHolder Call(const std::string& method, const std::vector<ObjectHolder>& actual_args, Context& context);
+    ObjectHolder Call(const std::string& method_name, const std::vector<ObjectHolder>& actual_arguments,
+                      Context& context);
 
-    // Возвращает true, если объект имеет метод method, принимающий argument_count параметров
-    [[nodiscard]] bool HasMethod(const std::string& method, size_t argument_count) const;
+    [[nodiscard]] bool HasMethod(const std::string& method_name, size_t argument_count) const;
 
-    // Возвращает ссылку на Closure, содержащий поля объекта
     [[nodiscard]] Closure& Fields();
-    // Возвращает константную ссылку на Closure, содержащую поля объекта
+
     [[nodiscard]] const Closure& Fields() const;
+
+private:  // Fields
+    const Class& class_;
+    Closure fields_;
 };
 
-/*
- * Возвращает true, если lhs и rhs содержат одинаковые числа, строки или значения типа Bool.
- * Если lhs - объект с методом __eq__, функция возвращает результат вызова lhs.__eq__(rhs),
- * приведённый к типу Bool. Если lhs и rhs имеют значение None, функция возвращает true.
- * В остальных случаях функция выбрасывает исключение runtime_error.
- *
- * Параметр context задаёт контекст для выполнения метода __eq__
- */
-bool Equal(const ObjectHolder& lhs, const ObjectHolder& rhs, Context& context);
+bool Equal(const ObjectHolder& left, const ObjectHolder& right, Context& context);
 
-/*
- * Если lhs и rhs - числа, строки или значения bool, функция возвращает результат их сравнения
- * оператором <.
- * Если lhs - объект с методом __lt__, возвращает результат вызова lhs.__lt__(rhs),
- * приведённый к типу bool. В остальных случаях функция выбрасывает исключение runtime_error.
- *
- * Параметр context задаёт контекст для выполнения метода __lt__
- */
 bool Less(const ObjectHolder& lhs, const ObjectHolder& rhs, Context& context);
-// Возвращает значение, противоположное Equal(lhs, rhs, context)
+
 bool NotEqual(const ObjectHolder& lhs, const ObjectHolder& rhs, Context& context);
-// Возвращает значение lhs>rhs, используя функции Equal и Less
+
 bool Greater(const ObjectHolder& lhs, const ObjectHolder& rhs, Context& context);
-// Возвращает значение lhs<=rhs, используя функции Equal и Less
+
 bool LessOrEqual(const ObjectHolder& lhs, const ObjectHolder& rhs, Context& context);
-// Возвращает значение, противоположное Less(lhs, rhs, context)
+
 bool GreaterOrEqual(const ObjectHolder& lhs, const ObjectHolder& rhs, Context& context);
 
-// Контекст-заглушка, применяется в тестах.
-// В этом контексте весь вывод перенаправляется в строковый поток вывода output
 struct DummyContext : Context {
     std::ostream& GetOutputStream() override {
         return output;
@@ -211,16 +214,16 @@ struct DummyContext : Context {
     std::ostringstream output;
 };
 
-// Простой контекст, в нём вывод происходит в поток output, переданный в конструктор
 class SimpleContext : public runtime::Context {
-public:
+public:  // Constructor
     explicit SimpleContext(std::ostream& output) : output_(output) {}
 
+public:  // Methods
     std::ostream& GetOutputStream() override {
         return output_;
     }
 
-private:
+private:  // Fields
     std::ostream& output_;
 };
 
