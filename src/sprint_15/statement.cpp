@@ -22,7 +22,7 @@ Closure& TryGetFields(const ObjectHolder& object) {
     if (auto* cls = object.TryAs<runtime::ClassInstance>())
         return cls->Fields();
     throw std::runtime_error("Attempt to access non-existed field of class");
-};
+}
 
 std::optional<ObjectHolder> NumberHelper(Operation type, const ObjectHolder& left_holder,
                                          const ObjectHolder& right_holder) {
@@ -56,6 +56,8 @@ std::optional<ObjectHolder> NumberHelper(Operation type, const ObjectHolder& lef
 
 }  // namespace
 
+/* ASSIGMENT AND NEW ITEMS CREATION */
+
 VariableValue::VariableValue(const std::string& variable_name) {
     fields_sequence_.push_back(variable_name);
 }
@@ -63,7 +65,7 @@ VariableValue::VariableValue(const std::string& variable_name) {
 VariableValue::VariableValue(std::vector<std::string> fields_sequence_)
     : fields_sequence_(std::move(fields_sequence_)) {}
 
-ObjectHolder VariableValue::Execute(Closure& closure, Context& /*context*/) {
+ObjectHolder VariableValue::Execute(Closure& closure, Context&) {
     auto try_get_first = [&](Closure& object_closure, const std::string& name) {
         if (auto position = object_closure.find(name); position != object_closure.end())
             return position->second;
@@ -117,7 +119,6 @@ unique_ptr<Print> Print::Variable(const std::string& name) {
     return std::make_unique<Print>(std::make_unique<VariableValue>(name));
 }
 
-// TODO: mb here
 ObjectHolder Print::Execute(Closure& closure, Context& context) {
     auto& output = context.GetOutputStream();
     bool is_first = true;
@@ -177,6 +178,8 @@ ObjectHolder NewInstance::Execute(Closure& closure, Context& context) {
     return object;
 }
 
+/* UNARY OPERATIONS */
+
 ObjectHolder Stringify::Execute(Closure& closure, Context& context) {
     auto object = GetArg()->Execute(closure, context);
     std::stringstream output;
@@ -217,7 +220,7 @@ BinaryOperation::BinaryOperation(StatementUPtr left, StatementUPtr right)
     return right_;
 }
 
-/* BINARY MATH OPERATIONS */
+/* MATH OPERATIONS */
 
 ObjectHolder Add::Execute(Closure& closure, Context& context) {
     if (!GetRight() || !GetLeft())
