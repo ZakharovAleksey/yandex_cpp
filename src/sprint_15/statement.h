@@ -8,277 +8,295 @@ namespace ast {
 
 using Statement = runtime::Executable;
 
-// Выражение, возвращающее значение типа T,
-// используется как основа для создания констант
-template <typename T>
+template <typename Type>
 class ValueStatement : public Statement {
-public:
-    explicit ValueStatement(T v) : value_(std::move(v)) {}
+public:  // Constructor
+    explicit ValueStatement(Type v) : value_(std::move(v)) {}
 
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& /*closure*/, runtime::Context& /*context*/) override {
         return runtime::ObjectHolder::Share(value_);
     }
 
-private:
-    T value_;
+private:  // Fields
+    Type value_;
 };
 
 using NumericConst = ValueStatement<runtime::Number>;
 using StringConst = ValueStatement<runtime::String>;
 using BoolConst = ValueStatement<runtime::Bool>;
 
-/*
-Вычисляет значение переменной либо цепочки вызовов полей объектов id1.id2.id3.
-Например, выражение circle.center.x - цепочка вызовов полей объектов в инструкции:
-x = circle.center.x
-*/
 class VariableValue : public Statement {
-public:
+public:  // Constructors
     explicit VariableValue(const std::string& var_name);
-    explicit VariableValue(std::vector<std::string> dotted_ids);
+    explicit VariableValue(std::vector<std::string> fields_sequence_);
 
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
+
+private:  // Fields
+    std::vector<std::string> fields_sequence_;
 };
 
-// Присваивает переменной, имя которой задано в параметре var, значение выражения rv
 class Assignment : public Statement {
-public:
+public:  // Constructors
     Assignment(std::string var, std::unique_ptr<Statement> rv);
 
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
+
+private:  // Fields
+    std::string var_;
+    std::unique_ptr<Statement> rv_;
 };
 
-// Присваивает полю object.field_name значение выражения rv
 class FieldAssignment : public Statement {
-public:
+public:  // Constructors
     FieldAssignment(VariableValue object, std::string field_name, std::unique_ptr<Statement> rv);
 
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
+
+private:  // Fields
+    VariableValue object_;
+    std::string field_name_;
+    std::unique_ptr<Statement> rv_;
 };
 
-// Значение None
 class None : public Statement {
-public:
+public:  // Methods
     runtime::ObjectHolder Execute([[maybe_unused]] runtime::Closure& closure,
                                   [[maybe_unused]] runtime::Context& context) override {
         return {};
     }
 };
 
-// Команда print
 class Print : public Statement {
-public:
-    // Инициализирует команду print для вывода значения выражения argument
+public:  // Constructors
     explicit Print(std::unique_ptr<Statement> argument);
-    // Инициализирует команду print для вывода списка значений args
     explicit Print(std::vector<std::unique_ptr<Statement>> args);
 
-    // Инициализирует команду print для вывода значения переменной name
+public:  // Methods
     static std::unique_ptr<Print> Variable(const std::string& name);
-
-    // Во время выполнения команды print вывод должен осуществляться в поток, возвращаемый из
-    // context.GetOutputStream()
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
+
+private:  // Fields
+    std::vector<std::unique_ptr<Statement>> args_;
 };
 
-// Вызывает метод object.method со списком параметров args
 class MethodCall : public Statement {
-public:
+public:  // Constructors
     MethodCall(std::unique_ptr<Statement> object, std::string method, std::vector<std::unique_ptr<Statement>> args);
 
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
+
+private:  // Fields
+    std::unique_ptr<Statement> object_;
+    std::string method_;
+    std::vector<std::unique_ptr<Statement>> args_;
 };
 
-/*
-Создаёт новый экземпляр класса class_, передавая его конструктору набор параметров args.
-Если в классе отсутствует метод __init__ с заданным количеством аргументов,
-то экземпляр класса создаётся без вызова конструктора (поля объекта не будут проинициализированы):
-
-class Person:
-  def set_name(name):
-    self.name = name
-
-p = Person()
-# Поле name будет иметь значение только после вызова метода set_name
-p.set_name("Ivan")
-*/
 class NewInstance : public Statement {
-public:
+public:  // Constructors
     explicit NewInstance(const runtime::Class& class_);
     NewInstance(const runtime::Class& class_, std::vector<std::unique_ptr<Statement>> args);
+
+public:  // Methods
     // Возвращает объект, содержащий значение типа ClassInstance
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
+
+private:  // Fields
+    const runtime::Class& class__;
+    std::vector<std::unique_ptr<Statement>> args_;
 };
 
-// Базовый класс для унарных операций
 class UnaryOperation : public Statement {
-public:
-    explicit UnaryOperation(std::unique_ptr<Statement> /*argument*/) {
-        // Реализуйте метод самостоятельно
+public:  // Constructors
+    explicit UnaryOperation(std::unique_ptr<Statement> argument) : argument_(std::move(argument)) {}
+
+public:  // Methods
+    const std::unique_ptr<Statement>& GetArg() const {
+        return argument_;
     }
+
+private:  // Fields
+    std::unique_ptr<Statement> argument_;
 };
 
-// Операция str, возвращающая строковое значение своего аргумента
 class Stringify : public UnaryOperation {
-public:
+public:  // Types
     using UnaryOperation::UnaryOperation;
+
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 };
 
-// Родительский класс Бинарная операция с аргументами lhs и rhs
+/* MATH OPERATIONS */
+
 class BinaryOperation : public Statement {
-public:
-    BinaryOperation(std::unique_ptr<Statement> /*lhs*/, std::unique_ptr<Statement> /*rhs*/) {
-        // Реализуйте метод самостоятельно
-    }
+public:  // Constructor
+    BinaryOperation(std::unique_ptr<Statement> left, std::unique_ptr<Statement> right);
+
+protected:  // Methods
+    [[nodiscard]] const std::unique_ptr<Statement>& GetLeft() const;
+    [[nodiscard]] const std::unique_ptr<Statement>& GetRight() const;
+
+private:  // Fields
+    std::unique_ptr<Statement> left_;
+    std::unique_ptr<Statement> right_;
 };
 
-// Возвращает результат операции + над аргументами lhs и rhs
 class Add : public BinaryOperation {
-public:
+public:  // Types
     using BinaryOperation::BinaryOperation;
 
-    // Поддерживается сложение:
-    //  число + число
-    //  строка + строка
-    //  объект1 + объект2, если у объект1 - пользовательский класс с методом _add__(rhs)
-    // В противном случае при вычислении выбрасывается runtime_error
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 };
 
-// Возвращает результат вычитания аргументов lhs и rhs
 class Sub : public BinaryOperation {
-public:
+public:  // Types
     using BinaryOperation::BinaryOperation;
 
-    // Поддерживается вычитание:
-    //  число - число
-    // Если lhs и rhs - не числа, выбрасывается исключение runtime_error
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 };
 
-// Возвращает результат умножения аргументов lhs и rhs
 class Mult : public BinaryOperation {
-public:
+public:  // Types
     using BinaryOperation::BinaryOperation;
 
-    // Поддерживается умножение:
-    //  число * число
-    // Если lhs и rhs - не числа, выбрасывается исключение runtime_error
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 };
 
-// Возвращает результат деления lhs и rhs
 class Div : public BinaryOperation {
-public:
+public:  // Types
     using BinaryOperation::BinaryOperation;
 
-    // Поддерживается деление:
-    //  число / число
-    // Если lhs и rhs - не числа, выбрасывается исключение runtime_error
-    // Если rhs равен 0, выбрасывается исключение runtime_error
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 };
 
-// Возвращает результат вычисления логической операции or над lhs и rhs
+/* LOGICAL OPERATIONS */
+
 class Or : public BinaryOperation {
-public:
+public:  // Types
     using BinaryOperation::BinaryOperation;
-    // Значение аргумента rhs вычисляется, только если значение lhs
-    // после приведения к Bool равно False
+
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 };
 
-// Возвращает результат вычисления логической операции and над lhs и rhs
 class And : public BinaryOperation {
-public:
+public:  // Types
     using BinaryOperation::BinaryOperation;
-    // Значение аргумента rhs вычисляется, только если значение lhs
-    // после приведения к Bool равно True
+
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 };
 
-// Возвращает результат вычисления логической операции not над единственным аргументом операции
+class Comparison : public BinaryOperation {
+public:  // Types
+    // clang-format off
+    using Comparator = std::function<bool(const runtime::ObjectHolder&,
+                                          const runtime::ObjectHolder&,
+                                          runtime::Context&)>;
+    // clang-format on
+public:  // Constructor
+    Comparison(Comparator cmp, std::unique_ptr<Statement> lhs, std::unique_ptr<Statement> rhs);
+
+public:  // Methods
+    runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
+
+private:  // Fields
+    Comparator cmp_;
+};
+
 class Not : public UnaryOperation {
-public:
+public:  // Types
     using UnaryOperation::UnaryOperation;
+
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 };
 
-// Составная инструкция (например: тело метода, содержимое ветки if, либо else)
+/* STATEMENTS */
+
 class Compound : public Statement {
-public:
-    // Конструирует Compound из нескольких инструкций типа unique_ptr<Statement>
+public:  // Constructor
     template <typename... Args>
-    explicit Compound(Args&&... /*args*/) {
-        // Реализуйте метод самостоятельно
+    explicit Compound(Args&&... args) {
+        if constexpr (sizeof...(Args) > 0) {
+            CompoundHelper(args...);
+        }
     }
 
-    // Добавляет очередную инструкцию в конец составной инструкции
-    void AddStatement(std::unique_ptr<Statement> /*stmt*/) {
-        // Реализуйте метод самостоятельно
-    }
-
-    // Последовательно выполняет добавленные инструкции. Возвращает None
+public:  // Methods
+    void AddStatement(std::unique_ptr<Statement> statement);
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
+
+private:  // Methods
+    template <typename T0, typename... Ts>
+    void CompoundHelper(T0&& v0, Ts&&... vs) {
+        if constexpr (sizeof...(vs) != 0) {
+            statements_.push_back(std::move(v0));
+            CompoundHelper(vs...);
+        } else {
+            statements_.push_back(std::move(v0));
+        }
+    }
+
+private:  // Fields
+    std::vector<std::unique_ptr<Statement>> statements_;
 };
 
-// Тело метода. Как правило, содержит составную инструкцию
 class MethodBody : public Statement {
-public:
+public:  // Types
     explicit MethodBody(std::unique_ptr<Statement>&& body);
 
-    // Вычисляет инструкцию, переданную в качестве body.
-    // Если внутри body была выполнена инструкция return, возвращает результат return
-    // В противном случае возвращает None
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
+
+private:  // Fields
+    std::unique_ptr<Statement> body_;
 };
 
-// Выполняет инструкцию return с выражением statement
 class Return : public Statement {
-public:
-    explicit Return(std::unique_ptr<Statement> /*statement*/) {
-        // Реализуйте метод самостоятельно
-    }
+public:  // Constructor
+    explicit Return(std::unique_ptr<Statement> statement) : statement_(std::move(statement)) {}
 
-    // Останавливает выполнение текущего метода. После выполнения инструкции return метод,
-    // внутри которого она была исполнена, должен вернуть результат вычисления выражения statement.
+public:  // Method
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
+
+private:  // Field
+    std::unique_ptr<Statement> statement_;
 };
 
-// Объявляет класс
 class ClassDefinition : public Statement {
-public:
-    // Гарантируется, что ObjectHolder содержит объект типа runtime::Class
+public:  // Constructors
     explicit ClassDefinition(runtime::ObjectHolder cls);
 
-    // Создаёт внутри closure новый объект, совпадающий с именем класса и значением, переданным в
-    // конструктор
+public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
+
+private:  // Fields
+    runtime::ObjectHolder cls_;
 };
 
-// Инструкция if <condition> <if_body> else <else_body>
 class IfElse : public Statement {
-public:
-    // Параметр else_body может быть равен nullptr
+public:  // Constructor
     IfElse(std::unique_ptr<Statement> condition, std::unique_ptr<Statement> if_body,
            std::unique_ptr<Statement> else_body);
 
+public:  // Method
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
-};
 
-// Операция сравнения
-class Comparison : public BinaryOperation {
-public:
-    // Comparator задаёт функцию, выполняющую сравнение значений аргументов
-    using Comparator =
-        std::function<bool(const runtime::ObjectHolder&, const runtime::ObjectHolder&, runtime::Context&)>;
-
-    Comparison(Comparator cmp, std::unique_ptr<Statement> lhs, std::unique_ptr<Statement> rhs);
-
-    // Вычисляет значение выражений lhs и rhs и возвращает результат работы comparator,
-    // приведённый к типу runtime::Bool
-    runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
+private:  // Fields
+    std::unique_ptr<Statement> condition_;
+    std::unique_ptr<Statement> if_body_;
+    std::unique_ptr<Statement> else_body_;
 };
 
 }  // namespace ast

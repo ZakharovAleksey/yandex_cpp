@@ -130,7 +130,6 @@ void TestAll() {
 int main() {
     try {
         TestAll();
-
         RunMythonProgram(cin, cout);
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;

@@ -1,6 +1,6 @@
 #include "parse.h"
 
-#include <test_runner.h>
+#include "test_runner_p.h"
 
 #include "lexer.h"
 #include "statement.h"
