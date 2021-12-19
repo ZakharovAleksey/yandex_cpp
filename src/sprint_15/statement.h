@@ -7,14 +7,15 @@
 namespace ast {
 
 using Statement = runtime::Executable;
+using StatementUPtr = std::unique_ptr<Statement>;
 
 template <typename Type>
 class ValueStatement : public Statement {
 public:  // Constructor
-    explicit ValueStatement(Type v) : value_(std::move(v)) {}
+    explicit ValueStatement(Type value) : value_(std::move(value)) {}
 
 public:  // Methods
-    runtime::ObjectHolder Execute(runtime::Closure& /*closure*/, runtime::Context& /*context*/) override {
+    runtime::ObjectHolder Execute(runtime::Closure&, runtime::Context&) override {
         return runtime::ObjectHolder::Share(value_);
     }
 
@@ -26,9 +27,13 @@ using NumericConst = ValueStatement<runtime::Number>;
 using StringConst = ValueStatement<runtime::String>;
 using BoolConst = ValueStatement<runtime::Bool>;
 
+/*!
+ * @brief Performs chain call of class object fields
+ * @example Used in expressions like: class.field0.field1.field2. ...
+ */
 class VariableValue : public Statement {
 public:  // Constructors
-    explicit VariableValue(const std::string& var_name);
+    explicit VariableValue(const std::string& variable_name);
     explicit VariableValue(std::vector<std::string> fields_sequence_);
 
 public:  // Methods
@@ -38,21 +43,28 @@ private:  // Fields
     std::vector<std::string> fields_sequence_;
 };
 
+/* ASSIGMENT AND NEW ITEMS CREATION */
+
+/// @brief Assigns "right_value" value to the "variable" variable on the left
 class Assignment : public Statement {
 public:  // Constructors
-    Assignment(std::string var, std::unique_ptr<Statement> rv);
+    Assignment(std::string variable, StatementUPtr right_value);
 
 public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 
 private:  // Fields
-    std::string var_;
-    std::unique_ptr<Statement> rv_;
+    std::string variable_;
+    StatementUPtr right_value_;
 };
 
+/*!
+ * @brief Assign "right_value" value to the field "field_name" of object "object"
+ * @example Used in cases like this: obj.field = right_value
+ */
 class FieldAssignment : public Statement {
 public:  // Constructors
-    FieldAssignment(VariableValue object, std::string field_name, std::unique_ptr<Statement> rv);
+    FieldAssignment(VariableValue object, std::string field_name, StatementUPtr right_value);
 
 public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
@@ -60,70 +72,82 @@ public:  // Methods
 private:  // Fields
     VariableValue object_;
     std::string field_name_;
-    std::unique_ptr<Statement> rv_;
+    StatementUPtr right_value_;
 };
 
+/// @brief Represents None value
 class None : public Statement {
 public:  // Methods
-    runtime::ObjectHolder Execute([[maybe_unused]] runtime::Closure& closure,
-                                  [[maybe_unused]] runtime::Context& context) override {
+    runtime::ObjectHolder Execute(runtime::Closure&, runtime::Context&) override {
         return {};
     }
 };
 
+/// @brief Represents the "print" method
 class Print : public Statement {
 public:  // Constructors
-    explicit Print(std::unique_ptr<Statement> argument);
-    explicit Print(std::vector<std::unique_ptr<Statement>> args);
+    explicit Print(StatementUPtr argument);
+    explicit Print(std::vector<StatementUPtr> arguments);
 
 public:  // Methods
     static std::unique_ptr<Print> Variable(const std::string& name);
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 
 private:  // Fields
-    std::vector<std::unique_ptr<Statement>> args_;
+    std::vector<StatementUPtr> arguments_;
 };
 
+/*!
+ * @brief Calls for the method "method" with arguments "arguments" from object "object"
+ * @example Could be used int: object.call_method(arg_1, arg_2)
+ */
 class MethodCall : public Statement {
 public:  // Constructors
-    MethodCall(std::unique_ptr<Statement> object, std::string method, std::vector<std::unique_ptr<Statement>> args);
+    MethodCall(StatementUPtr object, std::string method, std::vector<StatementUPtr> arguments);
 
 public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 
 private:  // Fields
-    std::unique_ptr<Statement> object_;
+    StatementUPtr object_;
     std::string method_;
-    std::vector<std::unique_ptr<Statement>> args_;
+    std::vector<StatementUPtr> arguments_;
 };
 
+/*!
+ * @brief Creates instance of "created_class" with arguments "arguments"
+ * @example Could be used int: instance = created_class(arg_1, arg_2, arg_3)
+ */
 class NewInstance : public Statement {
 public:  // Constructors
     explicit NewInstance(const runtime::Class& class_);
-    NewInstance(const runtime::Class& class_, std::vector<std::unique_ptr<Statement>> args);
+    NewInstance(const runtime::Class& class_, std::vector<StatementUPtr> arguments);
 
 public:  // Methods
-    // Возвращает объект, содержащий значение типа ClassInstance
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 
 private:  // Fields
-    const runtime::Class& class__;
-    std::vector<std::unique_ptr<Statement>> args_;
+    const runtime::Class& created_class_;
+    std::vector<StatementUPtr> arguments_;
 };
 
+/* UNARY OPERATIONS */
+
+/// @brief Base class for the unary operations
 class UnaryOperation : public Statement {
 public:  // Constructors
-    explicit UnaryOperation(std::unique_ptr<Statement> argument) : argument_(std::move(argument)) {}
+    explicit UnaryOperation(StatementUPtr argument) : argument_(std::move(argument)) {}
 
 public:  // Methods
-    const std::unique_ptr<Statement>& GetArg() const {
+    [[nodiscard]] const StatementUPtr& GetArg() const {
         return argument_;
     }
 
 private:  // Fields
-    std::unique_ptr<Statement> argument_;
+    StatementUPtr argument_;
 };
 
+/// @brief Returns string representation of object
 class Stringify : public UnaryOperation {
 public:  // Types
     using UnaryOperation::UnaryOperation;
@@ -134,19 +158,21 @@ public:  // Methods
 
 /* MATH OPERATIONS */
 
+/// @brief Base class for the binary operations
 class BinaryOperation : public Statement {
 public:  // Constructor
-    BinaryOperation(std::unique_ptr<Statement> left, std::unique_ptr<Statement> right);
+    BinaryOperation(StatementUPtr left, StatementUPtr right);
 
 protected:  // Methods
-    [[nodiscard]] const std::unique_ptr<Statement>& GetLeft() const;
-    [[nodiscard]] const std::unique_ptr<Statement>& GetRight() const;
+    [[nodiscard]] const StatementUPtr& GetLeft() const;
+    [[nodiscard]] const StatementUPtr& GetRight() const;
 
 private:  // Fields
-    std::unique_ptr<Statement> left_;
-    std::unique_ptr<Statement> right_;
+    StatementUPtr left_;
+    StatementUPtr right_;
 };
 
+/// @brief Represent plus operation
 class Add : public BinaryOperation {
 public:  // Types
     using BinaryOperation::BinaryOperation;
@@ -155,6 +181,7 @@ public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 };
 
+/// @brief Represent minus operation
 class Sub : public BinaryOperation {
 public:  // Types
     using BinaryOperation::BinaryOperation;
@@ -163,6 +190,7 @@ public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 };
 
+/// @brief Represent multiply operation
 class Mult : public BinaryOperation {
 public:  // Types
     using BinaryOperation::BinaryOperation;
@@ -171,6 +199,7 @@ public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 };
 
+/// @brief Represent division operation
 class Div : public BinaryOperation {
 public:  // Types
     using BinaryOperation::BinaryOperation;
@@ -181,6 +210,7 @@ public:  // Methods
 
 /* LOGICAL OPERATIONS */
 
+/// @brief Represent "logical or" operation
 class Or : public BinaryOperation {
 public:  // Types
     using BinaryOperation::BinaryOperation;
@@ -189,6 +219,7 @@ public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 };
 
+/// @brief Represent "logical and" operation
 class And : public BinaryOperation {
 public:  // Types
     using BinaryOperation::BinaryOperation;
@@ -197,6 +228,7 @@ public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 };
 
+/// @brief Represent "logical equal" operation
 class Comparison : public BinaryOperation {
 public:  // Types
     // clang-format off
@@ -205,15 +237,16 @@ public:  // Types
                                           runtime::Context&)>;
     // clang-format on
 public:  // Constructor
-    Comparison(Comparator cmp, std::unique_ptr<Statement> lhs, std::unique_ptr<Statement> rhs);
+    Comparison(Comparator comparator, StatementUPtr left, StatementUPtr right);
 
 public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 
 private:  // Fields
-    Comparator cmp_;
+    Comparator comparator_;
 };
 
+/// @brief Represent "logical not" operation
 class Not : public UnaryOperation {
 public:  // Types
     using UnaryOperation::UnaryOperation;
@@ -224,6 +257,7 @@ public:  // Methods
 
 /* STATEMENTS */
 
+/// @brief Base class for the composed actions, like body method, if-else
 class Compound : public Statement {
 public:  // Constructor
     template <typename... Args>
@@ -234,7 +268,7 @@ public:  // Constructor
     }
 
 public:  // Methods
-    void AddStatement(std::unique_ptr<Statement> statement);
+    void AddStatement(StatementUPtr statement);
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 
 private:  // Methods
@@ -249,31 +283,34 @@ private:  // Methods
     }
 
 private:  // Fields
-    std::vector<std::unique_ptr<Statement>> statements_;
+    std::vector<StatementUPtr> statements_;
 };
 
+/// @brief Represents the method body
 class MethodBody : public Statement {
 public:  // Types
-    explicit MethodBody(std::unique_ptr<Statement>&& body);
+    explicit MethodBody(StatementUPtr&& body);
 
 public:  // Methods
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 
 private:  // Fields
-    std::unique_ptr<Statement> body_;
+    StatementUPtr body_;
 };
 
+/// @brief Represents "return" statement
 class Return : public Statement {
 public:  // Constructor
-    explicit Return(std::unique_ptr<Statement> statement) : statement_(std::move(statement)) {}
+    explicit Return(StatementUPtr statement) : statement_(std::move(statement)) {}
 
 public:  // Method
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 
 private:  // Field
-    std::unique_ptr<Statement> statement_;
+    StatementUPtr statement_;
 };
 
+/// @brief Declares the class
 class ClassDefinition : public Statement {
 public:  // Constructors
     explicit ClassDefinition(runtime::ObjectHolder cls);
@@ -285,18 +322,18 @@ private:  // Fields
     runtime::ObjectHolder cls_;
 };
 
+/// @brief Represents if-else clause
 class IfElse : public Statement {
 public:  // Constructor
-    IfElse(std::unique_ptr<Statement> condition, std::unique_ptr<Statement> if_body,
-           std::unique_ptr<Statement> else_body);
+    IfElse(StatementUPtr condition, StatementUPtr if_body, StatementUPtr else_body);
 
 public:  // Method
     runtime::ObjectHolder Execute(runtime::Closure& closure, runtime::Context& context) override;
 
 private:  // Fields
-    std::unique_ptr<Statement> condition_;
-    std::unique_ptr<Statement> if_body_;
-    std::unique_ptr<Statement> else_body_;
+    StatementUPtr condition_;
+    StatementUPtr if_body_;
+    StatementUPtr else_body_;
 };
 
 }  // namespace ast

@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <optional>
-#include <sstream>
 #include <stdexcept>
 
 using namespace std;
@@ -14,8 +13,8 @@ using runtime::Context;
 using runtime::ObjectHolder;
 
 namespace {
-static const string kAddMethod = "__add__"s;
-static const string kInitMethod = "__init__"s;
+const string kAddMethod = "__add__"s;
+const string kInitMethod = "__init__"s;
 
 enum class Operation { Plus, Minus, Multiply, Divide };
 
@@ -57,8 +56,8 @@ std::optional<ObjectHolder> NumberHelper(Operation type, const ObjectHolder& lef
 
 }  // namespace
 
-VariableValue::VariableValue(const std::string& var_name) {
-    fields_sequence_.push_back(var_name);
+VariableValue::VariableValue(const std::string& variable_name) {
+    fields_sequence_.push_back(variable_name);
 }
 
 VariableValue::VariableValue(std::vector<std::string> fields_sequence_)
@@ -90,28 +89,29 @@ ObjectHolder VariableValue::Execute(Closure& closure, Context& /*context*/) {
     return try_get_first(fields, fields_sequence_.back());
 }
 
-Assignment::Assignment(std::string var, std::unique_ptr<Statement> rv) : var_(std::move(var)), rv_(std::move(rv)) {}
+Assignment::Assignment(std::string variable, StatementUPtr right_value)
+    : variable_(std::move(variable)), right_value_(std::move(right_value)) {}
 
 ObjectHolder Assignment::Execute(Closure& closure, Context& context) {
-    closure[var_] = std::move(rv_->Execute(closure, context));
-    return closure[var_];
+    closure[variable_] = std::move(right_value_->Execute(closure, context));
+    return closure[variable_];
 }
 
-FieldAssignment::FieldAssignment(VariableValue object, std::string field_name, std::unique_ptr<Statement> rv)
-    : object_(std::move(object)), field_name_(std::move(field_name)), rv_(std::move(rv)) {}
+FieldAssignment::FieldAssignment(VariableValue object, std::string field_name, StatementUPtr right_value)
+    : object_(std::move(object)), field_name_(std::move(field_name)), right_value_(std::move(right_value)) {}
 
 ObjectHolder FieldAssignment::Execute(Closure& closure, Context& context) {
     auto& fields = TryGetFields(object_.Execute(closure, context));
-    fields[field_name_] = rv_->Execute(closure, context);
+    fields[field_name_] = right_value_->Execute(closure, context);
 
     return fields[field_name_];
 }
 
 Print::Print(unique_ptr<Statement> argument) {
-    args_.push_back(std::move(argument));
+    arguments_.push_back(std::move(argument));
 }
 
-Print::Print(vector<unique_ptr<Statement>> args) : args_(std::move(args)) {}
+Print::Print(vector<unique_ptr<Statement>> arguments) : arguments_(std::move(arguments)) {}
 
 unique_ptr<Print> Print::Variable(const std::string& name) {
     return std::make_unique<Print>(std::make_unique<VariableValue>(name));
@@ -122,7 +122,7 @@ ObjectHolder Print::Execute(Closure& closure, Context& context) {
     auto& output = context.GetOutputStream();
     bool is_first = true;
 
-    for (const auto& arg : args_) {
+    for (const auto& arg : arguments_) {
         if (!is_first)
             output << ' ';
 
@@ -138,15 +138,14 @@ ObjectHolder Print::Execute(Closure& closure, Context& context) {
     return ObjectHolder::None();
 }
 
-MethodCall::MethodCall(std::unique_ptr<Statement> object, std::string method,
-                       std::vector<std::unique_ptr<Statement>> args)
-    : object_(std::move(object)), method_(std::move(method)), args_(std::move(args)) {}
+MethodCall::MethodCall(StatementUPtr object, std::string method, std::vector<StatementUPtr> arguments)
+    : object_(std::move(object)), method_(std::move(method)), arguments_(std::move(arguments)) {}
 
 ObjectHolder MethodCall::Execute(Closure& closure, Context& context) {
     std::vector<runtime::ObjectHolder> arguments;
-    arguments.reserve(args_.size());
+    arguments.reserve(arguments_.size());
 
-    for (const auto& arg : args_)
+    for (const auto& arg : arguments_)
         arguments.emplace_back(arg->Execute(closure, context));
 
     if (auto* cls = object_->Execute(closure, context).TryAs<runtime::ClassInstance>()) {
@@ -156,49 +155,49 @@ ObjectHolder MethodCall::Execute(Closure& closure, Context& context) {
     }
 }
 
-NewInstance::NewInstance(const runtime::Class& class_, std::vector<std::unique_ptr<Statement>> args)
-    : class__(class_), args_(std::move(args)) {}
+NewInstance::NewInstance(const runtime::Class& class_, std::vector<StatementUPtr> arguments)
+    : created_class_(class_), arguments_(std::move(arguments)) {}
 
-NewInstance::NewInstance(const runtime::Class& class_) : class__(class_) {}
+NewInstance::NewInstance(const runtime::Class& class_) : created_class_(class_) {}
 
 ObjectHolder NewInstance::Execute(Closure& closure, Context& context) {
-    auto holder = ObjectHolder::Own(runtime::ClassInstance(class__));
-    auto* object = holder.TryAs<runtime::ClassInstance>();
+    auto object = ObjectHolder::Own(runtime::ClassInstance(created_class_));
+    auto* object_class = object.TryAs<runtime::ClassInstance>();
 
-    if (object->HasMethod(kInitMethod, args_.size())) {
+    if (object_class->HasMethod(kInitMethod, arguments_.size())) {
         std::vector<runtime::ObjectHolder> arguments;
-        arguments.reserve(args_.size());
+        arguments.reserve(arguments_.size());
 
-        for (const auto& arg : args_)
+        for (const auto& arg : arguments_)
             arguments.emplace_back(arg->Execute(closure, context));
 
-        object->Call(kInitMethod, arguments, context);
+        object_class->Call(kInitMethod, arguments, context);
     }
 
-    return holder;
+    return object;
 }
 
 ObjectHolder Stringify::Execute(Closure& closure, Context& context) {
-    auto holder = GetArg()->Execute(closure, context);
+    auto object = GetArg()->Execute(closure, context);
     std::stringstream output;
 
-    if (auto* ptr = holder.TryAs<runtime::Number>()) {
-        ptr->Print(output, context);
+    if (auto* object_number = object.TryAs<runtime::Number>()) {
+        object_number->Print(output, context);
         return ObjectHolder::Own(runtime::String(output.str()));
     }
 
-    if (auto* ptr = holder.TryAs<runtime::String>()) {
-        ptr->Print(output, context);
+    if (auto* object_string = object.TryAs<runtime::String>()) {
+        object_string->Print(output, context);
         return ObjectHolder::Own(runtime::String(output.str()));
     }
 
-    if (auto* ptr = holder.TryAs<runtime::Bool>()) {
-        ptr->Print(output, context);
+    if (auto* object_bool = object.TryAs<runtime::Bool>()) {
+        object_bool->Print(output, context);
         return ObjectHolder::Own(runtime::String(output.str()));
     }
 
-    if (auto* ptr = holder.TryAs<runtime::ClassInstance>()) {
-        ptr->Print(output, context);
+    if (auto* object_class = object.TryAs<runtime::ClassInstance>()) {
+        object_class->Print(output, context);
         return ObjectHolder::Own(runtime::String(output.str()));
     }
 
@@ -207,14 +206,14 @@ ObjectHolder Stringify::Execute(Closure& closure, Context& context) {
 
 /* BINARY OPERATIONS */
 
-BinaryOperation::BinaryOperation(std::unique_ptr<Statement> left, std::unique_ptr<Statement> right)
+BinaryOperation::BinaryOperation(StatementUPtr left, StatementUPtr right)
     : left_(std::move(left)), right_(std::move(right)) {}
 
-[[nodiscard]] const std::unique_ptr<Statement>& BinaryOperation::GetLeft() const {
+[[nodiscard]] const StatementUPtr& BinaryOperation::GetLeft() const {
     return left_;
 }
 
-[[nodiscard]] const std::unique_ptr<Statement>& BinaryOperation::GetRight() const {
+[[nodiscard]] const StatementUPtr& BinaryOperation::GetRight() const {
     return right_;
 }
 
@@ -224,10 +223,10 @@ ObjectHolder Add::Execute(Closure& closure, Context& context) {
     if (!GetRight() || !GetLeft())
         throw std::runtime_error("Attempt to use operator + with at least one null value");
 
-    auto left_holder = GetLeft()->Execute(closure, context);
-    auto right_holder = GetRight()->Execute(closure, context);
+    auto left_object = GetLeft()->Execute(closure, context);
+    auto right_object = GetRight()->Execute(closure, context);
 
-    if (auto result = NumberHelper(Operation::Plus, left_holder, right_holder); result.has_value())
+    if (auto result = NumberHelper(Operation::Plus, left_object, right_object); result.has_value())
         return result.value();
 
     // clang-format off
@@ -236,14 +235,14 @@ ObjectHolder Add::Execute(Closure& closure, Context& context) {
         auto* right = right_holder.TryAs<runtime::String>();
         return (left && right) ? std::make_optional(ObjectHolder::Own(runtime::String{left->GetValue() + right->GetValue()}))
                                : std::nullopt;
-    }(left_holder, right_holder);
+    }(left_object, right_object);
     // clang-format on
 
     if (result.has_value())
         return result.value();
 
-    if (auto* left = left_holder.TryAs<runtime::ClassInstance>(); left && left->HasMethod(kAddMethod, 1))
-        return left->Call(kAddMethod, {right_holder}, context);
+    if (auto* left = left_object.TryAs<runtime::ClassInstance>(); left && left->HasMethod(kAddMethod, 1))
+        return left->Call(kAddMethod, {right_object}, context);
 
     throw std::runtime_error("Attempt to use operator + with unsupported operand types");
 }
@@ -252,10 +251,10 @@ ObjectHolder Sub::Execute(Closure& closure, Context& context) {
     if (!GetRight() || !GetLeft())
         throw std::runtime_error("Attempt to use operator - with at least one null value");
 
-    auto left_holder = GetLeft()->Execute(closure, context);
-    auto right_holder = GetRight()->Execute(closure, context);
+    auto left_object = GetLeft()->Execute(closure, context);
+    auto right_object = GetRight()->Execute(closure, context);
 
-    if (auto result = NumberHelper(Operation::Minus, left_holder, right_holder); result.has_value())
+    if (auto result = NumberHelper(Operation::Minus, left_object, right_object); result.has_value())
         return result.value();
 
     throw std::runtime_error("Attempt to use operator - with unsupported operand types");
@@ -265,10 +264,10 @@ ObjectHolder Mult::Execute(Closure& closure, Context& context) {
     if (!GetRight() || !GetLeft())
         throw std::runtime_error("Attempt to use operator * with at least one null value");
 
-    auto left_holder = GetLeft()->Execute(closure, context);
-    auto right_holder = GetRight()->Execute(closure, context);
+    auto left_object = GetLeft()->Execute(closure, context);
+    auto right_object = GetRight()->Execute(closure, context);
 
-    if (auto result = NumberHelper(Operation::Multiply, left_holder, right_holder); result.has_value())
+    if (auto result = NumberHelper(Operation::Multiply, left_object, right_object); result.has_value())
         return result.value();
 
     throw std::runtime_error("Attempt to use operator * with unsupported operand types");
@@ -278,10 +277,10 @@ ObjectHolder Div::Execute(Closure& closure, Context& context) {
     if (!GetRight() || !GetLeft())
         throw std::runtime_error("Attempt to use operator / with at least one null value");
 
-    auto left_holder = GetLeft()->Execute(closure, context);
-    auto right_holder = GetRight()->Execute(closure, context);
+    auto left_object = GetLeft()->Execute(closure, context);
+    auto right_object = GetRight()->Execute(closure, context);
 
-    if (auto result = NumberHelper(Operation::Divide, left_holder, right_holder); result.has_value())
+    if (auto result = NumberHelper(Operation::Divide, left_object, right_object); result.has_value())
         return result.value();
 
     throw std::runtime_error("Attempt to use operator / with unsupported operand types");
@@ -327,14 +326,14 @@ ObjectHolder And::Execute(Closure& closure, Context& context) {
     throw std::runtime_error("Attempt to use operator AND with incompatible types");
 }
 
-Comparison::Comparison(Comparator cmp, unique_ptr<Statement> lhs, unique_ptr<Statement> rhs)
-    : BinaryOperation(std::move(lhs), std::move(rhs)), cmp_(std::move(cmp)) {}
+Comparison::Comparison(Comparator comparator, unique_ptr<Statement> left, unique_ptr<Statement> right)
+    : BinaryOperation(std::move(left), std::move(right)), comparator_(std::move(comparator)) {}
 
 ObjectHolder Comparison::Execute(Closure& closure, Context& context) {
     auto left = GetLeft()->Execute(closure, context);
     auto right = GetRight()->Execute(closure, context);
 
-    return ObjectHolder::Own(runtime::Bool(cmp_(left, right, context)));
+    return ObjectHolder::Own(runtime::Bool(comparator_(left, right, context)));
 }
 
 ObjectHolder Not::Execute(Closure& closure, Context& context) {
@@ -351,7 +350,7 @@ ObjectHolder Not::Execute(Closure& closure, Context& context) {
 
 /* STATEMENTS */
 
-void Compound::AddStatement(std::unique_ptr<Statement> statement) {
+void Compound::AddStatement(StatementUPtr statement) {
     statements_.push_back(std::move(statement));
 }
 
@@ -362,7 +361,7 @@ ObjectHolder Compound::Execute(Closure& closure, Context& context) {
     return {};
 }
 
-MethodBody::MethodBody(std::unique_ptr<Statement>&& body) : body_(std::move(body)) {}
+MethodBody::MethodBody(StatementUPtr&& body) : body_(std::move(body)) {}
 
 ObjectHolder MethodBody::Execute(Closure& closure, Context& context) {
     ObjectHolder result = ObjectHolder::None();
@@ -370,7 +369,7 @@ ObjectHolder MethodBody::Execute(Closure& closure, Context& context) {
     try {
         result = std::move(body_->Execute(closure, context));
     } catch (ObjectHolder& obj) {
-        // Use Return statement
+        // Return statement
         result = std::move(obj);
     }
     return result;
@@ -387,8 +386,7 @@ ObjectHolder ClassDefinition::Execute(Closure& closure, Context& /*context*/) {
     return cls_;
 }
 
-IfElse::IfElse(std::unique_ptr<Statement> condition, std::unique_ptr<Statement> if_body,
-               std::unique_ptr<Statement> else_body)
+IfElse::IfElse(StatementUPtr condition, StatementUPtr if_body, StatementUPtr else_body)
     : condition_(std::move(condition)), if_body_(std::move(if_body)), else_body_(std::move(else_body)) {}
 
 ObjectHolder IfElse::Execute(Closure& closure, Context& context) {
