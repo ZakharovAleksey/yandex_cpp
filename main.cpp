@@ -1,139 +1,116 @@
+//============================================================================
+// Description : Тестирования первого задания: конвертировать между собой
+// пользовательский индекс ячейки и её программную позицию.
+//============================================================================
+
 #include <iostream>
+#include <string>
+#include <string_view>
 
-#include "src/sprint_15/lexer.h"
-#include "src/sprint_15/parse.h"
-#include "src/sprint_15/runtime.h"
-#include "src/sprint_15/statement.h"
-#include "src/sprint_15/test_runner_p.h"
+#include "src/sprint_16/common.h"
+#include "src/sprint_16/test_runner_p.h"
 
-using namespace std;
-
-namespace parse {
-void RunOpenLexerTests(TestRunner& tr);
-}  // namespace parse
-
-namespace ast {
-void RunUnitTests(TestRunner& tr);
+inline std::ostream& operator<<(std::ostream& output, Position pos) {
+    return output << "(" << pos.row << ", " << pos.col << ")";
 }
-namespace runtime {
-void RunObjectHolderTests(TestRunner& tr);
-void RunObjectsTests(TestRunner& tr);
-}  // namespace runtime
 
-void TestParseProgram(TestRunner& tr);
+inline Position operator"" _pos(const char* str, std::size_t) {
+    return Position::FromString(str);
+}
 
 namespace {
+void TestPositionAndStringConversion() {
+    auto test_single = [](Position pos, std::string_view str) {
+        ASSERT_EQUAL(pos.ToString(), str);
+        ASSERT_EQUAL(Position::FromString(str), pos);
+    };
 
-void RunMythonProgram(istream& input, ostream& output) {
-    parse::Lexer lexer(input);
-    auto program = ParseProgram(lexer);
+    for (int i = 0; i < 25; ++i) {
+        test_single(Position{i, i}, char('A' + i) + std::to_string(i + 1));
+    }
 
-    runtime::SimpleContext context{output};
-    runtime::Closure closure;
-    program->Execute(closure, context);
+    test_single(Position{0, 0}, "A1");
+    test_single(Position{0, 1}, "B1");
+    test_single(Position{0, 25}, "Z1");
+    test_single(Position{0, 26}, "AA1");
+    test_single(Position{0, 27}, "AB1");
+    test_single(Position{0, 51}, "AZ1");
+    test_single(Position{0, 52}, "BA1");
+    test_single(Position{0, 53}, "BB1");
+    test_single(Position{0, 77}, "BZ1");
+    test_single(Position{0, 78}, "CA1");
+    test_single(Position{0, 701}, "ZZ1");
+    test_single(Position{0, 702}, "AAA1");
+    test_single(Position{136, 2}, "C137");
+    test_single(Position{Position::MAX_ROWS - 1, Position::MAX_COLS - 1}, "XFD16384");
 }
 
-void TestSimplePrints() {
-    istringstream input(R"(
-print 57
-print 10, 24, -8
-print 'hello'
-print "world"
-print True, False
-print
-print None
-)");
-
-    ostringstream output;
-    RunMythonProgram(input, output);
-
-    ASSERT_EQUAL(output.str(), "57\n10 24 -8\nhello\nworld\nTrue False\n\nNone\n");
+void TestPositionToStringInvalid() {
+    ASSERT_EQUAL((Position::NONE).ToString(), "");
+    ASSERT_EQUAL((Position{-10, 0}).ToString(), "");
+    ASSERT_EQUAL((Position{1, -3}).ToString(), "");
 }
 
-void TestAssignments() {
-    istringstream input(R"(
-x = 57
-print x
-x = 'C++ black belt'
-print x
-y = False
-x = y
-print x
-x = None
-print x, y
-)");
-
-    ostringstream output;
-    RunMythonProgram(input, output);
-
-    ASSERT_EQUAL(output.str(), "57\nC++ black belt\nFalse\nNone False\n");
+void TestStringToPositionInvalid() {
+    ASSERT(!Position::FromString("").IsValid());
+    ASSERT(!Position::FromString("A").IsValid());
+    ASSERT(!Position::FromString("1").IsValid());
+    ASSERT(!Position::FromString("e2").IsValid());
+    ASSERT(!Position::FromString("A0").IsValid());
+    ASSERT(!Position::FromString("A-1").IsValid());
+    ASSERT(!Position::FromString("A+1").IsValid());
+    ASSERT(!Position::FromString("R2D2").IsValid());
+    ASSERT(!Position::FromString("C3PO").IsValid());
+    ASSERT(!Position::FromString("XFD16385").IsValid());
+    ASSERT(!Position::FromString("XFE16384").IsValid());
+    ASSERT(!Position::FromString("A1234567890123456789").IsValid());
+    ASSERT(!Position::FromString("ABCDEFGHIJKLMNOPQRS8").IsValid());
 }
-
-void TestArithmetics() {
-    istringstream input("print 1+2+3+4+5, 1*2*3*4*5, 1-2-3-4-5, 36/4/3, 2*5+10/2");
-
-    ostringstream output;
-    RunMythonProgram(input, output);
-
-    ASSERT_EQUAL(output.str(), "15 120 -13 3 15\n");
-}
-
-void TestVariablesArePointers() {
-    istringstream input(R"(
-class Counter:
-  def __init__():
-    self.value = 0
-
-  def add():
-    self.value = self.value + 1
-
-class Dummy:
-  def do_add(counter):
-    counter.add()
-
-x = Counter()
-y = x
-
-x.add()
-y.add()
-
-print x.value
-
-d = Dummy()
-d.do_add(x)
-
-print y.value
-)");
-
-    ostringstream output;
-    RunMythonProgram(input, output);
-
-    ASSERT_EQUAL(output.str(), "2\n3\n");
-}
-
-void TestAll() {
-    TestRunner tr;
-    parse::RunOpenLexerTests(tr);
-    runtime::RunObjectHolderTests(tr);
-    runtime::RunObjectsTests(tr);
-    ast::RunUnitTests(tr);
-    TestParseProgram(tr);
-
-    RUN_TEST(tr, TestSimplePrints);
-    RUN_TEST(tr, TestAssignments);
-    RUN_TEST(tr, TestArithmetics);
-    RUN_TEST(tr, TestVariablesArePointers);
-}
-
 }  // namespace
 
-int main() {
-    try {
-        TestAll();
-        RunMythonProgram(cin, cout);
-    } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        return 1;
+int LETTERS_1 = 26;
+#include <optional>
+
+std::optional<char> GetNextColumnSymbol1(int& current_residue, int pow) {
+    auto make_letter = [](int letter_id) -> char { return static_cast<char>(static_cast<int>('A') + letter_id); };
+
+    if (current_residue < pow || pow == 1)
+        return (pow == 1) ? std::make_optional(make_letter(current_residue)) : std::nullopt;
+
+    int max_fit_value{0};
+    for (int letter_id = 0; letter_id < LETTERS_1; ++letter_id) {
+        max_fit_value += pow;
+
+        if (max_fit_value == current_residue) {
+            current_residue = 0;
+            return std::make_optional(make_letter(letter_id));
+        } else if (max_fit_value > current_residue) {
+            current_residue = current_residue % (max_fit_value - pow);
+            // Use ' - 1' below because at this point we exceed the letter id (52 for input 27)
+            return std::make_optional(make_letter(letter_id - 1));
+        }
     }
+
+    return std::nullopt;
+}
+
+std::string ToString1(int col) {
+    std::string result;
+
+    int current_residue = col;
+    // String representation: SYMBOL_0 * 26^2 + SYMBOL_1 * 26^1 + SYMBOL_2 + 26^0
+    for (const auto& pow : {LETTERS_1 * LETTERS_1, LETTERS_1, 1}) {
+        if (auto symbol = GetNextColumnSymbol1(current_residue, pow); symbol.has_value())
+            result += symbol.value();
+    }
+
+    return result;
+}
+
+int main() {
+    TestRunner tr;
+    RUN_TEST(tr, TestPositionAndStringConversion);
+    RUN_TEST(tr, TestPositionToStringInvalid);
+    RUN_TEST(tr, TestStringToPositionInvalid);
     return 0;
 }

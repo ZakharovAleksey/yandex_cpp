@@ -17,7 +17,7 @@ if (MSVC)
 else ()
     message(STATUS "USE MINGW COMPILER")
     set(SYSTEM_LIBS -lstdc++)
-#    add_compile_options(-Wall -Wextra -ltbb -lpthread) #   +fs --enable-libstdcxx-filesystem-ts
+    #    add_compile_options(-Wall -Wextra -ltbb -lpthread) #   +fs --enable-libstdcxx-filesystem-ts
 endif ()
 
 add_subdirectory(tests)
@@ -59,8 +59,17 @@ set(SPRINT_15_FILES
         ${SPRINT_15_DIR}/parse_test.cpp
         ${SPRINT_15_DIR}/statement_test.cpp)
 
+
+# SPRINT 15
+set(SPRINT_16_DIR ${SOURCE_DIR}/sprint_16)
+set(SPRINT_16_FILES
+        ${SPRINT_16_DIR}/common.h
+        ${SPRINT_16_DIR}/structures.cpp
+        ${SPRINT_16_DIR}/test_runner_p.h)
+
 # SET UP BUILD TARGETS
 add_executable(sprint_12 main.cpp ${SPRINT_12_FILES})
 add_executable(sprint_13 main.cpp ${SPRINT_13_FILES})
 add_executable(sprint_15 main.cpp ${SPRINT_15_FILES})
+add_executable(sprint_16 main.cpp ${SPRINT_16_FILES})
 
