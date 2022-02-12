@@ -85,6 +85,35 @@ public:
     using std::runtime_error::runtime_error;
 };
 
+/*!
+ * @brief Provides the wrapper to handle indents during the parsing.
+ *
+ * @details Stores current indent while parsing the line.
+ * Cuts the indents spaces from line for the simplified further processing.
+ *
+ */
+class IndentParser {
+public:  // Constructor
+    explicit IndentParser(std::istream& input);
+
+public:  // Methods
+    [[nodiscard]] int GetIndent() const;
+    [[nodiscard]] std::stringstream& GetParsedStream();
+    [[nodiscard]] bool IsInputStreamEmpty() const;
+
+    void ParseNextLine();
+
+private:
+    [[nodiscard]] bool EmptyLine(std::string_view line) const;
+
+private:  // Fields
+    std::istream& input_;
+    std::stringstream line_;
+
+    int lines_count_{0};
+    int indent_{0};
+};
+
 class Lexer {
 public:  // Constructor
     explicit Lexer(std::istream& input);
@@ -112,8 +141,8 @@ public:  // Methods
     const TokenType& Expect() const {
         using namespace std::string_literals;
 
-        if (tokens_[current_token_id].Is<TokenType>())
-            return tokens_[current_token_id].As<TokenType>();
+        if (current_.Is<TokenType>())
+            return current_.As<TokenType>();
 
         throw LexerError("Token is has unexpected type:" + std::string(typeid(TokenType).name()));
     }
@@ -127,7 +156,7 @@ public:  // Methods
      */
     template <typename TokenType, typename ValueType>
     void Expect(const ValueType& value) const {
-        if (!tokens_[current_token_id].Is<TokenType>() || tokens_[current_token_id].As<TokenType>().value != value)
+        if (!current_.Is<TokenType>() || current_.As<TokenType>().value != value)
             throw LexerError("Token is has unexpected type or value");
     }
 
@@ -139,7 +168,7 @@ public:  // Methods
      */
     template <typename TokenType>
     const TokenType& ExpectNext() {
-        current_token_id = current_token_id + 1 < tokens_.size() ? current_token_id + 1 : current_token_id;
+        NextToken();
         return Expect<TokenType>();
     }
 
@@ -152,41 +181,27 @@ public:  // Methods
      */
     template <typename TokenType, typename ValueType>
     void ExpectNext(const ValueType& value) {
-        current_token_id = current_token_id + 1 < tokens_.size() ? current_token_id + 1 : current_token_id;
+        NextToken();
         Expect<TokenType>(value);
     }
 
 private:  // Methods
     /// @brief Reads the whole line converting it to the sequence of tokens
-    void ReadLine(std::istringstream& input);
+    Token NextTokenImpl();
 
     /// @brief Reads the identifiers
-    void ReadId(std::istringstream& input);
+    Token ReadId(std::stringstream& ss);
 
     /// @brief Reads the numbers
-    void ReadNumber(std::istringstream& input);
+    Token ReadNumber(std::stringstream& ss);
 
     /// @brief Reads the string in ""
-    void ReadString(std::istringstream& input, char last_symbol);
-
-    /* SUPPORT FUNCTIONS */
-
-    /// @brief Checks if the line is empty of consists only from comment
-    [[nodiscard]] bool EmptyLine(std::string_view) const;
-
-    /*!
-     * @brief Gets line without indent
-     * @return Indent value
-     */
-    size_t GetAndCutLineIndent(std::string& input) const;
-
-    /// @brief Set new indent value
-    void SetNewIndent(size_t new_indent);
+    Token ReadString(std::stringstream& ss, char last_symbol);
 
 private:  // Fields
-    size_t current_token_id{0};
-    size_t indent_{0};
-    std::vector<Token> tokens_;
+    int indent_{0};
+    IndentParser indent_reader_;
+    Token current_;
 };
 
 }  // namespace parse
