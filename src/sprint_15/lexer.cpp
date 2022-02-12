@@ -130,7 +130,7 @@ const Token& Lexer::CurrentToken() const {
 
 Token Lexer::NextToken() {
     current_ = NextTokenImpl();
-    return current_;
+    return CurrentToken();
 }
 
 Token Lexer::NextTokenImpl() {

@@ -39,6 +39,9 @@ ObjectHolder::operator bool() const {
 }
 
 bool IsTrue(const ObjectHolder& object) {
+    if (!object)
+        return false;
+
     if (auto* ptr = object.TryAs<Bool>())
         return ptr->GetValue();
 
