@@ -80,93 +80,103 @@ std::ostream& operator<<(std::ostream& os, const Token& rhs) {
     return os << "Unknown token :("sv;
 }
 
-Lexer::Lexer(std::istream& input) {
-    using namespace parse;
-    using namespace token_type;
+IndentParser::IndentParser(std::istream& input) : input_(input) {
+    ParseNextLine();
+}
 
+int IndentParser::GetIndent() const {
+    return indent_;
+}
+
+std::stringstream& IndentParser::GetParsedStream() {
+    return line_;
+}
+
+bool IndentParser::IsInputStreamEmpty() const {
+    return !static_cast<bool>(input_);
+}
+
+bool IndentParser::EmptyLine(std::string_view line) const {
+    if (line.empty())
+        return true;
+
+    size_t position = line.find_first_not_of(' ');
+    return line[position] == '#' || (position > 0 && position == (line.size() - 1));
+}
+
+void IndentParser::ParseNextLine() {
     std::string line;
-    while (getline(input, line)) {
+
+    while (getline(input_, line)) {
         if (EmptyLine(line))
             continue;
 
-        SetNewIndent(GetAndCutLineIndent(line));
-        std::istringstream ss(line);
-        ReadLine(ss);
+        indent_ = line.find_first_not_of(' ', 0);
+        indent_ = indent_ >= 2 ? indent_ / 2 : indent_;
+
+        line = line.substr(indent_);
+        line_ = std::stringstream{line};
+        return;
     }
-
-    SetNewIndent(0);
-
-    tokens_.emplace_back(Eof{});
+    // On empty input we should close all opened indents
+    indent_ = 0;
 }
 
+Lexer::Lexer(std::istream& input) : indent_reader_(input), current_(NextTokenImpl()) {}
+
 const Token& Lexer::CurrentToken() const {
-    return tokens_.at(current_token_id);
+    return current_;
 }
 
 Token Lexer::NextToken() {
-    current_token_id = current_token_id + 1 < tokens_.size() ? current_token_id + 1 : current_token_id;
-    return CurrentToken();
+    current_ = NextTokenImpl();
+    return current_;
 }
 
-size_t Lexer::GetAndCutLineIndent(std::string& input) const {
-    size_t indent = input.find_first_not_of(' ', 0);
-    indent = indent >= 2 ? indent / 2 : indent;
-
-    input = input.substr(indent);
-    return indent;
-}
-
-void Lexer::SetNewIndent(size_t new_indent) {
+Token Lexer::NextTokenImpl() {
     using namespace parse::token_type;
 
-    for (size_t indent = indent_; indent < new_indent; ++indent)
-        tokens_.emplace_back(Indent({}));
-
-    for (size_t dedent = indent_; dedent > new_indent; --dedent)
-        tokens_.emplace_back(Dedent({}));
-
-    if (indent_ != new_indent)
-        indent_ = new_indent;
-}
-
-void Lexer::ReadLine(std::istringstream& input) {
-    using namespace parse::token_type;
+    if (indent_ > indent_reader_.GetIndent()) {
+        --indent_;
+        return Dedent({});
+    } else if (indent_ < indent_reader_.GetIndent()) {
+        ++indent_;
+        return Indent({});
+    }
 
     char symbol;
-    bool is_new_line{false};
+    auto& ss = indent_reader_.GetParsedStream();
 
-    while (input.get(symbol)) {
+    while (ss.get(symbol)) {
         if (symbol == ' ')
             continue;
 
         if (symbol == '#') {
-            input.ignore(numeric_limits<streamsize>::max(), '\n');
-            tokens_.emplace_back(Newline{});
-            return;
+            ss.ignore(numeric_limits<streamsize>::max(), '\n');
+            indent_reader_.ParseNextLine();
+            return Newline({});
         }
 
-        is_new_line = true;
         if (isdigit(symbol)) {
-            input.unget();
-            ReadNumber(input);
+            ss.unget();
+            return ReadNumber(ss);
         } else if (isprint(symbol) || isspace(symbol)) {
             switch (symbol) {
                 case '=':
                 case '!':
                 case '<':
                 case '>': {
-                    if (input.peek() == '=') {
+                    if (ss.peek() == '=') {
+                        ss.get();
                         if (symbol == '=') {
-                            tokens_.emplace_back(Eq({}));
+                            return Eq({});
                         } else if (symbol == '!') {
-                            tokens_.emplace_back(NotEq({}));
+                            return NotEq({});
                         } else if (symbol == '<') {
-                            tokens_.emplace_back(LessOrEq({}));
+                            return LessOrEq({});
                         } else {
-                            tokens_.emplace_back(GreaterOrEq({}));
+                            return GreaterOrEq({});
                         }
-                        input.get();
-                        break;
                     }
                     [[fallthrough]];
                 }
@@ -183,81 +193,84 @@ void Lexer::ReadLine(std::istringstream& input) {
                 case ';':
                 case '\t':
                 case '\n': {
-                    tokens_.emplace_back(Char{symbol});
-                    break;
+                    return Char({symbol});
                 }
                 case '\'':
                 case '\"': {
-                    ReadString(input, symbol);
-                    break;
+                    return ReadString(ss, symbol);
                 }
                 default: {
-                    input.unget();
-                    ReadId(input);
+                    ss.unget();
+                    return ReadId(ss);
                 }
             }
         }
     }
 
-    if (is_new_line)
-        tokens_.emplace_back(Newline{});
+    if (indent_reader_.IsInputStreamEmpty())
+        return Eof{};
+
+    indent_reader_.ParseNextLine();
+    return Newline{};
 }
 
-void Lexer::ReadId(std::istringstream& input) {
+Token Lexer::ReadId(std::stringstream& ss) {
+    using namespace std::string_literals;
     using namespace parse::token_type;
 
     std::string identifier;
     char symbol;
 
-    while (input.get(symbol)) {
+    while (ss.get(symbol)) {
         if ((isspace(symbol) || symbol == ' ') || (ispunct(symbol) && symbol != '_')) {
             if (ispunct(symbol) && symbol != '_') {
-                input.unget();
+                ss.unget();
             }
             break;
         }
         identifier += symbol;
     }
-    if (identifier == "class") {
-        tokens_.emplace_back(Class({}));
-    } else if (identifier == "return") {
-        tokens_.emplace_back(Return({}));
-    } else if (identifier == "if") {
-        tokens_.emplace_back(If({}));
-    } else if (identifier == "else") {
-        tokens_.emplace_back(Else({}));
-    } else if (identifier == "def") {
-        tokens_.emplace_back(Def({}));
-    } else if (identifier == "print") {
-        tokens_.emplace_back(Print({}));
-    } else if (identifier == "or") {
-        tokens_.emplace_back(Or({}));
-    } else if (identifier == "None") {
-        tokens_.emplace_back(None({}));
-    } else if (identifier == "and") {
-        tokens_.emplace_back(And({}));
-    } else if (identifier == "not") {
-        tokens_.emplace_back(Not({}));
-    } else if (identifier == "True") {
-        tokens_.emplace_back(True({}));
-    } else if (identifier == "False") {
-        tokens_.emplace_back(False({}));
+
+    if (identifier == "class"s) {
+        return Class({});
+    } else if (identifier == "return"s) {
+        return Return({});
+    } else if (identifier == "if"s) {
+        return If({});
+    } else if (identifier == "else"s) {
+        return Else({});
+    } else if (identifier == "def"s) {
+        return Def({});
+    } else if (identifier == "print"s) {
+        return Print({});
+    } else if (identifier == "or"s) {
+        return Or({});
+    } else if (identifier == "None"s) {
+        return None({});
+    } else if (identifier == "and"s) {
+        return And({});
+    } else if (identifier == "not"s) {
+        return Not({});
+    } else if (identifier == "True"s) {
+        return True({});
+    } else if (identifier == "False"s) {
+        return False({});
     } else {
-        tokens_.emplace_back(Id({identifier}));
+        return Id({identifier});
     }
 }
 
-void Lexer::ReadString(std::istringstream& input, char last_symbol) {
+Token Lexer::ReadString(std::stringstream& ss, char last_symbol) {
     using namespace token_type;
     std::string result;
     char symbol;
 
-    while (input.get(symbol)) {
+    while (ss.get(symbol)) {
         if (symbol == last_symbol)
             break;
 
         if (symbol == '\\') {
-            input.get(symbol);
+            ss.get(symbol);
             switch (symbol) {
                 case 'n':
                     symbol = '\n';
@@ -271,23 +284,15 @@ void Lexer::ReadString(std::istringstream& input, char last_symbol) {
         }
     }
 
-    tokens_.emplace_back(String{result});
+    return String({result});
 }
 
-void Lexer::ReadNumber(std::istringstream& input) {
+Token Lexer::ReadNumber(std::stringstream& ss) {
     using namespace token_type;
 
     int value;
-    input >> value;
-    tokens_.emplace_back(Number{value});
-}
-
-bool Lexer::EmptyLine(std::string_view line) const {
-    if (line.empty())
-        return true;
-
-    size_t position = line.find_first_not_of(' ');
-    return line[position] == '#' || (position > 0 && position == (line.size() - 1));
+    ss >> value;
+    return Number({value});
 }
 
 }  // namespace parse
