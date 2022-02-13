@@ -5,3 +5,11 @@ cmake-build-wsl_profile
 3rdparty
 lib
 data/local
+src/sprint_16/antlr4_runtime
+*.jar
+*.tokens
+*.interp
+*.lib
+*Listener.*
+*Lexer.*
+*Parser.*
