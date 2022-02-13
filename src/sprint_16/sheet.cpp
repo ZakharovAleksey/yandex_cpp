@@ -45,9 +45,9 @@ const CellInterface* Sheet::GetCell(Position position) const {
 CellInterface* Sheet::GetCell(Position position) {
     CheckIfPositionValid(position);
 
-    if (position.row >= data_.size())
+    if (position.row >= static_cast<int>(data_.size()))
         return nullptr;
-    if (position.col >= data_.at(position.row).size())
+    if (position.col >= static_cast<int>(data_.at(position.row).size()))
         return nullptr;
 
     return data_.at(position.row).at(position.col).get();
@@ -57,38 +57,40 @@ void Sheet::ClearCell(Position position) {
     CheckIfPositionValid(position);
 
     if (GetCell(position))
-        data_.at(position.row).at(position.col).release();
+        data_.at(position.row).at(position.col).reset();
 }
 
 Size Sheet::GetPrintableSize() const {
-    auto get_biggest_id = [](const std::vector<std::unique_ptr<CellInterface>>& col) -> size_t {
-        for (int id = col.size() - 1; id >= 0; --id)
-            if (col.at(id))
-                return id;
-        return 0;
-    };
+    int row = 0;
+    int col = 0;
 
-    for (int row_id = data_.size() - 1; row_id >= 0; --row_id) {
-        int col_id = get_biggest_id(data_.at(row_id));
-        if (col_id != 0)
-            return {row_id, col_id};
+    for (int row_id = 0; row_id < static_cast<int>(data_.size()); ++row_id) {
+        for (int col_id = 0; col_id < static_cast<int>(data_.at(row_id).size()); ++col_id) {
+            if (data_.at(row_id).at(col_id)) {
+                col = std::max(col, col_id + 1);
+                row = std::max(row, row_id + 1);
+            }
+        }
     }
 
-    return {0, 0};
+    return {row, col};
 }
 
 void Sheet::PrintValues(std::ostream& output) const {
-    Print(output, [](CellInterface* cell) { return cell->GetValue(); });
+    auto print_value = [&output](const CellInterface* ptr_value) {
+        std::visit([&](const auto& value) { output << value; }, ptr_value->GetValue());
+    };
+    Print(output, print_value);
 }
 void Sheet::PrintTexts(std::ostream& output) const {
-    Print(output, [](CellInterface* cell) { return cell->GetText(); });
+    Print(output, [&output](const CellInterface* cell) { output << cell->GetText(); });
 }
 
 void Sheet::ResizeStorage(Position position) {
-    if (position.row >= data_.size())
+    if (position.row >= static_cast<int>(data_.size()))
         data_.resize(position.row + 1);
 
-    if (position.col >= data_.at(position.row).size())
+    if (position.col >= static_cast<int>(data_.at(position.row).size()))
         data_.at(position.row).resize(position.col + 1);
 }
 

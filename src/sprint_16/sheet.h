@@ -14,7 +14,7 @@ public:  // Constructor
     Sheet() = default;
 
 public:  // Destructor
-    ~Sheet() = default;
+    ~Sheet() override = default;
 
 public:  // Methods
     void SetCell(Position position, std::string text) override;
@@ -29,21 +29,19 @@ public:  // Methods
     void PrintValues(std::ostream& output) const override;
     void PrintTexts(std::ostream& output) const override;
 
-    // Можете дополнить ваш класс нужными полями и методами
-
 private:  // Methods
     void ResizeStorage(Position position);
 
     template <class Getter>
-    void Print(std::ostream& out, Getter getter) {
+    void Print(std::ostream& out, const Getter getter) const {
         auto [rows_count, columns_count] = GetPrintableSize();
 
         for (int row_id = 0; row_id < rows_count; ++row_id) {
             for (int col_id = 0; col_id < columns_count; ++col_id) {
-                if (col_id == 0)
+                if (col_id != 0)
                     out << '\t';
                 if (auto* cell = GetCell({row_id, col_id}))
-                    out << getter(cell);
+                    getter(cell);
             }
             out << '\n';
         }
