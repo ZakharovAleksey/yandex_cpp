@@ -75,3 +75,7 @@ Position Position::FromString(std::string_view input) {
 
     return Position::NONE;
 }
+
+bool Size::operator==(Size rhs) const {
+    return cols == rhs.cols && rows == rhs.rows;
+}
