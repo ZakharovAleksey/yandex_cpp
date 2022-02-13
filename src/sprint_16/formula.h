@@ -1,11 +1,10 @@
 #pragma once
 
-#include "common.h"
-
-#include "FormulaAST.h"
-
 #include <memory>
 #include <variant>
+
+#include "FormulaAST.h"
+#include "common.h"
 
 // Формула, позволяющая вычислять и обновлять арифметическое выражение.
 // Поддерживаемые возможности:
