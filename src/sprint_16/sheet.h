@@ -1,20 +1,28 @@
 #pragma once
 
 #include <functional>
+#include <vector>
 
 #include "cell.h"
 #include "common.h"
 
 class Sheet : public SheetInterface {
-public:
-    ~Sheet();
+public:  // Types
+    using Storage = std::vector<std::vector<std::unique_ptr<CellInterface>>>;
 
-    void SetCell(Position pos, std::string text) override;
+public:  // Constructor
+    Sheet() = default;
 
-    const CellInterface* GetCell(Position pos) const override;
-    CellInterface* GetCell(Position pos) override;
+public:  // Destructor
+    ~Sheet() = default;
 
-    void ClearCell(Position pos) override;
+public:  // Methods
+    void SetCell(Position position, std::string text) override;
+
+    const CellInterface* GetCell(Position position) const override;
+    CellInterface* GetCell(Position position) override;
+
+    void ClearCell(Position position) override;
 
     Size GetPrintableSize() const override;
 
@@ -23,6 +31,24 @@ public:
 
     // Можете дополнить ваш класс нужными полями и методами
 
+private:  // Methods
+    void ResizeStorage(Position position);
+
+    template <class Getter>
+    void Print(std::ostream& out, Getter getter) {
+        auto [rows_count, columns_count] = GetPrintableSize();
+
+        for (int row_id = 0; row_id < rows_count; ++row_id) {
+            for (int col_id = 0; col_id < columns_count; ++col_id) {
+                if (col_id == 0)
+                    out << '\t';
+                if (auto* cell = GetCell({row_id, col_id}))
+                    out << getter(cell);
+            }
+            out << '\n';
+        }
+    }
+
 private:
-    // Можете дополнить ваш класс нужными полями и методами
+    Storage data_;
 };

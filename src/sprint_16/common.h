@@ -37,6 +37,12 @@ struct Size {
     bool operator==(Size rhs) const;
 };
 
+// Исключение, выбрасываемое при попытке передать в метод некорректную позицию
+class InvalidPositionException : public std::out_of_range {
+public:
+    using std::out_of_range::out_of_range;
+};
+
 // Описывает ошибки, которые могут возникнуть при вычислении формулы.
 class FormulaError : public std::runtime_error {
 public:
