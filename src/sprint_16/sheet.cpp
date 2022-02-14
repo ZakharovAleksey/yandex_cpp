@@ -19,12 +19,6 @@ void CheckIfPositionValid(Position position) {
     }
 }
 
-std::unique_ptr<CellInterface> CreateNewCell(std::string text, SheetInterface& sheet) {
-    std::unique_ptr<CellInterface> cell = std::make_unique<Cell>(sheet);
-    cell->Set(std::move(text));
-    return cell;
-}
-
 }  // namespace
 
 void Sheet::SetCell(Position position, std::string text) {
@@ -34,7 +28,8 @@ void Sheet::SetCell(Position position, std::string text) {
         dynamic_cast<Cell*>(cell)->Set(std::move(text));
     } else {
         ResizeStorage(position);
-        data_.at(position.row).at(position.col) = CreateNewCell(text, *this);
+        data_.at(position.row).at(position.col) = std::make_unique<Cell>(*this);
+        SetCell(position, std::move(text));
     }
 }
 
