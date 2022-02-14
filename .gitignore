@@ -13,3 +13,4 @@ src/sprint_16/antlr4_runtime
 *Listener.*
 *Lexer.*
 *Parser.*
+*.a
