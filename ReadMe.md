@@ -1,6 +1,6 @@
 # Yandex Practicum C++
 
-:boom: **Sprint #15 description added [here](#Sprint-16)**
+:boom: **Sprint #16 description added [here](#Sprint-16)**
 
 - [ ] Add `conan` package manager (could not find packages)
 - [X] Make good `CMAKE` basing on chosen compiler
