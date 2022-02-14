@@ -1,9 +1,10 @@
 # Yandex Practicum C++
 
-:boom: **Sprint #15 description added [here](#Sprint-15)**
+:boom: **Sprint #15 description added [here](#Sprint-16)**
 
 - [ ] Add `conan` package manager (could not find packages)
 - [X] Make good `CMAKE` basing on chosen compiler
+- [X] Add `ANTLR` to the project
 
 ## Sprint 1
 
@@ -231,8 +232,6 @@ Implemented items:
 
 ## Sprint 15
 
-:exclamation: :exclamation: :exclamation:
-
 Code changes could be found here: [dev/sprint-15](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-15)
 
 Implemented items:
@@ -249,4 +248,42 @@ Language interpreter, consists from the following steps:
     * [statement.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-15/src/sprint_15/statement.cpp)
 4. Table of symbols
 
+## Sprint 16
+
+:exclamation: :exclamation: :exclamation:
+
+Code changes could be found here: [dev/sprint-16](https://github.com/ZakharovAleksey/yandex_cpp/tree/dev/sprint-16)
+
+Simple Excel-like sheet to work with text and formulas only.
+
+Main implemented items:
+1. Sheet:
+   * [sheet.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-16/src/sprint_16/sheet.h)
+   * [sheet.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-16/src/sprint_16/sheet.cpp)
+2. Cell:
+   * [cell.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-16/src/sprint_16/cell.h)
+   * [cell.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-16/src/sprint_16/cell.cpp)
+3. Formulas:
+   * [formula.h](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-16/src/sprint_16/formula.h)
+   * [formula.cpp](https://github.com/ZakharovAleksey/yandex_cpp/blob/dev/sprint-16/src/sprint_16/formula.cpp)
+4. Adjustments to use formula parser with [ANTLR](https://www.antlr.org/) 
+
 # Notes
+
+## ANTLR Installation
+
+Steps to install & test:
+1. Download & install **Java SE Runtime Environment 8**
+2. Download & install **Java SE Development Kit 8**
+3. Download *.jar file & set up all Path environment variable & *.bat files: [here](https://superuser.com/questions/1397513/please-help-me-resolve-error-antlr-is-not-recognized-command)
+4. Test the installation: [here](https://github.com/antlr/antlr4/blob/master/doc/getting-started.md)
+
+Steps to integrate with C++:
+1. Documentation page: [here](https://github.com/antlr/antlr4/blob/master/doc/cpp-target.md)
+2. Notes: [here](https://beyondtheloop.dev/Antlr-cpp-cmake/)
+
+P.S. In general, if ANTLR has been installed successfully, the only thing u need to do to integrate it with C++ 
+is just download the `runtime` module (see. above) together with `*.jar` file and place it in project folder. 
+CMakeFile will handle everything else. 
+
+
