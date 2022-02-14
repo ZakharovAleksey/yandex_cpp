@@ -1,5 +1,8 @@
 #pragma once
 
+#include <optional>
+#include <unordered_set>
+
 #include "common.h"
 #include "formula.h"
 
@@ -50,20 +53,24 @@ private:  // Fields
 
 class FormulaCellValue : public CellValueInterface {
 public:  // Constructor
-    FormulaCellValue(std::string text);
+    FormulaCellValue(std::string text, SheetInterface& sheet);
 
 public:  // Methods
     Value GetValue() const override;
     Value GetRawValue() const override;
     std::string GetText() const override;
+    std::vector<Position> GetReferencedCells() const;
+    void ClearCache();
 
 private:  // Fields
-    std::unique_ptr<FormulaInterface> formula_;
+    std::unique_ptr<FormulaInterface> formula_{nullptr};
+    SheetInterface& sheet_;
+    mutable std::optional<Value> cache_;
 };
 
 class Cell : public CellInterface {
 public:  // Constructor
-    Cell();
+    Cell(SheetInterface& sheet);
 
 public:  // Destructor
     virtual ~Cell() = default;
@@ -73,8 +80,23 @@ public:  // Methods
     void Clear();
 
     Value GetValue() const override;
+    Value GetRawValue() const;
     std::string GetText() const override;
+    std::vector<Position> GetReferencedCells() const override;
+
+    bool IsReferenced() const;
+
+    void AddReference(const Cell* cell) const;
+    void RemoveReference(const Cell* cell) const;
 
 private:
+    void GetReferencedCellsImpl(std::vector<Position>& referenced, std::unordered_set<const Cell*>& visited) const;
+    bool HasCircularDependency(const Cell* reference, const std::unique_ptr<CellValueInterface>& current,
+                               std::unordered_set<const Cell*>& visited) const;
+    void InvalidateReferencedCellsCache(std::unordered_set<const Cell*>& visited) const;
+
+private:
+    SheetInterface& sheet_;
     std::unique_ptr<CellValueInterface> value_{nullptr};
+    mutable std::unordered_set<const Cell*> referenced_cells_;
 };

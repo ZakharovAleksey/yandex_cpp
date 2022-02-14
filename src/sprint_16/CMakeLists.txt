@@ -1,19 +1,18 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
-project(formulaAST)
+project(spreadsheet)
 
 set(CMAKE_CXX_STANDARD 17)
-if (MSVC)
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(
             CMAKE_CXX_FLAGS_DEBUG
             "${CMAKE_CXX_FLAGS_DEBUG} /JMC"
     )
-else ()
+else()
     set(
             CMAKE_CXX_FLAGS
             "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Werror -Wno-unused-parameter -Wno-implicit-fallthrough"
     )
-endif ()
-
+endif()
 
 set(ANTLR_EXECUTABLE ${CMAKE_CURRENT_SOURCE_DIR}/antlr-4.9.3-complete.jar)
 include(${CMAKE_CURRENT_SOURCE_DIR}/FindANTLR.cmake)
@@ -46,9 +45,6 @@ add_executable(
 )
 
 target_link_libraries(spreadsheet antlr4_static)
-if (MSVC)
-    target_compile_options(antlr4_static PRIVATE /W0)
-endif ()
 
 install(
         TARGETS spreadsheet
@@ -56,4 +52,4 @@ install(
         EXPORT spreadsheet
 )
 
-set_directory_properties(PROPERTIES VS_STARTUP_PROJECT formulaAST)
+set_directory_properties(PROPERTIES VS_STARTUP_PROJECT spreadsheet)

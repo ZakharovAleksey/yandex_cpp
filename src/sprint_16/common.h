@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
 
 // Позиция ячейки. Индексация с нуля.
 struct Position {
@@ -43,10 +44,48 @@ public:
     using std::out_of_range::out_of_range;
 };
 
-// Описывает ошибки, которые могут возникнуть при вычислении формулы.
-class FormulaError : public std::runtime_error {
+class CircularDependencyException : public std::runtime_error {
 public:
     using std::runtime_error::runtime_error;
+};
+
+// Описывает ошибки, которые могут возникнуть при вычислении формулы.
+class FormulaError {
+public:  // Types
+    enum class Category {
+        Ref,    // ссылка на ячейку с некорректной позицией
+        Value,  // ячейка не может быть трактована как число
+        Div0,   // в результате вычисления возникло деление на ноль
+    };
+
+public:  // Constructor
+    FormulaError(Category category) : category_(category) {}
+
+    Category GetCategory() const {
+        return category_;
+    }
+
+    bool operator==(FormulaError rhs) const {
+        return category_ == rhs.category_;
+    }
+
+    std::string_view ToString() const {
+        using namespace std::string_view_literals;
+
+        switch (category_) {
+            case Category::Ref:
+                return "#REF!"sv;
+            case Category::Value:
+                return "#VALUE!"sv;
+            case Category::Div0:
+                return "#DIV/0!"sv;
+        }
+
+        return ""sv;
+    }
+
+private:
+    Category category_;
 };
 
 std::ostream& operator<<(std::ostream& output, FormulaError fe);
@@ -86,6 +125,11 @@ public:
     // редактирование. В случае текстовой ячейки это её текст (возможно,
     // содержащий экранирующие символы). В случае формулы - её выражение.
     virtual std::string GetText() const = 0;
+
+    // Возвращает список ячеек, которые непосредственно задействованы в данной
+    // формуле. Список отсортирован по возрастанию и не содержит повторяющихся
+    // ячеек. В случае текстовой ячейки список пуст.
+    virtual std::vector<Position> GetReferencedCells() const = 0;
 };
 
 // Интерфейс таблицы
