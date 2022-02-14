@@ -19,9 +19,9 @@ public:  // Destructor
     virtual ~CellValueInterface() = default;
 
 public:  // Methods
-    virtual Value GetValue() const = 0;
-    virtual Value GetRawValue() const = 0;
-    virtual std::string GetText() const = 0;
+    [[nodiscard]] virtual Value GetValue() const = 0;
+    [[nodiscard]] virtual Value GetRawValue() const = 0;
+    [[nodiscard]] virtual std::string GetText() const = 0;
     [[nodiscard]] Type GetType() const;
 
 private:  // Fields
@@ -33,19 +33,19 @@ public:  // Constructor
     EmptyCellValue();
 
 public:  // Methods
-    Value GetValue() const override;
-    Value GetRawValue() const override;
-    std::string GetText() const override;
+    [[nodiscard]] Value GetValue() const override;
+    [[nodiscard]] Value GetRawValue() const override;
+    [[nodiscard]] std::string GetText() const override;
 };
 
 class TextCellValue : public CellValueInterface {
 public:  // Constructor
-    TextCellValue(std::string text);
+    explicit TextCellValue(std::string text);
 
 public:  // Methods
-    Value GetValue() const override;
-    Value GetRawValue() const override;
-    std::string GetText() const override;
+    [[nodiscard]] Value GetValue() const override;
+    [[nodiscard]] Value GetRawValue() const override;
+    [[nodiscard]] std::string GetText() const override;
 
 private:  // Fields
     std::string text_;
@@ -70,10 +70,10 @@ private:  // Fields
 
 class Cell : public CellInterface {
 public:  // Constructor
-    Cell(SheetInterface& sheet);
+    explicit Cell(SheetInterface& sheet);
 
 public:  // Destructor
-    virtual ~Cell() = default;
+    ~Cell() override = default;
 
 public:  // Methods
     void Set(std::string text) override;

@@ -5,9 +5,9 @@
 
 #include "common.h"
 
-const int LETTERS = 26;
-const int MAX_POSITION_LENGTH = 17;
-const int MAX_POS_LETTER_COUNT = 3;
+const int kLettersCount = 26;
+const int kMaxPositionLength = 17;
+const int kMaxPositionLettersCount = 3;
 
 const Position Position::NONE = {-1, -1};
 
@@ -19,7 +19,7 @@ int ColumnStringToId(std::string_view column_str) {
 
     for (int id = static_cast<int>(column_str.length()) - 1; id >= 0; --id) {
         index += ((column_str[id] - 'A') + 1) * pow;
-        pow *= LETTERS;
+        pow *= kLettersCount;
     }
 
     return index - 1;
@@ -36,7 +36,7 @@ bool Position::operator<(const Position rhs) const {
 }
 
 bool Position::IsValid() const {
-    return col >= 0 && col < Position::MAX_COLS && row >= 0 && row < Position::MAX_ROWS;
+    return col >= 0 && col < Position::kMaxColumns && row >= 0 && row < Position::kMaxRows;
 }
 
 std::string Position::ToString() const {
@@ -47,7 +47,7 @@ std::string Position::ToString() const {
 
     int column_value{col + 1};
     while (column_value > 0) {
-        int modulo = (column_value - 1) % LETTERS;
+        int modulo = (column_value - 1) % kLettersCount;
         result.insert(result.begin(), static_cast<char>(static_cast<int>('A') + modulo));
 
         column_value = (column_value - modulo) / 26;

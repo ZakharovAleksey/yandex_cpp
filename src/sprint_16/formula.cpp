@@ -1,8 +1,6 @@
 #include "formula.h"
 
 #include <algorithm>
-#include <cassert>
-#include <cctype>
 #include <sstream>
 
 #include "FormulaAST.h"
@@ -44,12 +42,12 @@ public:  // Constructor
     }
 
 public:  // Methods
-    Value Evaluate(const SheetInterface& sheet) const override {
+    [[nodiscard]] Value Evaluate(const SheetInterface& sheet) const override {
         try {
             auto get_value = [&sheet](const Position& position) {
                 if (auto* cell = dynamic_cast<const Cell*>(sheet.GetCell(position)))
                     return std::visit(CellValueGetter{}, cell->GetRawValue());
-                // TODO: In case the cell is beyond the boundaries or absent - treat as Empty cell
+                // In case the cell is beyond the boundaries or absent - treat as Empty cell
                 return 0.;
             };
 
@@ -59,14 +57,14 @@ public:  // Methods
         }
     }
 
-    std::string GetExpression() const override {
+    [[nodiscard]] std::string GetExpression() const override {
         std::stringstream ss;
         ast_.PrintFormula(ss);
 
         return ss.str();
     }
 
-    std::vector<Position> GetReferencedCells() const override {
+    [[nodiscard]] std::vector<Position> GetReferencedCells() const override {
         return referenced_cells_;
     }
 
@@ -77,9 +75,9 @@ private:  // Fields
 
 }  // namespace
 
-std::unique_ptr<FormulaInterface> ParseFormula(std::string expression) {
+std::unique_ptr<FormulaInterface> ParseFormula(const std::string& expression) {
     try {
-        return std::make_unique<Formula>(std::move(expression));
+        return std::make_unique<Formula>(expression);
     } catch (std::exception& e) {
         throw FormulaException(e.what());
     }

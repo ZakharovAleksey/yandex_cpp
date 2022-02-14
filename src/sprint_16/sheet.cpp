@@ -1,11 +1,7 @@
 #include "sheet.h"
 
-#include <algorithm>
 #include <functional>
 #include <iostream>
-#include <optional>
-
-#include "cell.h"
 
 using namespace std::literals;
 

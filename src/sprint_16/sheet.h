@@ -19,12 +19,12 @@ public:  // Destructor
 public:  // Methods
     void SetCell(Position position, std::string text) override;
 
-    const CellInterface* GetCell(Position position) const override;
+    [[nodiscard]] const CellInterface* GetCell(Position position) const override;
     CellInterface* GetCell(Position position) override;
 
     void ClearCell(Position position) override;
 
-    Size GetPrintableSize() const override;
+    [[nodiscard]] Size GetPrintableSize() const override;
 
     void PrintValues(std::ostream& output) const override;
     void PrintTexts(std::ostream& output) const override;

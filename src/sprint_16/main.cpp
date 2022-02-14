@@ -49,7 +49,7 @@ void TestPositionAndStringConversion() {
     testSingle(Position{0, 701}, "ZZ1");
     testSingle(Position{0, 702}, "AAA1");
     testSingle(Position{136, 2}, "C137");
-    testSingle(Position{Position::MAX_ROWS - 1, Position::MAX_COLS - 1}, "XFD16384");
+    testSingle(Position{Position::kMaxRows - 1, Position::kMaxColumns - 1}, "XFD16384");
 }
 
 void TestPositionToStringInvalid() {
@@ -90,7 +90,7 @@ void TestInvalidPosition() {
     } catch (const InvalidPositionException&) {
     }
     try {
-        sheet->ClearCell(Position{Position::MAX_ROWS, 0});
+        sheet->ClearCell(Position{Position::kMaxRows, 0});
     } catch (const InvalidPositionException&) {
     }
 }

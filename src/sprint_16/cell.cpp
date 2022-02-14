@@ -1,7 +1,5 @@
 #include "cell.h"
 
-#include <cassert>
-#include <iostream>
 #include <optional>
 #include <string>
 
@@ -10,7 +8,7 @@ std::unique_ptr<CellValueInterface> TryCreateCell(std::string text, SheetInterfa
     using namespace std::string_literals;
 
     try {
-        if (text.size() > 1 && text.front() == FORMULA_SIGN) {
+        if (text.size() > 1 && text.front() == kFormulaSign) {
             return std::make_unique<FormulaCellValue>(text.substr(1), sheet);
         } else if (!text.empty()) {
             return std::make_unique<TextCellValue>(std::move(text));
@@ -52,7 +50,7 @@ TextCellValue::TextCellValue(std::string text)
     : CellValueInterface(CellValueInterface::Type::Text), text_(std::move(text)) {}
 
 CellValueInterface::Value TextCellValue::GetValue() const {
-    return (!text_.empty() && text_.front() == ESCAPE_SIGN) ? text_.substr(1) : text_;
+    return (!text_.empty() && text_.front() == kEscapeSign) ? text_.substr(1) : text_;
 }
 CellValueInterface::Value TextCellValue::GetRawValue() const {
     return text_;
