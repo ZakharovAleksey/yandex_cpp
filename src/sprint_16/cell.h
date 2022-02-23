@@ -95,8 +95,14 @@ private:
                                std::unordered_set<const Cell*>& visited) const;
     void InvalidateReferencedCellsCache(std::unordered_set<const Cell*>& visited) const;
 
+    /* SUPPORT FUNCTIONS */
+
+    const Cell* GetCell(Position position) const;
+
 private:
     SheetInterface& sheet_;
     std::unique_ptr<CellValueInterface> value_{nullptr};
-    mutable std::unordered_set<const Cell*> referenced_cells_;
+
+    mutable std::unordered_set<const Cell*> descending_cells_;
+    mutable std::unordered_set<const Cell*> ascending_cells_;
 };

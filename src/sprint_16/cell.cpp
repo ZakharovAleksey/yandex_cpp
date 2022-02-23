@@ -19,6 +19,11 @@ std::unique_ptr<CellValueInterface> TryCreateCell(std::string text, SheetInterfa
         throw FormulaException("Error in Set() method call for text: "s + text);
     }
 }
+
+FormulaCellValue* TryInterpretAsFormula(const std::unique_ptr<CellValueInterface>& cell) {
+    return cell->GetType() == CellValueInterface::Type::Formula ? dynamic_cast<FormulaCellValue*>(cell.get()) : nullptr;
+}
+
 }  // namespace
 
 /* CELL VALUE */
@@ -113,7 +118,7 @@ void Cell::Set(std::string text) {
     if (value_->GetType() != CellValueInterface::Type::Formula)
         return;
 
-    for (const auto& position : dynamic_cast<FormulaCellValue*>(value_.get())->GetReferencedCells()) {
+    for (const auto& position : TryInterpretAsFormula(value_)->GetReferencedCells()) {
         const auto* cell = dynamic_cast<Cell*>(sheet_.GetCell(position));
         cell->AddReference(cell);
     }
@@ -126,7 +131,7 @@ void Cell::Clear() {
 
         // In case, cell is formula - remove all references to this cell on the referenced
         if (value_->GetType() == CellValueInterface::Type::Formula) {
-            for (const auto& position : dynamic_cast<FormulaCellValue*>(value_.get())->GetReferencedCells()) {
+            for (const auto& position : TryInterpretAsFormula(value_)->GetReferencedCells()) {
                 const auto* cell = dynamic_cast<Cell*>(sheet_.GetCell(position));
                 cell->RemoveReference(this);
             }
@@ -162,26 +167,25 @@ std::vector<Position> Cell::GetReferencedCells() const {
 
 bool Cell::IsReferenced() const {
     if (value_->GetType() == CellValueInterface::Type::Formula)
-        return !dynamic_cast<FormulaCellValue*>(value_.get())->GetReferencedCells().empty();
+        return !TryInterpretAsFormula(value_)->GetReferencedCells().empty();
 
     return false;
 }
 
 void Cell::AddReference(const Cell* cell) const {
-    referenced_cells_.insert(cell);
+    ascending_cells_.insert(cell);
 }
 
 void Cell::RemoveReference(const Cell* cell) const {
-    referenced_cells_.erase(cell);
+    ascending_cells_.erase(cell);
 }
 
 void Cell::GetReferencedCellsImpl(std::vector<Position>& referenced, std::unordered_set<const Cell*>& visited) const {
     if (!value_ || value_->GetType() != CellValueInterface::Type::Formula)
         return;
 
-    auto* formula_cell = dynamic_cast<FormulaCellValue*>(value_.get());
-    for (const auto& position : formula_cell->GetReferencedCells()) {
-        if (auto* cell = dynamic_cast<const Cell*>(sheet_.GetCell(position)); visited.count(cell) == 0) {
+    for (const auto& position : TryInterpretAsFormula(value_)->GetReferencedCells()) {
+        if (auto* cell = GetCell(position); visited.count(cell) == 0) {
             referenced.emplace_back(position);
             visited.insert(cell);
 
@@ -195,15 +199,14 @@ bool Cell::HasCircularDependency(const Cell* reference, const std::unique_ptr<Ce
     if (!current || current->GetType() != CellValueInterface::Type::Formula)
         return false;
 
-    auto* formula_cell = dynamic_cast<FormulaCellValue*>(current.get());
-    for (const auto& position : formula_cell->GetReferencedCells()) {
-        auto* cell = dynamic_cast<const Cell*>(sheet_.GetCell(position));
+    for (const auto& position : TryInterpretAsFormula(current)->GetReferencedCells()) {
+        auto* cell = GetCell(position);
 
         if (cell == reference)
             return true;
         if (!cell) {
             sheet_.SetCell(position, "");
-            cell = dynamic_cast<const Cell*>(sheet_.GetCell(position));
+            cell = GetCell(position);
         }
         if (visited.count(cell) == 0) {
             visited.insert(cell);
@@ -216,14 +219,18 @@ bool Cell::HasCircularDependency(const Cell* reference, const std::unique_ptr<Ce
 }
 
 void Cell::InvalidateReferencedCellsCache(std::unordered_set<const Cell*>& visited) const {
-    for (const auto* cell : referenced_cells_) {
+    for (const auto* cell : ascending_cells_) {
         if (visited.count(cell) == 0) {
             visited.insert(cell);
 
-            if (cell->value_->GetType() == CellValueInterface::Type::Formula)
-                dynamic_cast<FormulaCellValue*>(cell->value_.get())->ClearCache();
+            if (auto* formula_cell = TryInterpretAsFormula(cell->value_))
+                formula_cell->ClearCache();
 
             cell->InvalidateReferencedCellsCache(visited);
         }
     }
+}
+
+const Cell* Cell::GetCell(Position position) const {
+    return dynamic_cast<const Cell*>(sheet_.GetCell(position));
 }
