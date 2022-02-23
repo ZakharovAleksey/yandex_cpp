@@ -69,6 +69,9 @@ private:  // Fields
 };
 
 class Cell : public CellInterface {
+public:  // Types
+    using CellsStorage = std::unordered_set<const Cell*>;
+
 public:  // Constructor
     explicit Cell(SheetInterface& sheet);
 
@@ -90,10 +93,10 @@ public:  // Methods
     void RemoveReference(const Cell* cell) const;
 
 private:
-    void GetReferencedCellsImpl(std::vector<Position>& referenced, std::unordered_set<const Cell*>& visited) const;
+    void GetReferencedCellsImpl(std::vector<Position>& referenced, CellsStorage& visited) const;
     bool HasCircularDependency(const Cell* reference, const std::unique_ptr<CellValueInterface>& current,
-                               std::unordered_set<const Cell*>& visited) const;
-    void InvalidateReferencedCellsCache(std::unordered_set<const Cell*>& visited) const;
+                               CellsStorage& visited) const;
+    void InvalidateReferencedCellsCache(CellsStorage& visited) const;
 
     /* SUPPORT FUNCTIONS */
 
@@ -103,6 +106,6 @@ private:
     SheetInterface& sheet_;
     std::unique_ptr<CellValueInterface> value_{nullptr};
 
-    mutable std::unordered_set<const Cell*> descending_cells_;
-    mutable std::unordered_set<const Cell*> ascending_cells_;
+    mutable CellsStorage descending_cells_;
+    mutable CellsStorage ascending_cells_;
 };

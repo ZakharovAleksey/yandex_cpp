@@ -106,7 +106,7 @@ Cell::Cell(SheetInterface& sheet) : sheet_(sheet) {}
 
 void Cell::Set(std::string text) {
     auto tmp = TryCreateCell(text, sheet_);
-    std::unordered_set<const Cell*> visited{this};
+    CellsStorage visited{this};
 
     if (HasCircularDependency(this, tmp, visited))
         throw CircularDependencyException("");
@@ -126,7 +126,7 @@ void Cell::Set(std::string text) {
 
 void Cell::Clear() {
     if (value_) {
-        std::unordered_set<const Cell*> visited{this};
+        CellsStorage visited{this};
         InvalidateReferencedCellsCache(visited);
 
         // In case, cell is formula - remove all references to this cell on the referenced
@@ -159,15 +159,15 @@ std::vector<Position> Cell::GetReferencedCells() const {
         return {};
 
     std::vector<Position> referenced_cells;
-    std::unordered_set<const Cell*> visited_cells;
-    GetReferencedCellsImpl(referenced_cells, visited_cells);
+    CellsStorage visited;
+    GetReferencedCellsImpl(referenced_cells, visited);
 
     return referenced_cells;
 }
 
 bool Cell::IsReferenced() const {
-    if (value_->GetType() == CellValueInterface::Type::Formula)
-        return !TryInterpretAsFormula(value_)->GetReferencedCells().empty();
+    if (auto* formula_cell = TryInterpretAsFormula(value_))
+        return !formula_cell->GetReferencedCells().empty();
 
     return false;
 }
@@ -180,7 +180,7 @@ void Cell::RemoveReference(const Cell* cell) const {
     ascending_cells_.erase(cell);
 }
 
-void Cell::GetReferencedCellsImpl(std::vector<Position>& referenced, std::unordered_set<const Cell*>& visited) const {
+void Cell::GetReferencedCellsImpl(std::vector<Position>& referenced, CellsStorage& visited) const {
     if (!value_ || value_->GetType() != CellValueInterface::Type::Formula)
         return;
 
@@ -195,8 +195,9 @@ void Cell::GetReferencedCellsImpl(std::vector<Position>& referenced, std::unorde
 }
 
 bool Cell::HasCircularDependency(const Cell* reference, const std::unique_ptr<CellValueInterface>& current,
-                                 std::unordered_set<const Cell*>& visited) const {
-    if (!current || current->GetType() != CellValueInterface::Type::Formula)
+                                 CellsStorage& visited) const {
+    // In case this is not a formula - no need to check further because there is no references on other cells
+    if (auto* formula_cell = TryInterpretAsFormula(current); !formula_cell)
         return false;
 
     for (const auto& position : TryInterpretAsFormula(current)->GetReferencedCells()) {
@@ -218,7 +219,7 @@ bool Cell::HasCircularDependency(const Cell* reference, const std::unique_ptr<Ce
     return false;
 }
 
-void Cell::InvalidateReferencedCellsCache(std::unordered_set<const Cell*>& visited) const {
+void Cell::InvalidateReferencedCellsCache(CellsStorage& visited) const {
     for (const auto* cell : ascending_cells_) {
         if (visited.count(cell) == 0) {
             visited.insert(cell);
