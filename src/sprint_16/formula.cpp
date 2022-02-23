@@ -1,6 +1,7 @@
 #include "formula.h"
 
 #include <algorithm>
+#include <regex>
 #include <sstream>
 
 #include "FormulaAST.h"
@@ -15,7 +16,14 @@ std::ostream& operator<<(std::ostream& output, FormulaError error) {
 struct CellValueGetter {
     double operator()(const std::string& text) {
         try {
-            return std::stod(text);
+            static const std::regex kDoubleValuePattern("^(-?)(0|([1-9][0-9]*))(.[0-9]+)?$");
+
+            std::smatch match;
+            if (std::regex_match(text.cbegin(), text.cend(), match, kDoubleValuePattern))
+                return std::stod(text);
+
+            // In case string could not be converted to double
+            throw std::runtime_error("");
         } catch (...) {
             throw FormulaError(FormulaError::Category::Value);
         }

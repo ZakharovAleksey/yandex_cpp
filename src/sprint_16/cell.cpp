@@ -109,25 +109,32 @@ void FormulaCellValue::InvalidateCache() {
 Cell::Cell(SheetInterface& sheet) : sheet_(sheet) {}
 
 void Cell::Set(std::string text) {
+    // Step 1. Create temporary cell interface
+    // NOTE: Temporary because cell should not exist till circular dependency check is ok
     auto tmp = TryCreateCell(text, sheet_);
-    CellsStorage visited{this};
 
-    //
+    // Step 2. Instantiate cell for formula in case they do not exist but references in formula
     InstantiateCellsIfNotExists(tmp);
 
-    if (HasCircularDependency(this, tmp, visited))
+    // Step 3. Check on circular cell dependency
+    if (CellsStorage visited{this}; HasCircularDependency(this, tmp, visited))
         throw CircularDependencyException("");
 
-    Clear();
+    // Step 4. Make temporary value primary
     value_ = std::move(tmp);
 
-    // In case, cell is formula - make a reference to this cell for all cells in formula
-    if (value_->GetType() != CellValueInterface::Type::Formula)
-        return;
+    // Step 5. If previously this cell was a formula - remove cells
+    if (!descending_cells_.empty())
+        RemoveOldConnections();
 
-    for (const auto& position : TryInterpretAsFormula(value_)->GetReferencedCells()) {
-        const auto* cell = dynamic_cast<Cell*>(sheet_.GetCell(position));
-        cell->AddReference(cell);
+    // Step 6. If now this cell contains a formula - create connections
+    if (auto* formula_cell = TryInterpretAsFormula(value_))
+        EstablishNewConnections(formula_cell);
+
+    // Step 7. If there are any dependencies from this cell via formula - invalidate them
+    if (!ascending_cells_.empty()) {
+        CellsStorage visited{this};
+        InvalidateReferencedCellsCache(visited);
     }
 }
 
@@ -203,17 +210,21 @@ void Cell::GetReferencedCellsImpl(std::vector<Position>& referenced, CellsStorag
 
 bool Cell::HasCircularDependency(const Cell* reference, const std::unique_ptr<CellValueInterface>& current,
                                  CellsStorage& visited) const {
+    auto* formula_cell = TryInterpretAsFormula(current);
+
     // In case this is not a formula - no need to check further because there is no references on other cells
-    if (auto* formula_cell = TryInterpretAsFormula(current); !formula_cell)
+    if (!formula_cell)
         return false;
 
-    for (const auto& position : TryInterpretAsFormula(current)->GetReferencedCells()) {
+    for (const auto& position : formula_cell->GetReferencedCells()) {
         auto* cell = GetCell(position);
 
         if (cell == reference)
             return true;
+
         if (visited.count(cell) == 0) {
             visited.insert(cell);
+
             if (cell->HasCircularDependency(reference, cell->value_, visited))
                 return true;
         }
@@ -249,5 +260,25 @@ void Cell::InstantiateCellsIfNotExists(const std::unique_ptr<CellValueInterface>
             if (auto* cell = GetCell(position); !cell)
                 sheet_.SetCell(position, ""s);
         }
+    }
+}
+
+void Cell::RemoveOldConnections() {
+    // Remove connection between ascending cells and this
+    for (auto* cell : descending_cells_)
+        cell->RemoveAscendingCell(this);
+
+    descending_cells_.clear();
+}
+
+void Cell::EstablishNewConnections(FormulaCellValue* formula_cell) {
+    if (!formula_cell)
+        return;
+
+    for (auto& position : formula_cell->GetReferencedCells()) {
+        auto* cell = GetCell(position);
+
+        descending_cells_.insert(cell);
+        cell->AddAscendingCell(this);
     }
 }

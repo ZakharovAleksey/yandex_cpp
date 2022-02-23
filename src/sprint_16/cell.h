@@ -104,6 +104,15 @@ private:
 
     const Cell* GetCell(Position position) const;
     void InstantiateCellsIfNotExists(const std::unique_ptr<CellValueInterface>& current);
+    void RemoveOldConnections();
+    void EstablishNewConnections(FormulaCellValue* formula_cell);
+    void RemoveAscendingCell(Cell* cell) const {
+        ascending_cells_.erase(cell);
+    }
+    void AddAscendingCell(const Cell* cell) const {
+        ascending_cells_.insert(cell);
+    }
+
 
 private:
     SheetInterface& sheet_;
