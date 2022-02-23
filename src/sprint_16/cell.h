@@ -28,6 +28,8 @@ private:  // Fields
     Type type_;
 };
 
+using CellValueIntefaceUPtr = std::unique_ptr<CellValueInterface>;
+
 class EmptyCellValue : public CellValueInterface {
 public:  // Constructor
     EmptyCellValue();
@@ -67,7 +69,7 @@ public:  // Methods
 private:  // Fields
     std::unique_ptr<FormulaInterface> formula_{nullptr};
     SheetInterface& sheet_;
-    mutable std::optional<Value> cache_;
+    mutable std::optional<double> cache_;
 };
 
 class Cell : public CellInterface {
@@ -91,32 +93,25 @@ public:  // Methods
 
     bool IsReferenced() const;
 
-    void AddReference(const Cell* cell) const;
-    void RemoveReference(const Cell* cell) const;
-
 private:
-    void GetReferencedCellsImpl(std::vector<Position>& referenced, CellsStorage& visited) const;
-    bool HasCircularDependency(const Cell* reference, const std::unique_ptr<CellValueInterface>& current,
+    /* SET METHOD HELPERS */
+    void InstantiateCellsIfNotExists(const CellValueIntefaceUPtr& current);
+    bool HasCircularDependency(const Cell* reference, const CellValueIntefaceUPtr& current,
                                CellsStorage& visited) const;
+    void RemoveOldConnections();
+    void EstablishNewConnections(FormulaCellValue* formula_cell);
     void InvalidateReferencedCellsCache(CellsStorage& visited) const;
 
     /* SUPPORT FUNCTIONS */
 
     const Cell* GetCell(Position position) const;
-    void InstantiateCellsIfNotExists(const std::unique_ptr<CellValueInterface>& current);
-    void RemoveOldConnections();
-    void EstablishNewConnections(FormulaCellValue* formula_cell);
-    void RemoveAscendingCell(Cell* cell) const {
-        ascending_cells_.erase(cell);
-    }
-    void AddAscendingCell(const Cell* cell) const {
-        ascending_cells_.insert(cell);
-    }
-
+    void RemoveAscendingCell(Cell* cell) const;
+    void AddAscendingCell(const Cell* cell) const;
+    void GetReferencedCellsImpl(std::vector<Position>& referenced, CellsStorage& visited) const;
 
 private:
     SheetInterface& sheet_;
-    std::unique_ptr<CellValueInterface> value_{nullptr};
+    CellValueIntefaceUPtr value_{nullptr};
 
     mutable CellsStorage descending_cells_;
     mutable CellsStorage ascending_cells_;

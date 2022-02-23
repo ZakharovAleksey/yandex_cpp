@@ -4,7 +4,7 @@
 #include <string>
 
 namespace {
-std::unique_ptr<CellValueInterface> TryCreateCell(std::string text, SheetInterface& sheet) {
+CellValueIntefaceUPtr TryCreateCell(std::string text, SheetInterface& sheet) {
     using namespace std::string_literals;
 
     try {
@@ -20,8 +20,9 @@ std::unique_ptr<CellValueInterface> TryCreateCell(std::string text, SheetInterfa
     }
 }
 
-FormulaCellValue* TryInterpretAsFormula(const std::unique_ptr<CellValueInterface>& cell) {
-    return cell->GetType() == CellValueInterface::Type::Formula ? dynamic_cast<FormulaCellValue*>(cell.get()) : nullptr;
+FormulaCellValue* TryInterpretAsFormula(const CellValueIntefaceUPtr& cell) {
+    return (cell && cell->GetType() == CellValueInterface::Type::Formula) ? dynamic_cast<FormulaCellValue*>(cell.get())
+                                                                          : nullptr;
 }
 
 }  // namespace
@@ -80,10 +81,14 @@ FormulaCellValue::FormulaCellValue(std::string text, SheetInterface& sheet)
     : CellValueInterface(CellValueInterface::Type::Formula), formula_(ParseFormula(std::move(text))), sheet_(sheet) {}
 
 CellValueInterface::Value FormulaCellValue::GetValue() const {
-    if (!cache_)
-        cache_ = std::visit(FormulaEvaluationGetter{}, formula_->Evaluate(sheet_));
+    if (cache_.has_value())
+        return cache_.value();
 
-    return cache_.value();
+    auto evaluation_result = formula_->Evaluate(sheet_);
+    if (auto* value = std::get_if<double>(&evaluation_result))
+        cache_ = *value;
+
+    return std::visit(FormulaEvaluationGetter{}, evaluation_result);
 }
 CellValueInterface::Value FormulaCellValue::GetRawValue() const {
     return GetValue();
@@ -105,7 +110,8 @@ void FormulaCellValue::InvalidateCache() {
     cache_.reset();
 }
 
-// Реализуйте следующие методы
+/* MAIN CELL CLASS */
+
 Cell::Cell(SheetInterface& sheet) : sheet_(sheet) {}
 
 void Cell::Set(std::string text) {
@@ -140,15 +146,12 @@ void Cell::Set(std::string text) {
 
 void Cell::Clear() {
     if (value_) {
-        CellsStorage visited{this};
-        InvalidateReferencedCellsCache(visited);
+        if (!descending_cells_.empty())
+            RemoveOldConnections();
 
-        // In case, cell is formula - remove all references to this cell on the referenced
-        if (value_->GetType() == CellValueInterface::Type::Formula) {
-            for (const auto& position : TryInterpretAsFormula(value_)->GetReferencedCells()) {
-                const auto* cell = dynamic_cast<Cell*>(sheet_.GetCell(position));
-                cell->RemoveReference(this);
-            }
+        if (!ascending_cells_.empty()) {
+            CellsStorage visited{this};
+            InvalidateReferencedCellsCache(visited);
         }
 
         value_.reset();
@@ -186,19 +189,13 @@ bool Cell::IsReferenced() const {
     return false;
 }
 
-void Cell::AddReference(const Cell* cell) const {
-    ascending_cells_.insert(cell);
-}
-
-void Cell::RemoveReference(const Cell* cell) const {
-    ascending_cells_.erase(cell);
-}
-
 void Cell::GetReferencedCellsImpl(std::vector<Position>& referenced, CellsStorage& visited) const {
-    if (!value_ || value_->GetType() != CellValueInterface::Type::Formula)
+    auto* formula_cell = TryInterpretAsFormula(value_);
+
+    if (!formula_cell)
         return;
 
-    for (const auto& position : TryInterpretAsFormula(value_)->GetReferencedCells()) {
+    for (const auto& position : formula_cell->GetReferencedCells()) {
         if (auto* cell = GetCell(position); visited.count(cell) == 0) {
             referenced.emplace_back(position);
             visited.insert(cell);
@@ -208,7 +205,7 @@ void Cell::GetReferencedCellsImpl(std::vector<Position>& referenced, CellsStorag
     }
 }
 
-bool Cell::HasCircularDependency(const Cell* reference, const std::unique_ptr<CellValueInterface>& current,
+bool Cell::HasCircularDependency(const Cell* reference, const CellValueIntefaceUPtr& current,
                                  CellsStorage& visited) const {
     auto* formula_cell = TryInterpretAsFormula(current);
 
@@ -252,7 +249,14 @@ const Cell* Cell::GetCell(Position position) const {
     return dynamic_cast<const Cell*>(sheet_.GetCell(position));
 }
 
-void Cell::InstantiateCellsIfNotExists(const std::unique_ptr<CellValueInterface>& current) {
+void Cell::RemoveAscendingCell(Cell* cell) const {
+    ascending_cells_.erase(cell);
+}
+void Cell::AddAscendingCell(const Cell* cell) const {
+    ascending_cells_.insert(cell);
+}
+
+void Cell::InstantiateCellsIfNotExists(const CellValueIntefaceUPtr& current) {
     using namespace std::string_literals;
 
     if (auto* formula_cell = TryInterpretAsFormula(current)) {
