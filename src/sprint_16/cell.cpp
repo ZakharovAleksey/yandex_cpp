@@ -97,7 +97,11 @@ std::vector<Position> FormulaCellValue::GetReferencedCells() const {
     return formula_->GetReferencedCells();
 }
 
-void FormulaCellValue::ClearCache() {
+bool FormulaCellValue::IsCacheValid() const {
+    return cache_.has_value();
+}
+
+void FormulaCellValue::InvalidateCache() {
     cache_.reset();
 }
 
@@ -107,6 +111,9 @@ Cell::Cell(SheetInterface& sheet) : sheet_(sheet) {}
 void Cell::Set(std::string text) {
     auto tmp = TryCreateCell(text, sheet_);
     CellsStorage visited{this};
+
+    //
+    InstantiateCellsIfNotExists(tmp);
 
     if (HasCircularDependency(this, tmp, visited))
         throw CircularDependencyException("");
@@ -205,10 +212,6 @@ bool Cell::HasCircularDependency(const Cell* reference, const std::unique_ptr<Ce
 
         if (cell == reference)
             return true;
-        if (!cell) {
-            sheet_.SetCell(position, "");
-            cell = GetCell(position);
-        }
         if (visited.count(cell) == 0) {
             visited.insert(cell);
             if (cell->HasCircularDependency(reference, cell->value_, visited))
@@ -221,12 +224,14 @@ bool Cell::HasCircularDependency(const Cell* reference, const std::unique_ptr<Ce
 
 void Cell::InvalidateReferencedCellsCache(CellsStorage& visited) const {
     for (const auto* cell : ascending_cells_) {
-        if (visited.count(cell) == 0) {
-            visited.insert(cell);
+        if (visited.count(cell) > 0)
+            return;
 
-            if (auto* formula_cell = TryInterpretAsFormula(cell->value_))
-                formula_cell->ClearCache();
+        visited.insert(cell);
 
+        // Do invalidation only in case cache is valid (otherwise - no need to do check)
+        if (auto* formula_cell = TryInterpretAsFormula(cell->value_); formula_cell && formula_cell->IsCacheValid()) {
+            formula_cell->InvalidateCache();
             cell->InvalidateReferencedCellsCache(visited);
         }
     }
@@ -234,4 +239,15 @@ void Cell::InvalidateReferencedCellsCache(CellsStorage& visited) const {
 
 const Cell* Cell::GetCell(Position position) const {
     return dynamic_cast<const Cell*>(sheet_.GetCell(position));
+}
+
+void Cell::InstantiateCellsIfNotExists(const std::unique_ptr<CellValueInterface>& current) {
+    using namespace std::string_literals;
+
+    if (auto* formula_cell = TryInterpretAsFormula(current)) {
+        for (const auto& position : formula_cell->GetReferencedCells()) {
+            if (auto* cell = GetCell(position); !cell)
+                sheet_.SetCell(position, ""s);
+        }
+    }
 }

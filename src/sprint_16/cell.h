@@ -60,7 +60,9 @@ public:  // Methods
     Value GetRawValue() const override;
     std::string GetText() const override;
     std::vector<Position> GetReferencedCells() const;
-    void ClearCache();
+
+    bool IsCacheValid() const;
+    void InvalidateCache();
 
 private:  // Fields
     std::unique_ptr<FormulaInterface> formula_{nullptr};
@@ -101,6 +103,7 @@ private:
     /* SUPPORT FUNCTIONS */
 
     const Cell* GetCell(Position position) const;
+    void InstantiateCellsIfNotExists(const std::unique_ptr<CellValueInterface>& current);
 
 private:
     SheetInterface& sheet_;
