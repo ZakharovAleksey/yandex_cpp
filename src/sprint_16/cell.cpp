@@ -266,7 +266,7 @@ void Cell::InstantiateCellsIfNotExists(const CellValueIntefaceUPtr& current) {
 void Cell::RemoveOldConnections() {
     // Remove connection between ascending cells and this
     for (auto* cell : descending_cells_)
-        cell->RemoveAscendingCell(this);
+        cell->ascending_cells_.erase(this);
 
     descending_cells_.clear();
 }
@@ -279,6 +279,6 @@ void Cell::EstablishNewConnections(FormulaCellValue* formula_cell) {
         auto* cell = GetCell(position);
 
         descending_cells_.insert(cell);
-        cell->AddAscendingCell(this);
+        cell->ascending_cells_.insert(this);
     }
 }

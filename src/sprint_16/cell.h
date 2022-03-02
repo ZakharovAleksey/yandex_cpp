@@ -104,8 +104,6 @@ private:
     /* SUPPORT FUNCTIONS */
 
     const Cell* GetCell(Position position) const;
-    void RemoveAscendingCell(Cell* cell) const;
-    void AddAscendingCell(const Cell* cell) const;
     void GetReferencedCellsImpl(std::vector<Position>& referenced, CellsStorage& visited) const;
 
 private:
