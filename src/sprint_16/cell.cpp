@@ -163,10 +163,6 @@ Cell::Value Cell::GetValue() const {
     return value_->GetValue();
 }
 
-Cell::Value Cell::GetRawValue() const {
-    return value_->GetRawValue();
-}
-
 std::string Cell::GetText() const {
     return value_->GetText();
 }

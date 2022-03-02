@@ -87,7 +87,6 @@ public:  // Methods
     void Clear();
 
     Value GetValue() const override;
-    Value GetRawValue() const;
     std::string GetText() const override;
     std::vector<Position> GetReferencedCells() const override;
 

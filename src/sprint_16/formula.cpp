@@ -53,14 +53,14 @@ public:  // Methods
     [[nodiscard]] Value Evaluate(const SheetInterface& sheet) const override {
         try {
             auto get_value = [&sheet](const Position& position) {
-                if (auto* cell = dynamic_cast<const Cell*>(sheet.GetCell(position)))
-                    return std::visit(CellValueGetter{}, cell->GetRawValue());
+                if (auto* cell = sheet.GetCell(position))
+                    return std::visit(CellValueGetter{}, cell->GetValue());
                 // In case the cell is beyond the boundaries or absent - treat as Empty cell
                 return 0.;
             };
 
             return ast_.Execute(get_value);
-        } catch (FormulaError& error_code) {
+        } catch (const FormulaError& error_code) {
             return error_code;
         }
     }
