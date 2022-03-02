@@ -3,112 +3,129 @@
 #include <optional>
 #include <string>
 
-namespace {
-CellValueIntefaceUPtr TryCreateCell(std::string text, SheetInterface& sheet) {
-    using namespace std::string_literals;
+/* CELL VALUE INTERFACE */
 
-    try {
-        if (text.size() > 1 && text.front() == kFormulaSign) {
-            return std::make_unique<FormulaCellValue>(text.substr(1), sheet);
-        } else if (!text.empty()) {
-            return std::make_unique<TextCellValue>(std::move(text));
-        } else {
-            return std::make_unique<EmptyCellValue>();
-        }
-    } catch (std::exception&) {
-        throw FormulaException("Error in Set() method call for text: "s + text);
+class Cell::CellValueInterface {
+public:  // Types
+    using Value = CellInterface::Value;
+
+    enum class Type { Empty, Text, Formula };
+
+public:  // Constructor
+    explicit CellValueInterface(Type type) : type_(type) {}
+
+public:  // Destructor
+    virtual ~CellValueInterface() = default;
+
+public:  // Methods
+    [[nodiscard]] virtual Value GetValue() const = 0;
+    [[nodiscard]] virtual Value GetRawValue() const = 0;
+    [[nodiscard]] virtual std::string GetText() const = 0;
+
+    [[nodiscard]] Type GetType() const {
+        return type_;
     }
-}
 
-FormulaCellValue* TryInterpretAsFormula(const CellValueIntefaceUPtr& cell) {
-    return (cell && cell->GetType() == CellValueInterface::Type::Formula) ? dynamic_cast<FormulaCellValue*>(cell.get())
-                                                                          : nullptr;
-}
-
-}  // namespace
-
-/* CELL VALUE */
-
-CellValueInterface::CellValueInterface(CellValueInterface::Type type) : type_(type) {}
-
-CellValueInterface::Type CellValueInterface::GetType() const {
-    return type_;
-}
+private:  // Fields
+    Type type_;
+};
 
 /* EMPTY CELL VALUE */
 
-EmptyCellValue::EmptyCellValue() : CellValueInterface(CellValueInterface::Type::Empty) {}
+class Cell::EmptyCellValue : public CellValueInterface {
+public:  // Constructor
+    EmptyCellValue() : CellValueInterface(CellValueInterface::Type::Empty) {}
 
-CellValueInterface::Value EmptyCellValue::GetValue() const {
-    return 0.;
-}
-CellValueInterface::Value EmptyCellValue::GetRawValue() const {
-    return 0.;
-}
-std::string EmptyCellValue::GetText() const {
-    using namespace std::string_literals;
-    return ""s;
-}
-
-/* TEXT CELL VALUE */
-
-TextCellValue::TextCellValue(std::string text)
-    : CellValueInterface(CellValueInterface::Type::Text), text_(std::move(text)) {}
-
-CellValueInterface::Value TextCellValue::GetValue() const {
-    return (!text_.empty() && text_.front() == kEscapeSign) ? text_.substr(1) : text_;
-}
-CellValueInterface::Value TextCellValue::GetRawValue() const {
-    return text_;
-}
-std::string TextCellValue::GetText() const {
-    return text_;
-}
-
-/* FORMULA CELL VALUE */
-
-struct FormulaEvaluationGetter {
-    CellInterface::Value operator()(double value) {
-        return value;
+public:  // Methods
+    [[nodiscard]] Value GetValue() const override {
+        return 0.;
     }
-
-    CellValueInterface::Value operator()(FormulaError error) {
-        return error;
+    [[nodiscard]] Value GetRawValue() const override {
+        return 0.;
+    }
+    [[nodiscard]] std::string GetText() const override {
+        using namespace std::string_literals;
+        return ""s;
     }
 };
 
-FormulaCellValue::FormulaCellValue(std::string text, SheetInterface& sheet)
-    : CellValueInterface(CellValueInterface::Type::Formula), formula_(ParseFormula(std::move(text))), sheet_(sheet) {}
+/* TEXT CELL VALUE */
 
-CellValueInterface::Value FormulaCellValue::GetValue() const {
-    if (cache_.has_value())
-        return cache_.value();
+class Cell::TextCellValue : public CellValueInterface {
+public:  // Constructor
+    explicit TextCellValue(std::string text)
+        : CellValueInterface(CellValueInterface::Type::Text), text_(std::move(text)) {}
 
-    auto evaluation_result = formula_->Evaluate(sheet_);
-    if (auto* value = std::get_if<double>(&evaluation_result))
-        cache_ = *value;
+public:  // Methods
+    [[nodiscard]] Value GetValue() const override {
+        return (!text_.empty() && text_.front() == kEscapeSign) ? text_.substr(1) : text_;
+    }
+    [[nodiscard]] Value GetRawValue() const override {
+        return text_;
+    }
+    [[nodiscard]] std::string GetText() const override {
+        return text_;
+    }
 
-    return std::visit(FormulaEvaluationGetter{}, evaluation_result);
-}
-CellValueInterface::Value FormulaCellValue::GetRawValue() const {
-    return GetValue();
-}
-std::string FormulaCellValue::GetText() const {
-    using namespace std::string_literals;
-    return "="s + formula_->GetExpression();
-}
+private:  // Fields
+    std::string text_;
+};
 
-std::vector<Position> FormulaCellValue::GetReferencedCells() const {
-    return formula_->GetReferencedCells();
-}
+/* FORMULA CELL VALUE */
 
-bool FormulaCellValue::IsCacheValid() const {
-    return cache_.has_value();
-}
+class Cell::FormulaCellValue : public CellValueInterface {
+public:  // Types
+    struct FormulaEvaluationGetter {
+        CellInterface::Value operator()(double value) {
+            return value;
+        }
 
-void FormulaCellValue::InvalidateCache() {
-    cache_.reset();
-}
+        Cell::CellValueInterface::Value operator()(FormulaError error) {
+            return error;
+        }
+    };
+
+public:  // Constructor
+    FormulaCellValue(std::string text, SheetInterface& sheet)
+        : CellValueInterface(CellValueInterface::Type::Formula),
+          formula_(ParseFormula(std::move(text))),
+          sheet_(sheet) {}
+
+public:  // Methods
+    Value GetValue() const override {
+        if (cache_.has_value())
+            return cache_.value();
+
+        auto evaluation_result = formula_->Evaluate(sheet_);
+        if (auto* value = std::get_if<double>(&evaluation_result))
+            cache_ = *value;
+
+        return std::visit(FormulaEvaluationGetter{}, evaluation_result);
+    }
+
+    Value GetRawValue() const override {
+        return GetValue();
+    }
+    std::string GetText() const override {
+        using namespace std::string_literals;
+        return "="s + formula_->GetExpression();
+    }
+    std::vector<Position> GetReferencedCells() const {
+        return formula_->GetReferencedCells();
+    }
+
+    bool IsCacheValid() const {
+        return cache_.has_value();
+    }
+    void InvalidateCache() {
+        cache_.reset();
+    }
+
+private:  // Fields
+    std::unique_ptr<FormulaInterface> formula_{nullptr};
+    SheetInterface& sheet_;
+    mutable std::optional<double> cache_;
+};
 
 /* MAIN CELL CLASS */
 
@@ -178,6 +195,27 @@ std::vector<Position> Cell::GetReferencedCells() const {
     return referenced_cells;
 }
 
+Cell::CellValueIntefaceUPtr Cell::TryCreateCell(std::string text, SheetInterface& sheet) const {
+    using namespace std::string_literals;
+
+    try {
+        if (text.size() > 1 && text.front() == kFormulaSign) {
+            return std::make_unique<FormulaCellValue>(text.substr(1), sheet);
+        } else if (!text.empty()) {
+            return std::make_unique<TextCellValue>(std::move(text));
+        } else {
+            return std::make_unique<EmptyCellValue>();
+        }
+    } catch (std::exception&) {
+        throw FormulaException("Error in Set() method call for text: "s + text);
+    }
+}
+
+Cell::FormulaCellValue* Cell::TryInterpretAsFormula(const CellValueIntefaceUPtr& cell) const {
+    return (cell && cell->GetType() == CellValueInterface::Type::Formula) ? dynamic_cast<FormulaCellValue*>(cell.get())
+                                                                          : nullptr;
+}
+
 bool Cell::IsReferenced() const {
     if (auto* formula_cell = TryInterpretAsFormula(value_))
         return !formula_cell->GetReferencedCells().empty();
@@ -243,13 +281,6 @@ void Cell::InvalidateReferencedCellsCache(CellsStorage& visited) const {
 
 const Cell* Cell::GetCell(Position position) const {
     return dynamic_cast<const Cell*>(sheet_.GetCell(position));
-}
-
-void Cell::RemoveAscendingCell(Cell* cell) const {
-    ascending_cells_.erase(cell);
-}
-void Cell::AddAscendingCell(const Cell* cell) const {
-    ascending_cells_.insert(cell);
 }
 
 void Cell::InstantiateCellsIfNotExists(const CellValueIntefaceUPtr& current) {
